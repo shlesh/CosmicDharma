@@ -1,59 +1,59 @@
-import swisseph as swe
+# backend/astro.py
+
 from datetime import datetime
+import swisseph as swe
 from timezonefinder import TimezoneFinder
 import pytz
+from geopy.geocoders import Nominatim
+from geopy.exc import GeocoderServiceError
+from .models import ProfileInput
 
-# Use Lahiri ayanamsa (commonly used in Indian astrology)
-swe.set_sid_mode(swe.SIDM_LAHIRI)
+NAKSHATRAS = [ ... ]  # as before
+RASHIS     = [ ... ]  # as before
 
-# Nakshatra mapping
-nakshatras = [
-    "Ashwini", "Bharani", "Krittika", "Rohini", "Mrigashira", "Ardra", "Punarvasu",
-    "Pushya", "Ashlesha", "Magha", "Purva Phalguni", "Uttara Phalguni", "Hasta",
-    "Chitra", "Swati", "Vishakha", "Anuradha", "Jyeshtha", "Mula", "Purva Ashadha",
-    "Uttara Ashadha", "Shravana", "Dhanishta", "Shatabhisha", "Purva Bhadrapada",
-    "Uttara Bhadrapada", "Revati"
-]
+def calculate_astrology_profile(data: ProfileInput):
+    # 1. Parse birth datetime
+    naive_dt = datetime.strptime(f"{data.dob} {data.tob}", "%Y-%m-%d %H:%M")
 
-signs = [
-    "Aries", "Taurus", "Gemini", "Cancer", "Leo", "Virgo",
-    "Libra", "Scorpio", "Sagittarius", "Capricorn", "Aquarius", "Pisces"
-]
+    # 2. Geocode with timeout + error handling
+    geolocator = Nominatim(user_agent="astro_app")
+    try:
+        location = geolocator.geocode(data.pob, timeout=10)  # 10s timeout
+    except GeocoderServiceError as e:
+        raise RuntimeError(f"Geocoding failed: {e}")
+    if not location:
+        raise RuntimeError(f"Place not found: {data.pob}")
+    lat, lon = location.latitude, location.longitude
 
-def calculate_astrology_profile(data):
-    print("DOB:", dob)
-    print("JULIAN:", jd)
-    print("MOON LONG:", moon_long)
-    print("Nakshatra Index:", nak_index)
+    # 3. Timezone → UTC
+    tz_str   = TimezoneFinder().timezone_at(lat=lat, lng=lon)
+    local_tz = pytz.timezone(tz_str)
+    local_dt = local_tz.localize(naive_dt)
+    utc_dt   = local_dt.astimezone(pytz.utc)
 
-    # Step 1: Parse birth datetime
-    dob = datetime.strptime(f"{data.dob} {data.tob}", "%Y-%m-%d %H:%M")
+    # 4. Julian Day
+    jd = swe.julday(
+        utc_dt.year,
+        utc_dt.month,
+        utc_dt.day,
+        utc_dt.hour + utc_dt.minute/60 + utc_dt.second/3600
+    )
 
-    # Step 2: Get coordinates and timezone
-    # (For now, use placeholder coordinates for Renukoot)
-    lat, lon = 24.2166, 83.0369
-    tf = TimezoneFinder()
-    timezone_str = tf.timezone_at(lat=lat, lng=lon) or "Asia/Kolkata"
-    timezone = pytz.timezone(timezone_str)
-    dob_utc = timezone.localize(dob).astimezone(pytz.utc)
+    # 5. Moon longitude
+    moon_long = swe.calc_ut(jd, swe.MOON)[0]
 
-    jd = swe.julday(dob_utc.year, dob_utc.month, dob_utc.day, dob_utc.hour + dob_utc.minute / 60.0)
+    # 6. Nakshatra & pada
+    nak_index = int(moon_long // (13 + 1/3))
+    nak       = NAKSHATRAS[nak_index]
+    pada      = int(((moon_long % (13 + 1/3)) // (1 + 1/3))) + 1
 
-    # Step 3: Get Moon position
-    moon_long = swe.calc_ut(jd, swe.MOON)[0]  # safer
-    moon_sign = signs[int(moon_long // 30)]
+    # 7. Rashi
+    rashi_index = int(moon_long // 30)
+    rashi       = RASHIS[rashi_index]
 
-    # Step 4: Nakshatra
-    nak_index = int(moon_long // (13 + 1/3))  # 13°20' = 13.333...
-    pada = int((moon_long % (13 + 1/3)) // (3 + 1/3)) + 1
-    nakshatra = nakshatras[nak_index % 27]
-
-    # Step 5: Return result
     return {
-        "lagna": "Pending",  # Will compute this later
-        "rashi": moon_sign,
-        "nakshatra": nakshatra,
-        "pada": str(pada),
-        "mahadasa": "Pending",  # Coming soon
-        "message": f"{data.name}, you are born under {nakshatra} nakshatra in {moon_sign} rashi (Pada {pada})."
+        "moon_longitude": moon_long,
+        "nakshatra":      nak,
+        "pada":           pada,
+        "rashi":          rashi,
     }

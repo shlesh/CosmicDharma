@@ -16,7 +16,8 @@ function App() {
 
   const handleSubmit = async () => {
     try {
-      const res = await fetch("http://127.0.0.1:8000/profile", {
+      const apiUrl = import.meta.env.VITE_API_URL || "http://localhost:8000";
+      const res = await fetch(`${apiUrl}/profile`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(form),

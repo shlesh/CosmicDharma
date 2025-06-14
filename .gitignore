@@ -108,6 +108,8 @@ dist
 /node_modules
 /.pnp
 .pnp.js
+backend/venv/
+*.env
 
 # testing
 /coverage
