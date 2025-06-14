@@ -1,27 +1,53 @@
-import './App.css';
+import { useState } from "react";
+import "./App.css";
 
 function App() {
+  const [form, setForm] = useState({
+    name: "",
+    dob: "",
+    tob: "",
+    pob: "",
+  });
+  const [result, setResult] = useState(null);
+
+  const handleChange = (e) => {
+    setForm({ ...form, [e.target.name]: e.target.value });
+  };
+
+  const handleSubmit = async () => {
+    try {
+      const res = await fetch("http://127.0.0.1:8000/profile", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(form),
+      });
+      const data = await res.json();
+      setResult(data);
+    } catch (err) {
+      console.error(err);
+      alert("Could not fetch profile. Try again later.");
+    }
+  };
+
   return (
-    <div className="App">
-      <header className="App-header">
-        <img src="Octocat.png" className="App-logo" alt="logo" />
-        <p>
-          GitHub Codespaces <span className="heart">♥️</span> React
-        </p>
-        <p className="small">
-          Edit <code>src/App.jsx</code> and save to reload.
-        </p>
-        <p>
-          <a
-            className="App-link"
-            href="https://reactjs.org"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Learn React
-          </a>
-        </p>
-      </header>
+    <div className="container">
+      <h1>🪐 Vedic Astrology Profile</h1>
+      <input name="name" placeholder="Your Name" onChange={handleChange} />
+      <input name="dob" type="date" onChange={handleChange} />
+      <input name="tob" type="time" onChange={handleChange} />
+      <input name="pob" placeholder="Place of Birth" onChange={handleChange} />
+      <button onClick={handleSubmit}>Get My Profile</button>
+
+      {result && (
+        <div className="result">
+          <h2>Your Vedic Profile</h2>
+          <p><strong>Lagna:</strong> {result.lagna}</p>
+          <p><strong>Moon Sign:</strong> {result.rashi}</p>
+          <p><strong>Nakshatra:</strong> {result.nakshatra} (Pada {result.pada})</p>
+          <p><strong>Mahadasha:</strong> {result.mahadasa}</p>
+          <p><em>{result.message}</em></p>
+        </div>
+      )}
     </div>
   );
 }
