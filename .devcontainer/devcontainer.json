@@ -20,7 +20,8 @@
     "3000": {
       "label": "Application",
       "onAutoForward": "openPreview"
-    }
+    },
+    "8000": { "label": "FastAPI Swagger UI", "onAutoForward": "notify" }
   },
-  "forwardPorts": [3000]
+  "forwardPorts": [3000, 8000]
 }

@@ -1,56 +1,103 @@
 import { useState } from "react";
-import "./App.css";
 
-function App() {
-  const [form, setForm] = useState({
-    name: "",
-    dob: "",
-    tob: "",
-    pob: "",
-  });
+export default function App() {
+  const [form, setForm] = useState({ name: "", dob: "", tob: "", pob: "" });
   const [result, setResult] = useState(null);
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  const apiUrl = import.meta.env.VITE_API_URL || "http://localhost:8000";
 
   const handleChange = (e) => {
-    setForm({ ...form, [e.target.name]: e.target.value });
+    const { name, value } = e.target;
+    setForm((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleSubmit = async () => {
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    setError("");
+    setResult(null);
     try {
-      const apiUrl = import.meta.env.VITE_API_URL || "http://localhost:8000";
       const res = await fetch(`${apiUrl}/profile`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(form),
       });
       const data = await res.json();
+      if (!res.ok) throw new Error(data.detail || "Server error");
       setResult(data);
     } catch (err) {
-      console.error(err);
-      alert("Could not fetch profile. Try again later.");
+      setError(err.message);
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
-    <div className="container">
-      <h1>🪐 Vedic Astrology Profile</h1>
-      <input name="name" placeholder="Your Name" onChange={handleChange} />
-      <input name="dob" type="date" onChange={handleChange} />
-      <input name="tob" type="time" onChange={handleChange} />
-      <input name="pob" placeholder="Place of Birth" onChange={handleChange} />
-      <button onClick={handleSubmit}>Get My Profile</button>
+    <div className="app-container">
+      <h1>Vedic Astrology Profile</h1>
+      <form onSubmit={handleSubmit} className="profile-form">
+        <label>
+          Name:
+          <input
+            name="name"
+            value={form.name}
+            onChange={handleChange}
+            required
+          />
+        </label>
+
+        <label>
+          Date of Birth:
+          <input
+            type="date"
+            name="dob"
+            value={form.dob}
+            onChange={handleChange}
+            required
+          />
+        </label>
+
+        <label>
+          Time of Birth:
+          <input
+            type="time"
+            name="tob"
+            value={form.tob}
+            onChange={handleChange}
+            required
+          />
+        </label>
+
+        <label>
+          Place of Birth:
+          <input
+            name="pob"
+            value={form.pob}
+            onChange={handleChange}
+            required
+          />
+        </label>
+
+        <button type="submit" disabled={loading}>
+          {loading ? "Calculating..." : "Submit"}
+        </button>
+      </form>
+
+      {error && <div className="error">Error: {error}</div>}
 
       {result && (
         <div className="result">
-          <h2>Your Vedic Profile</h2>
-          <p><strong>Lagna:</strong> {result.lagna}</p>
-          <p><strong>Moon Sign:</strong> {result.rashi}</p>
-          <p><strong>Nakshatra:</strong> {result.nakshatra} (Pada {result.pada})</p>
-          <p><strong>Mahadasha:</strong> {result.mahadasa}</p>
-          <p><em>{result.message}</em></p>
+          <h2>Profile Results</h2>
+          <ul>
+            <li><strong>Moon Longitude:</strong> {result.moon_longitude.toFixed(4)}</li>
+            <li><strong>Rashi:</strong> {result.rashi}</li>
+            <li><strong>Nakshatra:</strong> {result.nakshatra}</li>
+            <li><strong>Pada:</strong> {result.pada}</li>
+          </ul>
         </div>
       )}
     </div>
   );
 }
-
-export default App;
