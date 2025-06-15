@@ -1,23 +1,29 @@
-# backend/planets.py
 import swisseph as swe
-from .astro_constants import RASHI_METADATA
 
-_PLANETS = {
-    "Sun": swe.SUN, "Moon": swe.MOON, "Mercury": swe.MERCURY,
-    "Venus": swe.VENUS, "Mars": swe.MARS,
-    "Jupiter": swe.JUPITER, "Saturn": swe.SATURN,
-    "Rahu": swe.MEAN_NODE, "Ketu": swe.TRUE_NODE,
-}
-
-def get_planetary_positions(jd: float):
-    positions = {}
-    for name, body in _PLANETS.items():
-        res = swe.calc_ut(jd, body)
-        raw = res[0][0] if isinstance(res[0], (list, tuple)) else res[0]
-        sign_idx = int(raw // 30)
-        positions[name] = {
-            "longitude": raw,
-            "sign":      RASHI_METADATA[sign_idx]["name"],
-            "deg":       raw % 30,
-        }
-    return positions
+def calculate_planets(binfo):
+    """
+    Calculate geocentric planetary longitudes for core planets.
+    Returns list of dicts: name, longitude, sign, degree_in_sign.
+    """
+    planet_ids = {
+        'Sun': swe.SUN,
+        'Moon': swe.MOON,
+        'Mercury': swe.MERCURY,
+        'Venus': swe.VENUS,
+        'Mars': swe.MARS,
+        'Jupiter': swe.JUPITER,
+        'Saturn': swe.SATURN,
+        'Rahu': swe.MEAN_NODE,
+    }
+    results = []
+    for name, pid in planet_ids.items():
+        lon, lat, dist = swe.calc_ut(binfo['jd_ut'], pid)
+        sign = int(lon // 30) + 1
+        deg_in_sign = lon % 30
+        results.append({
+            'name': name,
+            'longitude': lon,
+            'sign': sign,
+            'degree': deg_in_sign,
+        })
+    return results

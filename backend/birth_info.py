@@ -1,55 +1,26 @@
-# backend/birth_info.py
-"""
-Parse and format birth details into human-readable strings:
-- Day of week and full date
-- Time with AM/PM and timezone abbreviation
-- Reverse-geocoded location string (City, State, Country)
-- Coordinates summary
-"""
+import swisseph as swe
 from datetime import datetime
-import pytz
-from timezonefinder import TimezoneFinder
-from geopy.geocoders import Nominatim
-from geopy.exc import GeocoderServiceError
 
-# One-time reverse geolocator
-geo_reverse = Nominatim(user_agent="astro_app/1.0")
-
-def get_birth_info(dob: str, tob: str, lat: float, lon: float) -> dict:
+def get_birth_info(date, time, latitude, longitude, timezone):
     """
-    Given date (YYYY-MM-DD), time (HH:MM), and coords,
-    return formatted birth info.
+    Compute Julian Day, sidereal offset, ascendant, house cusps.
+    Returns a dict with jd_ut, sidereal_offset, asc, houses.
     """
-    # 1) Parse naive local datetime
-    naive = datetime.strptime(f"{dob} {tob}", "%Y-%m-%d %H:%M")
-
-    # 2) Determine timezone from coords
-    tz_str = TimezoneFinder().timezone_at(lat=lat, lng=lon) or "UTC"
-    tz = pytz.timezone(tz_str)
-    local_dt = tz.localize(naive)
-
-    # 3) Format date & time
-    date_string = local_dt.strftime("%A, %B %d, %Y")
-    time_string = local_dt.strftime("%I:%M %p %Z")
-
-    # 4) Reverse geocode
-    try:
-        rev = geo_reverse.reverse((lat, lon), timeout=10)
-        addr = rev.raw.get("address", {})
-        parts = []
-        for key in ("city", "town", "village", "state", "country"):
-            v = addr.get(key)
-            if v and v not in parts:
-                parts.append(v)
-        location = ", ".join(parts)
-    except GeocoderServiceError:
-        location = ""
-
+    # combine date and time to UTC datetime
+    dt = datetime.combine(date, time)
+    # convert to Julian Day UTC
+    jd_ut = swe.julday(dt.year, dt.month, dt.day, dt.hour + dt.minute/60 + dt.second/3600)
+    # set sidereal ayanamsha (Fagan/Bradley)
+    swe.set_sid_mode(swe.SIDM_FAGAN_BRADLEY)
+    # compute ascendant
+    asc, mc = swe.houses(jd_ut, latitude, longitude)[0:2]
+    # compute house cusps
+    cusps = swe.houses(jd_ut, latitude, longitude)[1]
     return {
-        "date_string": date_string,
-        "time_string": time_string,
-        "timezone": tz_str,
-        "location": location,
-        "latitude": lat,
-        "longitude": lon,
+        "jd_ut": jd_ut,
+        "ascendant": asc,
+        "cusps": cusps,
+        "latitude": latitude,
+        "longitude": longitude,
+        "timezone": timezone,
     }

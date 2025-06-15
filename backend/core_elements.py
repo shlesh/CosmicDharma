@@ -1,30 +1,17 @@
-# backend/core_elements.py
-import swisseph as swe
-from .astro_constants import RASHI_METADATA
-
-def get_core_elements(jd: float, lat: float, lon: float, moon_long: float) -> dict:
+def calculate_core_elements(binfo, planets):
     """
-    Compute Sun sign, Moon sign, and Ascendant metadata.
-    Returns a dict:
-      {
-        'sun': { name, element, quality, ruler, nature },
-        'moon': { ... },
-        'ascendant': { ... }
-      }
+    Compute elemental balances based on signs of planets.
+    Returns dict of five tattvas percentages.
     """
-    # Sun longitude
-    sun_res = swe.calc_ut(jd, swe.SUN)
-    sun_long = sun_res[0][0] if isinstance(sun_res[0], (list, tuple)) else sun_res[0]
-    # Ascendant longitude
-    asc_res = swe.houses(jd, lat, lon, b'P')
-    asc_long = asc_res[0][0] if isinstance(asc_res[0], (list, tuple)) else asc_res[0]
-
-    sun_idx = int(sun_long // 30)
-    moon_idx = int(moon_long // 30)
-    asc_idx = int(asc_long // 30)
-
-    return {
-        'sun':        RASHI_METADATA[sun_idx],
-        'moon':       RASHI_METADATA[moon_idx],
-        'ascendant':  RASHI_METADATA[asc_idx],
+    elements = {'Fire':0,'Earth':0,'Air':0,'Water':0,'Space':0}
+    sign_to_element = {
+        1:'Fire',2:'Earth',3:'Air',4:'Water',5:'Fire',6:'Earth',7:'Space',8:'Space',
+        9:'Fire',10:'Water',11:'Air',12:'Earth'
     }
+    for p in planets:
+        element = sign_to_element[p['sign']]
+        elements[element] += 1
+    total = len(planets)
+    for k in elements:
+        elements[k] = round((elements[k]/total)*100, 1)
+    return elements
