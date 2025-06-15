@@ -1,6 +1,7 @@
 import swisseph as swe
 from datetime import datetime
 import pytz
+from .astro_constants import RASHI_METADATA
 
 
 # Supported ayanamśa options
@@ -84,3 +85,22 @@ def get_birth_info(date, time, latitude, longitude, timezone,
         "longitude": longitude,
         "timezone": timezone,
     }
+
+
+def get_lagna(jd_ut: float, latitude: float, longitude: float,
+              house_system: str | bytes = "P") -> dict:
+    """Return rashi metadata for the rising sign."""
+    if isinstance(house_system, bytes):
+        hsys = house_system[:1]
+    else:
+        hsys = HOUSE_MAP.get(house_system.lower())
+        if not hsys and len(house_system) == 1:
+            hsys = house_system.upper().encode()[:1]
+    if not hsys:
+        hsys = b"P"
+
+    res = swe.houses(jd_ut, latitude, longitude, hsys)
+    asc_list = res[0] if isinstance(res[0], (list, tuple)) else res
+    asc_deg = asc_list[0]
+    idx = int(asc_deg // 30)
+    return RASHI_METADATA[idx]

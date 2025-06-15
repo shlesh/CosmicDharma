@@ -1,6 +1,11 @@
 import datetime
 from backend.dasha import calculate_vimshottari_dasha
-from backend.analysis import calculate_all_divisional_charts, DIVISIONAL_CHARTS, DIV_CHART_INTERP
+from backend.analysis import (
+    calculate_all_divisional_charts,
+    DIVISIONAL_CHARTS,
+    DIV_CHART_INTERP,
+)
+from backend.d_charts import calculate_basic_divisional_charts
 
 
 def test_vimshottari_dasha_sequence():
@@ -54,3 +59,12 @@ def test_all_divisional_charts_full():
 
 def test_div_chart_interpretations_complete():
     assert len(DIV_CHART_INTERP) == 60
+
+
+def test_basic_d_charts_prototype():
+    planets = [{"name": "Sun", "longitude": 15.0}]
+    charts = calculate_basic_divisional_charts(planets)
+    assert set(charts.keys()) == {"D9", "D10"}
+    assert charts["D9"]["Sun"] == 1
+    assert charts["D10"]["Sun"] == 1
+
