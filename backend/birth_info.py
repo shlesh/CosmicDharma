@@ -20,11 +20,14 @@ def get_birth_info(date, time, latitude, longitude, timezone):
     )
     # set sidereal ayanamsha (Fagan/Bradley)
     swe.set_sid_mode(swe.SIDM_FAGAN_BRADLEY)
+    # get ayanamsa (sidereal offset)
+    sidereal_offset = swe.get_ayanamsa(jd_ut)
     # compute houses and ascendant
     cusps, ascmc = swe.houses(jd_ut, latitude, longitude)
     asc = ascmc[0]
     return {
         "jd_ut": jd_ut,
+        "sidereal_offset": sidereal_offset,
         "ascendant": asc,
         "cusps": cusps,
         "latitude": latitude,
