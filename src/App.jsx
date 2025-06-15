@@ -116,8 +116,8 @@ function App() {
   };
 
   return (
-    <div className="neo-container">
-      <h1>Complete Vedic Astrological Profile</h1>
+    <div className="glass-container">
+      <h1>🕉️ Complete Vedic Astrological Profile</h1>
 
       <ProfileForm
         form={form}

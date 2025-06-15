@@ -1,67 +1,71 @@
 body {
-  font-family: sans-serif;
-  background: #e0e5ec;
+  font-family: 'Karma', sans-serif;
+  background: linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%);
   margin: 0;
   padding: 2rem;
+  min-height: 100vh;
 }
 
-/* Neomorphic card container */
-.neo-container {
+/* Glassmorphic card container */
+.glass-container {
   max-width: 600px;
   margin: 0 auto;
   padding: 2rem;
   border-radius: 20px;
-  background: #e0e5ec;
-  box-shadow: 9px 9px 16px #a3b1c6,
-              -9px -9px 16px #ffffff;
+  background: rgba(255, 255, 255, 0.3);
+  box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  border: 1px solid rgba(255, 255, 255, 0.4);
 }
 
-/* Inputs styled with inset shadows */
-.neo-input {
+/* Inputs styled with glassmorphism */
+.glass-input {
   display: block;
   width: 100%;
   margin: 0.5rem 0;
   padding: 0.75rem 1rem;
   font-size: 1rem;
-  border: none;
   border-radius: 12px;
-  background: #e0e5ec;
-  box-shadow: inset 2px 2px 5px #bec8d2,
-              inset -2px -2px 5px #ffffff;
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  background: rgba(255, 255, 255, 0.3);
+  color: #222;
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
 }
 
-.neo-input:focus {
+.glass-input:focus {
   outline: none;
-  box-shadow: inset 2px 2px 5px #a3b1c6,
-              inset -2px -2px 5px #ffffff;
+  border-color: rgba(255, 255, 255, 0.8);
 }
 
-/* Button with raised neomorphic effect */
-.neo-button {
-  background: #e0e5ec;
-  color: #333;
+/* Button with glassmorphic effect */
+.glass-button {
+  background: rgba(255, 255, 255, 0.3);
+  color: #222;
   padding: 0.75rem;
   width: 100%;
   font-size: 1rem;
   margin-top: 1rem;
   cursor: pointer;
-  border: none;
   border-radius: 12px;
-  box-shadow: 4px 4px 8px #a3b1c6,
-              -4px -4px 8px #ffffff;
-  transition: box-shadow 0.2s ease;
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  transition: background 0.2s ease;
 }
 
-.neo-button:active {
-  box-shadow: inset 4px 4px 8px #a3b1c6,
-              inset -4px -4px 8px #ffffff;
+.glass-button:active {
+  background: rgba(255, 255, 255, 0.6);
 }
 
 .result {
   margin-top: 2rem;
-  background: #e0e5ec;
+  background: rgba(255, 255, 255, 0.3);
   padding: 1rem;
   border-radius: 20px;
-  box-shadow: inset 2px 2px 5px #bec8d2,
-              inset -2px -2px 5px #ffffff;
+  box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  border: 1px solid rgba(255, 255, 255, 0.4);
 }

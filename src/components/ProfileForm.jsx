@@ -12,7 +12,7 @@ export default function ProfileForm({ form, onChange, onSubmit, loading }) {
           placeholder="Shailesh Tiwari"
           onChange={onChange}
           required
-          className="neo-input"
+          className="glass-input"
         />
       </label>
       <label>
@@ -23,7 +23,7 @@ export default function ProfileForm({ form, onChange, onSubmit, loading }) {
           value={form.birthDate}
           onChange={onChange}
           required
-          className="neo-input"
+          className="glass-input"
         />
       </label>
       <label>
@@ -34,7 +34,7 @@ export default function ProfileForm({ form, onChange, onSubmit, loading }) {
           value={form.birthTime}
           onChange={onChange}
           required
-          className="neo-input"
+          className="glass-input"
         />
       </label>
       <label>
@@ -45,10 +45,10 @@ export default function ProfileForm({ form, onChange, onSubmit, loading }) {
           placeholder="Renukoot, India"
           onChange={onChange}
           required
-          className="neo-input"
+          className="glass-input"
         />
       </label>
-      <button type="submit" disabled={loading} className="neo-button">
+      <button type="submit" disabled={loading} className="glass-button">
         {loading ? 'Calculating…' : 'Submit'}
       </button>
     </form>
