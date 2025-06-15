@@ -7,4 +7,4 @@ timezonefinder
 pytz
 geopy
 geopy[speedups]
-httpx
+httpx<0.25
