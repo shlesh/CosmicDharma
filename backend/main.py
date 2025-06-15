@@ -27,11 +27,11 @@ from backend.house_analysis import analyze_houses
 from backend.core_elements import calculate_core_elements
 
 # New Vedic modules
-from backend.divisional_charts import calculate_divisional_charts, get_vargottama_planets
+from backend.divisional_charts import get_vargottama_planets
 from backend.aspects import calculate_vedic_aspects, calculate_sign_aspects
 from backend.yogas import calculate_all_yogas
 from backend.shadbala import calculate_shadbala, calculate_bhava_bala
-from backend.analysis import full_analysis
+from backend.analysis import full_analysis, calculate_all_divisional_charts
 
 # FastAPI app init
 app = FastAPI(
@@ -111,17 +111,19 @@ def _compute_vedic_profile(request: ProfileRequest):
     
     # Houses
     houses = analyze_houses(binfo, planets)
+    if isinstance(houses, dict) and 'houses' not in houses:
+        houses = {'houses': houses, 'placements': {}, 'aspects': {}}
     
     # Core elements with modalities
     core = calculate_core_elements(planets, include_modalities=True)
     
     # Proper divisional charts
-    dcharts = calculate_divisional_charts(planets)
+    dcharts = calculate_all_divisional_charts(planets)
     
     # Vargottama planets
     vargottama = get_vargottama_planets(
-        dcharts['D1'], 
-        dcharts['D9']
+        dcharts.get('D1', {}),
+        dcharts.get('D9', {})
     )
     
     # Vedic aspects
@@ -202,10 +204,7 @@ async def get_divisional_charts(request: ProfileRequest):
     logger.info("Received divisional charts request: %s", request)
     data = _compute_vedic_profile(request)
     logger.info("Divisional charts computation completed")
-    return {
-        "divisionalCharts": data["divisionalCharts"],
-        "vargottamaPlanets": data["analysis"]["vargottamaPlanets"]
-    }
+    return {"divisionalCharts": data["divisionalCharts"]}
 
 
 @app.post("/dasha")
