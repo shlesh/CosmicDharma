@@ -50,6 +50,13 @@ PYTHONPATH=. pytest -q
 
 The backend tests stub all external dependencies so no API keys or internet access are required.
 
+To run the backend tests inside the Docker container, build the image and mount the test suite:
+
+```bash
+docker build -f backend/Dockerfile -t backend-tests .
+docker run --rm -v $(pwd)/tests:/tests backend-tests bash -c "pip install pytest && PYTHONPATH=/app pytest -q /tests"
+```
+
 ## Continuous integration
 
 Automated tests run on GitHub Actions for every push and pull request. The workflow installs Node and Python dependencies and executes both the frontend and backend test suites.

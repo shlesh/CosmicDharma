@@ -4,10 +4,18 @@ on:
   push:
     branches: [ main ]
   pull_request:
+  workflow_dispatch:
+    inputs:
+      use-docker:
+        description: "Run backend tests inside Docker"
+        required: false
+        default: "false"
 
 jobs:
   test:
     runs-on: ubuntu-latest
+    env:
+      USE_DOCKER: ${{ github.event.inputs.use-docker || 'false' }}
     steps:
       - uses: actions/checkout@v3
       - uses: actions/setup-node@v3
@@ -16,9 +24,20 @@ jobs:
       - run: npm install
       - run: npm test
       - uses: actions/setup-python@v4
+        if: env.USE_DOCKER != 'true'
         with:
           python-version: '3.11'
       - run: python -m venv backend/venv
+        if: env.USE_DOCKER != 'true'
       - run: backend/venv/bin/pip install -r backend/requirements.txt
+        if: env.USE_DOCKER != 'true'
       - run: backend/venv/bin/pip install pytest
+        if: env.USE_DOCKER != 'true'
       - run: PYTHONPATH=. backend/venv/bin/pytest -q
+        if: env.USE_DOCKER != 'true'
+      - name: Build backend Docker image
+        if: env.USE_DOCKER == 'true'
+        run: docker build -t backend-tests -f backend/Dockerfile .
+      - name: Run backend tests in Docker
+        if: env.USE_DOCKER == 'true'
+        run: docker run --rm -v ${{ github.workspace }}/tests:/tests backend-tests bash -c "pip install pytest && PYTHONPATH=/app pytest -q /tests"
