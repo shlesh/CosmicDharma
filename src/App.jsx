@@ -7,6 +7,8 @@ import CoreElements from './components/CoreElements';
 import PlanetTable from './components/PlanetTable';
 import DashaTable from './components/DashaTable';
 import DashaChart from './components/DashaChart';
+import DivisionalSummary from './components/DivisionalSummary';
+import RasiChart from './components/RasiChart';
 import HouseAnalysis from './components/HouseAnalysis';
 import { generatePdf } from './pdf';
 
@@ -16,6 +18,9 @@ function App() {
   const [birthDate, setBirthDate] = useState('');
   const [birthTime, setBirthTime] = useState('');
   const [location, setLocation] = useState('');
+  const [ayanamsa, setAyanamsa] = useState('fagan_bradley');
+  const [houseSystem, setHouseSystem] = useState('placidus');
+  const [nodeType, setNodeType] = useState('mean');
 
   useEffect(() => {
     // On mount, load saved values
@@ -25,6 +30,9 @@ function App() {
       if (saved.birthDate) setBirthDate(saved.birthDate);
       if (saved.birthTime) setBirthTime(saved.birthTime);
       if (saved.location) setLocation(saved.location);
+      if (saved.ayanamsa) setAyanamsa(saved.ayanamsa);
+      if (saved.houseSystem) setHouseSystem(saved.houseSystem);
+      if (saved.nodeType) setNodeType(saved.nodeType);
     } catch {
       // ignore
     }
@@ -41,16 +49,32 @@ function App() {
 
   useEffect(() => {
     // Persist form values
-    const toSave = { name, birthDate, birthTime, location };
+    const toSave = {
+      name,
+      birthDate,
+      birthTime,
+      location,
+      ayanamsa,
+      houseSystem,
+      nodeType,
+    };
     localStorage.setItem('vedicForm', JSON.stringify(toSave));
-  }, [name, birthDate, birthTime, location]);
+  }, [name, birthDate, birthTime, location, ayanamsa, houseSystem, nodeType]);
 
   // UI state
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [profile, setProfile] = useState(null);
 
-  const form = { name, birthDate, birthTime, location };
+  const form = {
+    name,
+    birthDate,
+    birthTime,
+    location,
+    ayanamsa,
+    houseSystem,
+    nodeType,
+  };
 
   const handleChange = (e) => {
     const { name: field, value } = e.target;
@@ -67,6 +91,15 @@ function App() {
       case 'location':
         setLocation(value);
         break;
+      case 'ayanamsa':
+        setAyanamsa(value);
+        break;
+      case 'houseSystem':
+        setHouseSystem(value);
+        break;
+      case 'nodeType':
+        setNodeType(value);
+        break;
       default:
         break;
     }
@@ -82,7 +115,14 @@ function App() {
       const res = await fetch('/profile', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ date: birthDate, time: birthTime, location }),
+        body: JSON.stringify({
+          date: birthDate,
+          time: birthTime,
+          location,
+          ayanamsa,
+          house_system: houseSystem,
+          lunar_node: nodeType,
+        }),
       });
 
       console.log('Response status', res.status);
@@ -190,8 +230,13 @@ function App() {
             elements={profile.coreElements}
           />
           <PlanetTable planets={profile.planetaryPositions} />
+          <RasiChart planets={profile.planetaryPositions} />
           <HouseAnalysis houses={profile.analysis?.houses || profile.houses} />
-          <DashaTable dasha={profile.vimshottariDasha} />
+          <DivisionalSummary charts={profile.analysis?.divisionalCharts} />
+          <DashaTable
+            dasha={profile.vimshottariDasha}
+            analysis={profile.analysis && profile.analysis.vimshottariDasha}
+          />
           <DashaChart
             dasha={profile.vimshottariDasha}
             analysis={profile.analysis && profile.analysis.vimshottariDasha}
