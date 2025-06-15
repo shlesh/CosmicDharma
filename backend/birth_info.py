@@ -3,7 +3,8 @@ from datetime import datetime
 import pytz
 
 
-AYANAMSA_MAP = {
+# Supported ayanamśa options
+AYANAMSHA_MAP = {
     "fagan_bradley": swe.SIDM_FAGAN_BRADLEY,
     "lahiri": swe.SIDM_LAHIRI,
     "raman": swe.SIDM_RAMAN,
@@ -16,7 +17,7 @@ HOUSE_MAP = {
 }
 
 def get_birth_info(date, time, latitude, longitude, timezone,
-                   *, ayanamsa: str = "fagan_bradley",
+                   *, ayanamsha: str = "fagan_bradley",
                    house_system: str = "placidus"):
     """
     Compute Julian Day, sidereal offset, ascendant, house cusps.
