@@ -7,6 +7,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field, ConfigDict
+from typing import Literal
 
 from backend.config import load_config
 from backend.geocoder import geocode_location
@@ -58,9 +59,15 @@ class ProfileRequest(BaseModel):
     birth_date: dt_date = Field(..., alias="date")
     birth_time: dt_time = Field(..., alias="time")
     location: str = Field(...)
-    ayanamsa: str = Field(default=CONFIG.get("ayanamsa", "fagan_bradley"))
-    node_type: str = Field(default=CONFIG.get("node_type", "mean"), alias="lunar_node")
-    house_system: str = Field(default=CONFIG.get("house_system", "placidus"))
+    ayanamsa: Literal["fagan_bradley", "lahiri", "raman", "kp"] = Field(
+        default=CONFIG.get("ayanamsa", "fagan_bradley")
+    )
+    node_type: Literal["mean", "true"] = Field(
+        default=CONFIG.get("node_type", "mean"), alias="lunar_node"
+    )
+    house_system: Literal["placidus", "whole_sign"] = Field(
+        default=CONFIG.get("house_system", "placidus")
+    )
 
 
 def _compute_profile(request: ProfileRequest):
@@ -80,7 +87,7 @@ def _compute_profile(request: ProfileRequest):
         latitude=lat,
         longitude=lon,
         timezone=tz,
-        ayanamsa=request.ayanamsa,
+        ayanamsha=request.ayanamsa,
         house_system=request.house_system,
     )
     planets = calculate_planets(binfo, node_type=request.node_type)
