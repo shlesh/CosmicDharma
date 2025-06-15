@@ -100,6 +100,15 @@ table {
   border-collapse: collapse;
 }
 
+/* Subtle explanation text */
+.help-text {
+  font-size: 0.9rem;
+  font-style: italic;
+  color: #333;
+  margin-top: -0.25rem;
+  margin-bottom: 0.75rem;
+}
+
 th,
 td {
   padding: 0.5rem;

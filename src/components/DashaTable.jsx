@@ -1,11 +1,14 @@
 // src/components/DashaTable.jsx
 import React from 'react';
 
+// Tabular listing of each planetary period with start and end dates.
+
 export default function DashaTable({ dasha }) {
   if (!Array.isArray(dasha) || dasha.length === 0) return null;
   return (
     <section className="mb-6">
-      <h3>Vimshottari Mahādasha</h3>
+      <h3 title="Detailed listing of your planetary periods">Vimshottari Mahādasha</h3>
+      <p className="help-text">This table helps you track when each period begins and ends.</p>
       <table>
         <thead>
           <tr>

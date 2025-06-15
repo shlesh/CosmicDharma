@@ -1,4 +1,6 @@
 import React, { useMemo } from 'react';
+
+// Visualizes planetary periods so visitors can grasp upcoming life phases.
 import { Line } from 'react-chartjs-2';
 import {
   Chart,
@@ -85,7 +87,8 @@ export default function DashaChart({ dasha, analysis }) {
 
   return (
     <section className="mb-6">
-      <h3>Dasha Timeline</h3>
+      <h3 title="Graphical view of each major period">Dasha Timeline</h3>
+      <p className="help-text">Hover over each segment to read what it signifies.</p>
       <Line data={data} options={options} />
     </section>
   );

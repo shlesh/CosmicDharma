@@ -1,9 +1,12 @@
 // src/components/ProfileForm.jsx
 import React from 'react';
 
+// Collects birth information from the visitor to generate their horoscope.
+
 export default function ProfileForm({ form, onChange, onSubmit, loading }) {
   return (
     <form onSubmit={onSubmit} className="mb-6 space-y-4">
+      <p className="help-text">Fill out your birth details to generate a personalized chart.</p>
       <label>
         Name:
         <input
@@ -13,6 +16,7 @@ export default function ProfileForm({ form, onChange, onSubmit, loading }) {
           onChange={onChange}
           required
           className="glass-input"
+          title="Your full name for reference"
         />
       </label>
       <label>
@@ -24,6 +28,7 @@ export default function ProfileForm({ form, onChange, onSubmit, loading }) {
           onChange={onChange}
           required
           className="glass-input"
+          title="Choose the exact calendar date"
         />
       </label>
       <label>
@@ -35,6 +40,7 @@ export default function ProfileForm({ form, onChange, onSubmit, loading }) {
           onChange={onChange}
           required
           className="glass-input"
+          title="Local time of your birth"
         />
       </label>
       <label>
@@ -46,6 +52,7 @@ export default function ProfileForm({ form, onChange, onSubmit, loading }) {
           onChange={onChange}
           required
           className="glass-input"
+          title="City or town where you were born"
         />
       </label>
       <button type="submit" disabled={loading} className="glass-button">

@@ -53,3 +53,16 @@ The backend tests stub all external dependencies so no API keys or internet acce
 ## Continuous integration
 
 Automated tests run on GitHub Actions for every push and pull request. The workflow installs Node and Python dependencies and executes both the frontend and backend test suites.
+
+## Components
+
+The interface is composed of several reusable React components:
+
+- **ProfileForm** – collects your birth details. Tooltips guide each input.
+- **ProfileSummary** – highlights key chart insights, such as your nakshatra.
+- **BasicInfo** – confirms the birth data used in calculations.
+- **CoreElements** – shows the balance of Fire, Earth, Air and Water elements.
+- **PlanetTable** – lists the zodiac sign and degree of every planet.
+- **HouseAnalysis** – explains how each astrological house influences life areas.
+- **DashaTable** – lists major planetary periods with start and end dates.
+- **DashaChart** – visual timeline of those periods; hover to read descriptions.
