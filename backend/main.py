@@ -4,6 +4,8 @@ import logging
 from datetime import date as dt_date, time as dt_time
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.exceptions import RequestValidationError
+from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field, ConfigDict
 
 from backend.config import load_config
@@ -36,6 +38,13 @@ app.add_middleware(
     allow_origins=["*"], allow_credentials=True,
     allow_methods=["*"], allow_headers=["*"],
 )
+
+
+@app.exception_handler(RequestValidationError)
+async def validation_exception_handler(request, exc):
+    """Return validation errors in a structured format."""
+    logger.error("Validation error: %s", exc)
+    return JSONResponse(status_code=422, content={"detail": exc.errors()})
 
 class ProfileRequest(BaseModel):
     """
@@ -112,12 +121,16 @@ async def get_profile(request: ProfileRequest):
 @app.post("/divisional-charts")
 async def get_divisional_charts(request: ProfileRequest):
     """Return only divisional charts based on profile input."""
+    logger.info("Received divisional charts request: %s", request)
     data = _compute_profile(request)
+    logger.info("Divisional charts computation completed")
     return {"divisionalCharts": data["divisionalCharts"]}
 
 
 @app.post("/dasha")
 async def get_dasha(request: ProfileRequest):
     """Return only Vimshottari dasha sequence based on profile input."""
+    logger.info("Received dasha request: %s", request)
     data = _compute_profile(request)
+    logger.info("Dasha computation completed")
     return {"vimshottariDasha": data["vimshottariDasha"]}
