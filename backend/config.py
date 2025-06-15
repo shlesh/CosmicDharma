@@ -1,10 +1,11 @@
 from pathlib import Path
+import os
 import yaml
 
 DEFAULTS = {
-    "ayanamsa": "fagan_bradley",
+    "ayanamsa": "lahiri",
     "node_type": "mean",
-    "house_system": "placidus",
+    "house_system": "whole_sign",
 }
 
 _cfg = None
@@ -14,6 +15,7 @@ def load_config():
     if _cfg is not None:
         return _cfg
     cfg = DEFAULTS.copy()
+
     path = Path(__file__).with_name("config.yaml")
     if path.exists():
         try:
@@ -23,5 +25,11 @@ def load_config():
                     cfg[k] = str(data[k]).lower()
         except Exception:
             pass
+
+    for k in DEFAULTS:
+        val = os.getenv(k.upper())
+        if val is not None:
+            cfg[k] = str(val).lower()
+
     _cfg = cfg
     return cfg
