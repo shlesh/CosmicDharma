@@ -17,6 +17,7 @@ def test_profile(monkeypatch):
     monkeypatch.setattr(main, "analyze_houses", lambda *a, **k: {1: ["Moon"]})
     monkeypatch.setattr(main, "calculate_core_elements", lambda *a, **k: {"Fire": 100})
     monkeypatch.setattr(main, "calculate_divisional_charts", lambda *a, **k: {})
+    monkeypatch.setattr(main, "calculate_ashtakavarga", lambda *a, **k: {"bav": {}, "total_points": {}})
     monkeypatch.setattr(main, "full_analysis", lambda *a, **k: {})
 
     resp = client.post("/profile", json={"date": "2020-01-01", "time": "12:00:00", "location": "Delhi"})
@@ -35,6 +36,7 @@ def test_divisional_charts(monkeypatch):
     monkeypatch.setattr(main, "analyze_houses", lambda *a, **k: {})
     monkeypatch.setattr(main, "calculate_core_elements", lambda *a, **k: {})
     monkeypatch.setattr(main, "calculate_divisional_charts", lambda *a, **k: {"D1": {}})
+    monkeypatch.setattr(main, "calculate_ashtakavarga", lambda *a, **k: {"bav": {}, "total_points": {}})
     monkeypatch.setattr(main, "full_analysis", lambda *a, **k: {})
 
     resp = client.post("/divisional-charts", json={"date": "2020-01-01", "time": "12:00:00", "location": "Delhi"})
@@ -52,6 +54,7 @@ def test_dasha(monkeypatch):
     monkeypatch.setattr(main, "analyze_houses", lambda *a, **k: {})
     monkeypatch.setattr(main, "calculate_core_elements", lambda *a, **k: {})
     monkeypatch.setattr(main, "calculate_divisional_charts", lambda *a, **k: {})
+    monkeypatch.setattr(main, "calculate_ashtakavarga", lambda *a, **k: {"bav": {}, "total_points": {}})
     monkeypatch.setattr(main, "full_analysis", lambda *a, **k: {})
 
     resp = client.post("/dasha", json={"date": "2020-01-01", "time": "12:00:00", "location": "Delhi"})
