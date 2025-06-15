@@ -3,6 +3,7 @@ from backend import planets as planets_mod
 
 
 def test_calculate_planets_with_mock(monkeypatch):
+    planets_mod.clear_planet_cache()
     binfo = {'jd_ut': 0, 'sidereal_offset': 24}
     values = {
         swe.SUN: 10.0,

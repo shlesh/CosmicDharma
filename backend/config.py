@@ -6,6 +6,7 @@ DEFAULTS = {
     "ayanamsa": "lahiri",
     "node_type": "mean",
     "house_system": "whole_sign",
+    "cache_enabled": "true",
 }
 
 _cfg = None

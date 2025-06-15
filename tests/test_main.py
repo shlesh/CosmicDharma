@@ -6,6 +6,7 @@ client = TestClient(main.app)
 
 
 def test_profile(monkeypatch):
+    main.clear_profile_cache()
     # stub external services
     monkeypatch.setattr(main, "geocode_location", lambda loc: (10.0, 20.0, "UTC"))
 
@@ -28,6 +29,7 @@ def test_profile(monkeypatch):
 
 
 def test_divisional_charts(monkeypatch):
+    main.clear_profile_cache()
     monkeypatch.setattr(main, "geocode_location", lambda loc: (10.0, 20.0, "UTC"))
     monkeypatch.setattr(main, "get_birth_info", lambda **k: {"jd_ut": 0, "cusps": [0]*12})
     monkeypatch.setattr(main, "calculate_planets", lambda *a, **k: [])
@@ -46,6 +48,7 @@ def test_divisional_charts(monkeypatch):
 
 
 def test_dasha(monkeypatch):
+    main.clear_profile_cache()
     monkeypatch.setattr(main, "geocode_location", lambda loc: (10.0, 20.0, "UTC"))
     monkeypatch.setattr(main, "get_birth_info", lambda **k: {"jd_ut": 0, "cusps": [0]*12})
     monkeypatch.setattr(main, "calculate_planets", lambda *a, **k: [])
@@ -64,6 +67,7 @@ def test_dasha(monkeypatch):
 
 
 def test_geocode_error(monkeypatch):
+    main.clear_profile_cache()
     def fail(loc):
         raise ValueError("bad location")
 
@@ -78,6 +82,7 @@ def test_geocode_error(monkeypatch):
 
 
 def test_birth_info_invalid(monkeypatch):
+    main.clear_profile_cache()
     monkeypatch.setattr(main, "geocode_location", lambda loc: (10.0, 20.0, "UTC"))
 
     def bad_birth(**kwargs):
@@ -94,6 +99,7 @@ def test_birth_info_invalid(monkeypatch):
 
 
 def test_swisseph_failure(monkeypatch):
+    main.clear_profile_cache()
     monkeypatch.setattr(main, "geocode_location", lambda loc: (10.0, 20.0, "UTC"))
     monkeypatch.setattr(main, "get_birth_info", lambda **k: {"jd_ut": 0, "cusps": [0]*12, "sidereal_offset": 0})
 
