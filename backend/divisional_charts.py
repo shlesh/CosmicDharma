@@ -4,6 +4,13 @@ Divisional chart calculations according to Brihat Parashara Hora Shastra (BPHS)
 Each divisional chart has specific calculation rules, not simple division.
 """
 
+def calculate_generic_division(longitude, divisions):
+    """Return the sign placement when a sign is divided equally."""
+    sign = int(longitude // 30)
+    deg_in_sign = longitude % 30
+    part = int(deg_in_sign // (30 / divisions))
+    return ((sign + part) % 12) + 1
+
 def calculate_navamsa(longitude):
     """
     D9 - Navamsa calculation
@@ -123,6 +130,22 @@ def calculate_dwadasamsa(longitude):
     
     return ((sign + part) % 12) + 1
 
+def calculate_panchamsa(longitude):
+    """D5 - Panchamsa"""
+    return calculate_generic_division(longitude, 5)
+
+def calculate_shashthamsa(longitude):
+    """D6 - Shashthamsa"""
+    return calculate_generic_division(longitude, 6)
+
+def calculate_ashtamsa(longitude):
+    """D8 - Ashtamsa"""
+    return calculate_generic_division(longitude, 8)
+
+def calculate_rudramsa(longitude):
+    """D11 - Rudramsa"""
+    return calculate_generic_division(longitude, 11)
+
 def calculate_shodasamsa(longitude):
     """
     D16 - Shodasamsa (Vehicles, Comforts)
@@ -145,6 +168,18 @@ def calculate_shodasamsa(longitude):
     
     return ((start + part) % 12) + 1
 
+def calculate_trayodashamsa(longitude):
+    """D13 - Trayodashamsa"""
+    return calculate_generic_division(longitude, 13)
+
+def calculate_chaturdamsa(longitude):
+    """D14 - Chaturdamsa"""
+    return calculate_generic_division(longitude, 14)
+
+def calculate_panchadasamsa(longitude):
+    """D15 - Panchadasamsa"""
+    return calculate_generic_division(longitude, 15)
+
 def calculate_vimsamsa(longitude):
     """
     D20 - Vimsamsa (Spiritual Progress)
@@ -166,6 +201,30 @@ def calculate_vimsamsa(longitude):
     
     return ((start + part) % 12) + 1
 
+def calculate_saptadasamsa(longitude):
+    """D17 - Saptadasamsa"""
+    return calculate_generic_division(longitude, 17)
+
+def calculate_ashtadasamsa(longitude):
+    """D18 - Ashtadasamsa"""
+    return calculate_generic_division(longitude, 18)
+
+def calculate_navadasamsa(longitude):
+    """D19 - Navadasamsa"""
+    return calculate_generic_division(longitude, 19)
+
+def calculate_ekavimsamsa(longitude):
+    """D21 - Ekavimsamsa"""
+    return calculate_generic_division(longitude, 21)
+
+def calculate_bhavamsa(longitude):
+    """D22 - Bhamsa"""
+    return calculate_generic_division(longitude, 22)
+
+def calculate_trayovimsamsa(longitude):
+    """D23 - Trayovimsamsa"""
+    return calculate_generic_division(longitude, 23)
+
 def calculate_chaturvimsamsa(longitude):
     """
     D24 - Chaturvimsamsa (Education, Learning)
@@ -180,6 +239,18 @@ def calculate_chaturvimsamsa(longitude):
         return ((4 + part) % 12) + 1  # Leo = 5
     else:
         return ((3 + part) % 12) + 1  # Cancer = 4
+
+def calculate_nakshatramsa(longitude):
+    """D27 - Bhamsa/Nakshatramsa"""
+    return calculate_generic_division(longitude, 27)
+
+def calculate_quintamsa(longitude):
+    """D25 - Panchvimsamsa"""
+    return calculate_generic_division(longitude, 25)
+
+def calculate_shadvimsamsa(longitude):
+    """D26 - Shadvimsamsa"""
+    return calculate_generic_division(longitude, 26)
 
 def calculate_trimsamsa(longitude):
     """
@@ -213,6 +284,26 @@ def calculate_trimsamsa(longitude):
         else:
             return 1  # Aries (Mars)
 
+def calculate_ashtakavimsamsa(longitude):
+    """D28 - Ashtakavimsamsa"""
+    return calculate_generic_division(longitude, 28)
+
+def calculate_ekonatrimsamsa(longitude):
+    """D29 - Ekonatrimsamsa"""
+    return calculate_generic_division(longitude, 29)
+
+def calculate_trimshatsamsa(longitude):
+    """D31 - Trimshatsamsa"""
+    return calculate_generic_division(longitude, 31)
+
+def calculate_dwatrimsamsa(longitude):
+    """D32 - Dwatrimsamsa"""
+    return calculate_generic_division(longitude, 32)
+
+def calculate_tritrimsamsa(longitude):
+    """D33 - Tritrimsamsa"""
+    return calculate_generic_division(longitude, 33)
+
 def calculate_khavedamsa(longitude):
     """
     D40 - Khavedamsa (Auspicious/Inauspicious Effects)
@@ -227,6 +318,30 @@ def calculate_khavedamsa(longitude):
         return ((part) % 12) + 1
     else:
         return ((6 + part) % 12) + 1
+
+def calculate_chatvarimsamsa(longitude):
+    """D34 - Chatvarimsamsa"""
+    return calculate_generic_division(longitude, 34)
+
+def calculate_panchatvimsamsa(longitude):
+    """D35 - Panchatvimsamsa"""
+    return calculate_generic_division(longitude, 35)
+
+def calculate_shadtrimsamsa(longitude):
+    """D36 - Shadtrimsamsa"""
+    return calculate_generic_division(longitude, 36)
+
+def calculate_saptatrimsamsa(longitude):
+    """D37 - Saptatrimsamsa"""
+    return calculate_generic_division(longitude, 37)
+
+def calculate_ashtatrimsamsa(longitude):
+    """D38 - Ashtatrimsamsa"""
+    return calculate_generic_division(longitude, 38)
+
+def calculate_navatrimsamsa(longitude):
+    """D39 - Navatrimsamsa"""
+    return calculate_generic_division(longitude, 39)
 
 def calculate_akshvedamsa(longitude):
     """
@@ -248,6 +363,22 @@ def calculate_akshvedamsa(longitude):
     
     return ((start + part) % 12) + 1
 
+def calculate_eka_Chatvarimsamsa(longitude):
+    """D41 - Ekacatvarimsamsa"""
+    return calculate_generic_division(longitude, 41)
+
+def calculate_dvi_chatvarimsamsa(longitude):
+    """D42 - Dvichatvarimsamsa"""
+    return calculate_generic_division(longitude, 42)
+
+def calculate_tri_chatvarimsamsa(longitude):
+    """D43 - Trichatvarimsamsa"""
+    return calculate_generic_division(longitude, 43)
+
+def calculate_chatu_chatvarimsamsa(longitude):
+    """D44 - Chaturchatvarimsamsa"""
+    return calculate_generic_division(longitude, 44)
+
 def calculate_shashtiamsa(longitude):
     """
     D60 - Shashtiamsa (General Effects - Most Important)
@@ -261,34 +392,137 @@ def calculate_shashtiamsa(longitude):
     # Simplified calculation for sign placement
     return ((sign + part) % 12) + 1
 
+def calculate_chatvimsamsa(longitude):
+    """D46 - Chatvimsamsa"""
+    return calculate_generic_division(longitude, 46)
+
+def calculate_saptchatvarimsamsa(longitude):
+    """D47 - Saptchatvarimsamsa"""
+    return calculate_generic_division(longitude, 47)
+
+def calculate_ashtchatvarimsamsa(longitude):
+    """D48 - Ashtchatvarimsamsa"""
+    return calculate_generic_division(longitude, 48)
+
+def calculate_navchatvarimsamsa(longitude):
+    """D49 - Navchatvarimsamsa"""
+    return calculate_generic_division(longitude, 49)
+
+def calculate_panchasaptamsa(longitude):
+    """D50 - Panchasaptamsa"""
+    return calculate_generic_division(longitude, 50)
+
+def calculate_ekonnapanchasamsa(longitude):
+    """D51 - Ekonnapanchasamsa"""
+    return calculate_generic_division(longitude, 51)
+
+def calculate_dvi_panchasamsa(longitude):
+    """D52 - Dvi panchasamsa"""
+    return calculate_generic_division(longitude, 52)
+
+def calculate_tri_panchasamsa(longitude):
+    """D53 - Tri panchasamsa"""
+    return calculate_generic_division(longitude, 53)
+
+def calculate_chatu_panchasamsa(longitude):
+    """D54 - Chatu panchasamsa"""
+    return calculate_generic_division(longitude, 54)
+
+def calculate_panch_panchasamsa(longitude):
+    """D55 - Panch panchasamsa"""
+    return calculate_generic_division(longitude, 55)
+
+def calculate_shad_panchasamsa(longitude):
+    """D56 - Shad panchasamsa"""
+    return calculate_generic_division(longitude, 56)
+
+def calculate_sapt_panchasamsa(longitude):
+    """D57 - Sapt panchasamsa"""
+    return calculate_generic_division(longitude, 57)
+
+def calculate_asht_panchasamsa(longitude):
+    """D58 - Asht panchasamsa"""
+    return calculate_generic_division(longitude, 58)
+
+def calculate_nav_panchasamsa(longitude):
+    """D59 - Nav panchasamsa"""
+    return calculate_generic_division(longitude, 59)
+
 def calculate_all_vargas(longitude):
-    """Calculate all main divisional charts for a longitude."""
-    return {
-        'D1': int(longitude // 30) + 1,  # Rasi
-        'D2': calculate_hora(longitude),
-        'D3': calculate_drekkana(longitude),
-        'D4': calculate_chaturthamsa(longitude),
-        'D7': calculate_saptamsa(longitude),
-        'D9': calculate_navamsa(longitude),
-        'D10': calculate_dasamsa(longitude),
-        'D12': calculate_dwadasamsa(longitude),
-        'D16': calculate_shodasamsa(longitude),
-        'D20': calculate_vimsamsa(longitude),
-        'D24': calculate_chaturvimsamsa(longitude),
-        'D30': calculate_trimsamsa(longitude),
-        'D40': calculate_khavedamsa(longitude),
-        'D45': calculate_akshvedamsa(longitude),
-        'D60': calculate_shashtiamsa(longitude)
+    """Return all divisional chart placements from D1 through D60."""
+
+    special = {
+        1: lambda lon: int(lon // 30) + 1,
+        2: calculate_hora,
+        3: calculate_drekkana,
+        4: calculate_chaturthamsa,
+        5: calculate_panchamsa,
+        6: calculate_shashthamsa,
+        7: calculate_saptamsa,
+        8: calculate_ashtamsa,
+        9: calculate_navamsa,
+        10: calculate_dasamsa,
+        11: calculate_rudramsa,
+        12: calculate_dwadasamsa,
+        13: calculate_trayodashamsa,
+        14: calculate_chaturdamsa,
+        15: calculate_panchadasamsa,
+        16: calculate_shodasamsa,
+        17: calculate_saptadasamsa,
+        18: calculate_ashtadasamsa,
+        19: calculate_navadasamsa,
+        20: calculate_vimsamsa,
+        21: calculate_ekavimsamsa,
+        22: calculate_bhavamsa,
+        23: calculate_trayovimsamsa,
+        24: calculate_chaturvimsamsa,
+        25: calculate_quintamsa,
+        26: calculate_shadvimsamsa,
+        27: calculate_nakshatramsa,
+        28: calculate_ashtakavimsamsa,
+        29: calculate_ekonatrimsamsa,
+        30: calculate_trimsamsa,
+        31: calculate_trimshatsamsa,
+        32: calculate_dwatrimsamsa,
+        33: calculate_tritrimsamsa,
+        34: calculate_chatvarimsamsa,
+        35: calculate_panchatvimsamsa,
+        36: calculate_shadtrimsamsa,
+        37: calculate_saptatrimsamsa,
+        38: calculate_ashtatrimsamsa,
+        39: calculate_navatrimsamsa,
+        40: calculate_khavedamsa,
+        41: calculate_eka_Chatvarimsamsa,
+        42: calculate_dvi_chatvarimsamsa,
+        43: calculate_tri_chatvarimsamsa,
+        44: calculate_chatu_chatvarimsamsa,
+        45: calculate_akshvedamsa,
+        46: calculate_chatvimsamsa,
+        47: calculate_saptchatvarimsamsa,
+        48: calculate_ashtchatvarimsamsa,
+        49: calculate_navchatvarimsamsa,
+        50: calculate_panchasaptamsa,
+        51: calculate_ekonnapanchasamsa,
+        52: calculate_dvi_panchasamsa,
+        53: calculate_tri_panchasamsa,
+        54: calculate_chatu_panchasamsa,
+        55: calculate_panch_panchasamsa,
+        56: calculate_shad_panchasamsa,
+        57: calculate_sapt_panchasamsa,
+        58: calculate_asht_panchasamsa,
+        59: calculate_nav_panchasamsa,
+        60: calculate_shashtiamsa,
     }
 
+    results = {}
+    for i in range(1, 61):
+        func = special.get(i, lambda lon, d=i: calculate_generic_division(lon, d))
+        results[f'D{i}'] = func(longitude)
+    return results
+
 def calculate_divisional_charts(planets):
-    """Calculate divisional charts for all planets."""
-    charts = {}
-    
-    # Initialize all charts
-    for varga in ['D1', 'D2', 'D3', 'D4', 'D7', 'D9', 'D10', 'D12', 
-                  'D16', 'D20', 'D24', 'D30', 'D40', 'D45', 'D60']:
-        charts[varga] = {}
+    """Calculate divisional charts D1 through D60 for all planets."""
+    charts = {f'D{i}': {} for i in range(1, 61)}
     
     # Calculate for each planet
     for planet in planets:
