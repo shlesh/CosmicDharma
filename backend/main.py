@@ -7,7 +7,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field, ConfigDict
-from typing import Literal
+from typing import Literal, Optional, Any
 
 from backend.config import load_config
 from backend.geocoder import geocode_location
@@ -76,6 +76,24 @@ class ProfileRequest(BaseModel):
     house_system: Literal["whole_sign", "equal", "sripati"] = Field(
         default="whole_sign"  # Changed to Vedic standard
     )
+
+
+class ProfileResponse(BaseModel):
+    """Response schema for profile-related endpoints."""
+
+    birthInfo: Optional[dict] = None
+    planetaryPositions: Optional[list] = None
+    vimshottariDasha: Optional[list] = None
+    nakshatra: Optional[dict] = None
+    houses: Optional[dict] = None
+    coreElements: Optional[dict] = None
+    divisionalCharts: Optional[dict] = None
+    vedicAspects: Optional[dict] = None
+    yogas: Optional[dict] = None
+    shadbala: Optional[dict] = None
+    bhavaBala: Optional[dict] = None
+    ashtakavarga: Optional[dict] = None
+    analysis: Optional[dict] = None
 
 
 def _compute_vedic_profile(request: ProfileRequest):
@@ -185,7 +203,7 @@ def _compute_vedic_profile(request: ProfileRequest):
     }
     return result
 
-@app.post("/profile")
+@app.post("/profile", response_model=ProfileResponse)
 async def get_profile(request: ProfileRequest):
     """Get complete Vedic astrological profile."""
     logger.info("Received profile request: %s", request)
@@ -201,7 +219,7 @@ async def get_profile(request: ProfileRequest):
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@app.post("/divisional-charts")
+@app.post("/divisional-charts", response_model=ProfileResponse)
 async def get_divisional_charts(request: ProfileRequest):
     """Return all 16 main divisional charts based on profile input."""
     logger.info("Received divisional charts request: %s", request)
@@ -210,7 +228,7 @@ async def get_divisional_charts(request: ProfileRequest):
     return {"divisionalCharts": data["divisionalCharts"]}
 
 
-@app.post("/dasha")
+@app.post("/dasha", response_model=ProfileResponse)
 async def get_dasha(request: ProfileRequest):
     """Return Vimshottari dasha with sub-periods."""
     logger.info("Received dasha request: %s", request)
@@ -219,7 +237,7 @@ async def get_dasha(request: ProfileRequest):
     return {"vimshottariDasha": data["vimshottariDasha"]}
 
 
-@app.post("/yogas")
+@app.post("/yogas", response_model=ProfileResponse)
 async def get_yogas(request: ProfileRequest):
     """Return all planetary combinations (yogas) in the chart."""
     logger.info("Received yogas request: %s", request)
@@ -231,7 +249,7 @@ async def get_yogas(request: ProfileRequest):
     }
 
 
-@app.post("/strengths")
+@app.post("/strengths", response_model=ProfileResponse)
 async def get_strengths(request: ProfileRequest):
     """Return planetary and house strengths."""
     logger.info("Received strengths request: %s", request)
