@@ -1,0 +1,56 @@
+import datetime
+import pytest
+import swisseph as swe
+
+from backend.birth_info import get_birth_info, AYANAMSHA_MAP
+
+
+def test_ayanamsha_and_house(monkeypatch):
+    calls = {}
+
+    def fake_set_sid_mode(mode):
+        calls['mode'] = mode
+
+    def fake_houses(jd, lat, lon, hsys=b'P'):
+        calls['hsys'] = hsys
+        return ([0] * 12, [0] * 8)
+
+    monkeypatch.setattr(swe, 'set_sid_mode', fake_set_sid_mode)
+    monkeypatch.setattr(swe, 'get_ayanamsa', lambda jd: 0)
+    monkeypatch.setattr(swe, 'houses', fake_houses)
+    monkeypatch.setattr(swe, 'julday', lambda *a, **k: 0)
+
+    get_birth_info(
+        datetime.date(2020, 1, 1),
+        datetime.time(0, 0),
+        10,
+        20,
+        'UTC',
+        ayanamsha='lahiri',
+        house_system='W',
+    )
+
+    assert calls['mode'] == swe.SIDM_LAHIRI
+    assert calls['hsys'] == b'W'
+
+
+def test_invalid_latitude():
+    with pytest.raises(ValueError):
+        get_birth_info(
+            datetime.date(2020, 1, 1),
+            datetime.time(0, 0),
+            100,
+            20,
+            'UTC',
+        )
+
+
+def test_invalid_timezone():
+    with pytest.raises(ValueError):
+        get_birth_info(
+            datetime.date(2020, 1, 1),
+            datetime.time(0, 0),
+            10,
+            20,
+            'Invalid/Zone',
+        )
