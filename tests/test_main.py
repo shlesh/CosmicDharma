@@ -21,9 +21,9 @@ def test_profile(monkeypatch):
 
     resp = client.post("/profile", json={"date": "2020-01-01", "time": "12:00:00", "location": "Delhi"})
     assert resp.status_code == 200
-    data = resp.json()
-    assert data["birthInfo"]["latitude"] == 10.0
-    assert data["birthInfo"]["longitude"] == 20.0
+    data = main.ProfileResponse.model_validate(resp.json())
+    assert data.birthInfo["latitude"] == 10.0
+    assert data.birthInfo["longitude"] == 20.0
 
 
 def test_divisional_charts(monkeypatch):
@@ -39,7 +39,8 @@ def test_divisional_charts(monkeypatch):
 
     resp = client.post("/divisional-charts", json={"date": "2020-01-01", "time": "12:00:00", "location": "Delhi"})
     assert resp.status_code == 200
-    assert resp.json() == {"divisionalCharts": {"D1": {}}}
+    data = main.ProfileResponse.model_validate(resp.json())
+    assert data.divisionalCharts == {"D1": {}}
 
 
 def test_dasha(monkeypatch):
@@ -55,4 +56,5 @@ def test_dasha(monkeypatch):
 
     resp = client.post("/dasha", json={"date": "2020-01-01", "time": "12:00:00", "location": "Delhi"})
     assert resp.status_code == 200
-    assert resp.json() == {"vimshottariDasha": [{"lord": "Sun"}]}
+    data = main.ProfileResponse.model_validate(resp.json())
+    assert data.vimshottariDasha == [{"lord": "Sun"}]
