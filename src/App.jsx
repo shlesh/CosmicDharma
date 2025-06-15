@@ -6,6 +6,7 @@ import ProfileSummary from './components/ProfileSummary';
 import CoreElements from './components/CoreElements';
 import PlanetTable from './components/PlanetTable';
 import DashaTable from './components/DashaTable';
+import DashaChart from './components/DashaChart';
 import HouseAnalysis from './components/HouseAnalysis';
 
 function App() {
@@ -163,6 +164,7 @@ function App() {
           <PlanetTable planets={profile.planetaryPositions} />
           <HouseAnalysis houses={profile.houses} />
           <DashaTable dasha={profile.vimshottariDasha} />
+          <DashaChart dasha={profile.vimshottariDasha} />
         </section>
       )}
     </div>
