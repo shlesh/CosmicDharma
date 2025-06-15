@@ -1,36 +1,42 @@
-import { useState } from "react";
+// src/App.jsx
+import { useState } from 'react';
+import ProfileForm from './components/ProfileForm';
+import BasicInfo from './components/BasicInfo';
+import ProfileSummary from './components/ProfileSummary';
+import PlanetTable from './components/PlanetTable';
+import DashaTable from './components/DashaTable';
+import HouseAnalysis from './components/HouseAnalysis';
 
 export default function App() {
-  // Pre-fill form with sample data for quick testing
   const [form, setForm] = useState({
     name: "Shailesh Tiwari",
-    dob: "2001-06-23",
-    tob: "04:26",
-    pob: "Renukoot, Sonebhadra",
+    dob:  "2001-06-23",
+    tob:  "04:26",
+    pob:  "Renukoot, Sonebhadra",
   });
-  const [result, setResult] = useState(null);
-  const [error, setError] = useState("");
+  const [data, setData] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
 
-  const handleChange = (e) => {
+  const handleChange = e => {
     const { name, value } = e.target;
-    setForm((prev) => ({ ...prev, [name]: value }));
+    setForm(f => ({ ...f, [name]: value }));
   };
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = async e => {
     e.preventDefault();
     setLoading(true);
-    setError("");
-    setResult(null);
+    setError('');
+    setData(null);
     try {
-      const res = await fetch(`/profile`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
+      const res = await fetch('/profile', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(form),
       });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.detail || "Server error");
-      setResult(data);
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.detail || 'Server error');
+      setData(json);
     } catch (err) {
       setError(err.message);
     } finally {
@@ -39,72 +45,19 @@ export default function App() {
   };
 
   return (
-    <div className="app-container">
-      <h1>Vedic Astrology Profile</h1>
-      <form onSubmit={handleSubmit} className="profile-form">
-        <label>
-          Name:
-          <input
-            name="name"
-            value={form.name}
-            placeholder="Shailesh Tiwari"
-            onChange={handleChange}
-            required
-          />
-        </label>
-
-        <label>
-          Date of Birth:
-          <input
-            type="date"
-            name="dob"
-            value={form.dob}
-            onChange={handleChange}
-            required
-          />
-        </label>
-
-        <label>
-          Time of Birth:
-          <input
-            type="time"
-            name="tob"
-            value={form.tob}
-            onChange={handleChange}
-            required
-          />
-        </label>
-
-        <label>
-          Place of Birth:
-          <input
-            name="pob"
-            value={form.pob}
-            placeholder="Renukoot, Sonebhadra"
-            onChange={handleChange}
-            required
-          />
-        </label>
-
-        <button type="submit" disabled={loading}>
-          {loading ? "Calculating..." : "Submit"}
-        </button>
-      </form>
-
-      {error && <div className="error">Error: {error}</div>}
-
-      {result && (
-        <div className="result">
-          <h2>Profile Results</h2>
-          <ul>
-            <li><strong>Lagna (Ascendant):</strong> {result.lagna}</li>
-            <li><strong>Moon Longitude:</strong> {result.moon_longitude.toFixed(4)}</li>
-            <li><strong>Rashi:</strong> {result.rashi}</li>
-            <li><strong>Nakshatra:</strong> {result.nakshatra}</li>
-            <li><strong>Pada:</strong> {result.pada}</li>
-          </ul>
-        </div>
+    <div className="p-6 max-w-2xl mx-auto">
+      <h1 className="text-2xl mb-4">Complete Vedic Astrological Profile</h1>
+      <ProfileForm form={form} onChange={handleChange} onSubmit={handleSubmit} loading={loading} />
+      {error && <p className="text-red-600">Error: {error}</p>}
+      {data && (
+        <>
+          <BasicInfo birth={data.birth_info} />
+          <ProfileSummary data={data} />
+          <PlanetTable planets={data.planets} />
+          <HouseAnalysis houses={data.houses.cusps ? data.houses : null} />
+          <DashaTable dasha={data.dasha} />
+        </>
       )}
     </div>
-  );
+);
 }

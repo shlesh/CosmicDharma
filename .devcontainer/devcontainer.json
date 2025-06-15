@@ -5,7 +5,10 @@
   },
   "waitFor": "onCreateCommand",
   "updateContentCommand": "npm install",
-  "postCreateCommand": "",
+  "settings": {
+    "python.pythonPath": "/workspaces/codespaces-react/backend/venv/bin/python"
+  },
+  "postCreateCommand": "cd backend && python3 -m venv venv && source venv/bin/activate && pip install -r requirements.txt",
   "postAttachCommand": {
     "server": "npm start"
   },
@@ -24,4 +27,4 @@
     "8000": { "label": "FastAPI Swagger UI", "onAutoForward": "notify" }
   },
   "forwardPorts": [3000, 8000]
-}
+ }
