@@ -2,31 +2,26 @@ import swisseph as swe
 from datetime import datetime
 import pytz
 
-# Mapping of human readable ayanamsha names to Swiss Ephemeris constants
-AYANAMSHA_MAP = {
-    "fagan": swe.SIDM_FAGAN_BRADLEY,
-    "fagan/bradley": swe.SIDM_FAGAN_BRADLEY,
+
+AYANAMSA_MAP = {
+    "fagan_bradley": swe.SIDM_FAGAN_BRADLEY,
     "lahiri": swe.SIDM_LAHIRI,
     "raman": swe.SIDM_RAMAN,
-    "krishnamurti": swe.SIDM_KRISHNAMURTI,
+    "kp": swe.SIDM_KRISHNAMURTI,
 }
 
-def get_birth_info(
-    date,
-    time,
-    latitude,
-    longitude,
-    timezone,
-    *,
-    ayanamsha: str | int = "fagan",
-    house_system: str = "P",
-):
-    """Return core astronomical info for a birth.
+HOUSE_MAP = {
+    "placidus": b"P",
+    "whole_sign": b"W",
+}
 
-    Parameters are validated and then fed to Swiss Ephemeris. ``ayanamsha`` can
-    be a human readable name like ``"lahiri"`` or one of the numeric constants
-    from :mod:`swisseph`. ``house_system`` is the single letter code understood
-    by :func:`swisseph.houses`.
+def get_birth_info(date, time, latitude, longitude, timezone,
+                   *, ayanamsa: str = "fagan_bradley",
+                   house_system: str = "placidus"):
+    """
+    Compute Julian Day, sidereal offset, ascendant, house cusps.
+    Returns a dict with jd_ut, sidereal_offset, asc, houses.
+
     """
     # validate coordinates
     if not (-90.0 <= latitude <= 90.0):
@@ -49,6 +44,7 @@ def get_birth_info(
         utc_dt.day,
         utc_dt.hour + utc_dt.minute / 60 + utc_dt.second / 3600,
     )
+
 
     # determine ayanamsha constant
     if isinstance(ayanamsha, str):
