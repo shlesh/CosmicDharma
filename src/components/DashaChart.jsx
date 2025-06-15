@@ -1,4 +1,5 @@
 import React, { useMemo } from 'react';
+import PropTypes from 'prop-types';
 
 // Visualizes planetary periods so visitors can grasp upcoming life phases.
 import { Line } from 'react-chartjs-2';
@@ -93,3 +94,14 @@ export default function DashaChart({ dasha, analysis }) {
     </section>
   );
 }
+
+DashaChart.propTypes = {
+  dasha: PropTypes.arrayOf(
+    PropTypes.shape({
+      lord: PropTypes.string.isRequired,
+      start: PropTypes.string.isRequired,
+      end: PropTypes.string.isRequired,
+    })
+  ),
+  analysis: PropTypes.array,
+};

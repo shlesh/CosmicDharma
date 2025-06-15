@@ -1,4 +1,5 @@
 import React from 'react';
+import PropTypes from 'prop-types';
 
 // Shows the balance of the four classical elements based on the user's chart.
 
@@ -32,3 +33,8 @@ export default function CoreElements({ analysis, elements }) {
     </section>
   );
 }
+
+CoreElements.propTypes = {
+  analysis: PropTypes.object,
+  elements: PropTypes.object,
+};
