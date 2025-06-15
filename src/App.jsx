@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import useFormFields from './hooks/useFormFields';
 import './App.css';
 import ProfileForm from './components/ProfileForm';
 import BasicInfo from './components/BasicInfo';
@@ -12,23 +13,24 @@ import { generatePdf } from './pdf';
 
 function App() {
   // Load & persist form state in localStorage
-  const [name, setName] = useState('');
-  const [birthDate, setBirthDate] = useState('');
-  const [birthTime, setBirthTime] = useState('');
-  const [location, setLocation] = useState('');
+  const [form, handleChange, setForm] = useFormFields({
+    name: '',
+    birthDate: '',
+    birthTime: '',
+    location: '',
+  });
 
   useEffect(() => {
     // On mount, load saved values
     try {
       const saved = JSON.parse(localStorage.getItem('vedicForm') || '{}');
-      if (saved.name) setName(saved.name);
-      if (saved.birthDate) setBirthDate(saved.birthDate);
-      if (saved.birthTime) setBirthTime(saved.birthTime);
-      if (saved.location) setLocation(saved.location);
+      if (Object.keys(saved).length) {
+        setForm(prev => ({ ...prev, ...saved }));
+      }
     } catch {
       // ignore
     }
-  }, []);
+  }, [setForm]);
 
   useEffect(() => {
     // Load ads after mount
@@ -41,36 +43,15 @@ function App() {
 
   useEffect(() => {
     // Persist form values
-    const toSave = { name, birthDate, birthTime, location };
-    localStorage.setItem('vedicForm', JSON.stringify(toSave));
-  }, [name, birthDate, birthTime, location]);
+    localStorage.setItem('vedicForm', JSON.stringify(form));
+  }, [form]);
 
   // UI state
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [profile, setProfile] = useState(null);
 
-  const form = { name, birthDate, birthTime, location };
-
-  const handleChange = (e) => {
-    const { name: field, value } = e.target;
-    switch (field) {
-      case 'name':
-        setName(value);
-        break;
-      case 'birthDate':
-        setBirthDate(value);
-        break;
-      case 'birthTime':
-        setBirthTime(value);
-        break;
-      case 'location':
-        setLocation(value);
-        break;
-      default:
-        break;
-    }
-  };
+  const { name, birthDate, birthTime, location } = form;
 
   const handleSubmit = async (e) => {
     e.preventDefault();
