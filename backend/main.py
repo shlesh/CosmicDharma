@@ -2,6 +2,7 @@
 
 import os
 import time as _time
+import logging
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field, ConfigDict
@@ -24,6 +25,10 @@ from timezonefinder import TimezoneFinder
 
 google_fallback = Nominatim(user_agent="vedic-astrology-geocoder")
 timezone_finder = TimezoneFinder()
+
+# Setup basic logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 # Core astrology modules
 from backend.birth_info import get_birth_info
@@ -61,8 +66,10 @@ class ProfileRequest(BaseModel):
 
 @app.post("/profile")
 async def get_profile(request: ProfileRequest):
+    logger.info("Received profile request: %s", request)
     try:
         loc_str = request.location.strip()
+        logger.info("Geocoding '%s'", loc_str)
         lat = lon = None
 
         # 1. Try Google Maps geocoding if available
@@ -90,7 +97,8 @@ async def get_profile(request: ProfileRequest):
             # primary fuzzy search
             try:
                 candidates = google_fallback.geocode(loc_str, exactly_one=False, limit=5)
-            except Exception:
+            except Exception as ex:
+                logger.warning("Primary geocode failed: %s", ex)
                 candidates = None
             if candidates:
                 geo = candidates[0]
@@ -102,7 +110,8 @@ async def get_profile(request: ProfileRequest):
                     trial = ", ".join(parts[i:])
                     try:
                         candidates = google_fallback.geocode(trial, exactly_one=False, limit=5)
-                    except Exception:
+                    except Exception as ex:
+                        logger.warning("Fallback geocode failed for '%s': %s", trial, ex)
                         candidates = None
                     if candidates:
                         geo = candidates[0]
@@ -110,13 +119,16 @@ async def get_profile(request: ProfileRequest):
                         break
         
         if lat is None or lon is None:
+            logger.error("Failed to geocode '%s'", loc_str)
             raise HTTPException(status_code=400, detail=f"Could not geocode location '{loc_str}'")
 
         # 3. Timezone determination if not from Google
         if not tz:
             tz = timezone_finder.timezone_at(lat=lat, lng=lon) or 'UTC'
+        logger.info("Computed coordinates %s, %s timezone %s", lat, lon, tz)
 
         # 4. Compute birth info & charts
+        logger.info("Calculating charts")
         binfo = get_birth_info(date=request.birth_date, time=request.birth_time,
                                latitude=lat, longitude=lon, timezone=tz)
         planets = calculate_planets(binfo)
@@ -127,7 +139,7 @@ async def get_profile(request: ProfileRequest):
         dcharts = calculate_all_divisional_charts(planets)
         analysis_results = full_analysis(planets, dashas, nak, houses, core, dcharts)
 
-        return {
+        result = {
             "birthInfo": {**binfo, "latitude": lat, "longitude": lon, "timezone": tz},
             "planetaryPositions": planets,
             "vimshottariDasha": dashas,
@@ -137,8 +149,11 @@ async def get_profile(request: ProfileRequest):
             "divisionalCharts": dcharts,
             "analysis": analysis_results,
         }
+        logger.info("Profile computation completed")
+        return result
 
     except HTTPException:
         raise
     except Exception as e:
+        logger.exception("Unhandled error")
         raise HTTPException(status_code=500, detail=str(e))

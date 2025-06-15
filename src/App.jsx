@@ -62,6 +62,7 @@ function App() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    console.log('Submitting profile', { birthDate, birthTime, location });
     setLoading(true);
     setError('');
 
@@ -72,6 +73,8 @@ function App() {
         body: JSON.stringify({ date: birthDate, time: birthTime, location }),
       });
 
+      console.log('Response status', res.status);
+
       const text = await res.text();
       let payload;
       try {
@@ -80,7 +83,10 @@ function App() {
         payload = text;
       }
 
+      console.log('Response payload', payload);
+
       if (!res.ok) {
+        console.error('Server returned error', res.status, payload);
         if (
           payload &&
           typeof payload === 'object' &&
@@ -101,17 +107,21 @@ function App() {
         setProfile(null);
       } else {
         if (payload && typeof payload === 'object') {
+          console.log('Setting profile data', payload);
           setProfile({ ...payload, request: form });
         } else {
+          console.error('Invalid server response', payload);
           setError('Invalid server response');
           setProfile(null);
         }
       }
     } catch (err) {
+      console.error('Request failed', err);
       setError(err.message);
       setProfile(null);
     } finally {
       setLoading(false);
+      console.log('Done submitting');
     }
   };
 
