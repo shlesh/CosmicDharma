@@ -1,3 +1,4 @@
-ayanamsa: fagan_bradley
-node_type: mean
-house_system: placidus
+# backend/config.yaml - CORRECTED FOR VEDIC ASTROLOGY
+ayanamsa: lahiri  # Changed from fagan_bradley to lahiri (standard for Vedic)
+node_type: mean   # This is correct for Vedic
+house_system: whole_sign  # Changed from placidus to whole_sign (traditional Vedic)
