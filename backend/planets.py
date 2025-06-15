@@ -17,7 +17,8 @@ def calculate_planets(binfo):
     }
     results = []
     for name, pid in planet_ids.items():
-        lon, lat, dist = swe.calc_ut(binfo['jd_ut'], pid)
+        values, _ = swe.calc_ut(binfo['jd_ut'], pid)
+        lon, lat, dist = values[:3]
         sign = int(lon // 30) + 1
         deg_in_sign = lon % 30
         results.append({
