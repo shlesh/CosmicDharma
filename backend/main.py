@@ -34,6 +34,7 @@ from backend.divisional_charts import (
 from backend.aspects import calculate_vedic_aspects, calculate_sign_aspects
 from backend.yogas import calculate_all_yogas
 from backend.shadbala import calculate_shadbala, calculate_bhava_bala
+from backend.ashtakavarga import calculate_ashtakavarga
 from backend.analysis import full_analysis
 
 # FastAPI app init
@@ -160,11 +161,8 @@ def _compute_vedic_profile(request: ProfileRequest):
     # House strengths (Bhava Bala)
     bhava_bala = calculate_bhava_bala(houses, planets, binfo)
     
-    # Ashtakavarga (simplified - would need full implementation)
-    ashtakavarga = {
-        'note': 'Full Ashtakavarga calculation to be implemented',
-        'total_points': {}  # Would calculate benefic points
-    }
+    # Ashtakavarga
+    ashtakavarga = calculate_ashtakavarga(planets)
     
     # Analysis with all components
     analysis_results = full_analysis(
