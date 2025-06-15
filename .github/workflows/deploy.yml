@@ -1,0 +1,43 @@
+name: Deploy
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+      - run: npm install
+      - run: npm test
+      - uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+      - run: python -m venv backend/venv
+      - run: backend/venv/bin/pip install -r backend/requirements.txt
+      - run: backend/venv/bin/pip install pytest pytest-asyncio
+      - run: PYTHONPATH=. backend/venv/bin/pytest -q
+      - run: npm run build
+      - name: Upload frontend via FTP
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.4
+        with:
+          server: ${{ secrets.HOSTINGER_FTP_HOST }}
+          username: ${{ secrets.HOSTINGER_FTP_USER }}
+          password: ${{ secrets.HOSTINGER_FTP_PASSWORD }}
+          local-dir: dist
+          server-dir: public_html/
+      - name: Deploy backend over SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.HOSTINGER_SSH_HOST }}
+          username: ${{ secrets.HOSTINGER_SSH_USER }}
+          key: ${{ secrets.HOSTINGER_SSH_KEY }}
+          script: |
+            cd /var/www/cosmicdharma
+            git pull
+            systemctl restart cosmicdharma.service
