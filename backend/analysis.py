@@ -7,10 +7,13 @@ Comprehensive analysis module:
 from datetime import date
 from .astro_constants import NAKSHATRA_METADATA
 
+# Cache for analyses keyed by Julian Day and option tuple
+_CACHE = {}
+
 # Extended divisional charts (D1–D60)
 DIVISIONAL_CHARTS = {f"D{n}": n for n in range(1, 61)}
 
-def calculate_all_divisional_charts(planets):
+def calculate_all_divisional_charts(planets, jd=None):
     """
     Generate all standard divisional charts by dividing each 30° sign into n parts.
     Returns a dict of chart name to mapping of planet to sign number.
@@ -20,18 +23,27 @@ def calculate_all_divisional_charts(planets):
         idx = int(lon / part)
         return (idx // divisions) + 1
 
+    cache_key = ("dcharts", jd)
+    if jd is not None and cache_key in _CACHE:
+        return _CACHE[cache_key]
+
     charts = {}
     for chart, div in DIVISIONAL_CHARTS.items():
         mapping = {}
         for p in planets:
             mapping[p['name']] = varga_sign(p['longitude'], div)
         charts[chart] = mapping
+    if jd is not None:
+        _CACHE[cache_key] = charts
     return charts
 
 # Interpretations dictionaries
-# Build simple interpretations for each nakshatra using its trait keywords
+# Build interpretations for each nakshatra referencing classical texts
 NAKSHATRA_INTERP = {
-    info["name"]: f"{', '.join(info.get('traits', []))} qualities." 
+    info['name']: (
+        f"In Brihat Parashara Hora Shastra, {info['name']} is described as "
+        f"having {', '.join(info.get('traits', []))} qualities."
+    )
     for info in NAKSHATRA_METADATA
 }
 
@@ -71,18 +83,18 @@ DASHA_INTERP = {
 }
 
 DIV_CHART_INTERP = {
-    'D1': 'Rashi chart shows overall life themes and the physical body.',
-    'D2': 'Hora chart relates to wealth and possessions.',
-    'D3': 'Drekkana focuses on siblings and courage.',
-    'D4': 'Chaturthamsha indicates property and fortune.',
-    'D5': 'Panchamsha reveals spiritual practices and learning.',
-    'D6': 'Shashthamsa highlights health issues and obstacles.',
-    'D7': 'Saptamsa reflects children and creativity.',
-    'D8': 'Ashtamsa deals with longevity and transformation.',
-    'D9': 'Navamsa reflects marriage, spirituality, and inner strength.',
-    'D10': 'Dasamsa highlights career, vocation, and public life.',
-    'D11': 'Rudramsa reveals power and challenges.',
-    'D12': 'Dvadashamsa relates to parents and heritage.',
+    'D1': 'Rashi chart (BPHS Ch.3) shows the body and life path; houses 1, 4, 7 and 10 are key.',
+    'D2': 'Hora (BPHS Ch.6) examines wealth via the 2nd house and its lord.',
+    'D3': 'Drekkana (BPHS Ch.7) highlights siblings and courage through the 3rd house.',
+    'D4': 'Chaturthamsha (BPHS Ch.8) relates to property and fortune seen from the 4th house.',
+    'D5': 'Panchamsha (BPHS Ch.8) reveals mantra practice and learning involving the 5th house.',
+    'D6': 'Shashthamsa (BPHS Ch.8) notes health issues and obstacles via the 6th house.',
+    'D7': 'Saptamsa (BPHS Ch.8) reflects children and creativity shown by the 5th and 7th houses.',
+    'D8': 'Ashtamsa (BPHS Ch.8) deals with longevity and transformation of the 8th house.',
+    'D9': 'Navamsa (BPHS Ch.8) represents marriage and dharma; planets retaining their D1 sign are vargottama.',
+    'D10': 'Dasamsa (BPHS Ch.8) highlights career and public life through the 10th house.',
+    'D11': 'Rudramsa (BPHS Ch.8) reveals power and challenges of the 11th house.',
+    'D12': 'Dvadashamsa (BPHS Ch.8) relates to parents and ancestral heritage of the 12th house.',
     'D13': 'Trayodashamsa gives insight into hidden talents.',
     'D14': 'Chaturdamsa outlines stability and comforts.',
     'D15': 'Panchadasamsa indicates prosperity and luxury.',
@@ -181,11 +193,34 @@ def interpret_dasha_sequence(dashas):
     return result
 
 
-def interpret_divisional_charts(dcharts):
+def verify_divisional_chart_positions(planets, dcharts):
+    """Ensure planet placements match computed Varga positions."""
+    lon_map = {p['name']: p['longitude'] for p in planets}
+    def varga_sign(lon, divisions):
+        part = 360 / (12 * divisions)
+        idx = int(lon / part)
+        return (idx // divisions) + 1
+
+    for chart, div in DIVISIONAL_CHARTS.items():
+        if chart not in dcharts:
+            continue
+        mapping = dcharts[chart]
+        for name, sign in mapping.items():
+            lon = lon_map.get(name)
+            if lon is None:
+                continue
+            if varga_sign(lon, div) != sign:
+                raise ValueError(f"{name} wrong sign in {chart}")
+
+
+def interpret_divisional_charts(dcharts, planets=None):
     """
     Summarize divisional charts focusing on key ones.
     """
     summary = {}
+    if planets:
+        verify_divisional_chart_positions(planets, dcharts)
+
     for chart, mapping in dcharts.items():
         interp = DIV_CHART_INTERP.get(chart)
         if interp:
@@ -194,18 +229,59 @@ def interpret_divisional_charts(dcharts):
             for sign in mapping.values():
                 counts[sign] = counts.get(sign, 0) + 1
             summary[chart] = {'interpretation': interp, 'distribution': counts}
+
+    if 'D1' in dcharts and 'D9' in dcharts:
+        vargottama = {}
+        for name, sign in dcharts['D9'].items():
+            if dcharts['D1'].get(name) == sign:
+                vargottama[name] = 'Vargottama'
+        if vargottama and 'D9' in summary:
+            summary['D9']['navamsaStrength'] = vargottama
     return summary
 
 # Combined analysis
 
-def full_analysis(planets, dashas, nak, houses, core, dcharts):
-    """
-    Returns a dict of all textual interpretations.
-    """
-    return {
-        'nakshatra': interpret_nakshatra(nak),
-        'houses': interpret_houses(houses),
-        'coreElements': interpret_core_elements(core),
-        'vimshottariDasha': interpret_dasha_sequence(dashas),
-        'divisionalCharts': interpret_divisional_charts(dcharts)
-    }
+def full_analysis(
+    planets,
+    dashas,
+    nak,
+    houses,
+    core,
+    dcharts,
+    *,
+    jd=None,
+    include_nakshatra=True,
+    include_houses=True,
+    include_core=True,
+    include_dashas=True,
+    include_divisional_charts=True,
+):
+    """Return selected textual interpretations with optional caching."""
+    key = None
+    if jd is not None:
+        key = (
+            jd,
+            include_nakshatra,
+            include_houses,
+            include_core,
+            include_dashas,
+            include_divisional_charts,
+        )
+        if key in _CACHE:
+            return _CACHE[key]
+
+    result = {}
+    if include_nakshatra:
+        result['nakshatra'] = interpret_nakshatra(nak)
+    if include_houses:
+        result['houses'] = interpret_houses(houses)
+    if include_core:
+        result['coreElements'] = interpret_core_elements(core)
+    if include_dashas:
+        result['vimshottariDasha'] = interpret_dasha_sequence(dashas)
+    if include_divisional_charts:
+        result['divisionalCharts'] = interpret_divisional_charts(dcharts, planets)
+
+    if key is not None:
+        _CACHE[key] = result
+    return result
