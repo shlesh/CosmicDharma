@@ -1,5 +1,7 @@
 import React from 'react';
 
+// Shows the balance of the four classical elements based on the user's chart.
+
 export default function CoreElements({ analysis, elements }) {
   const data =
     (analysis && (analysis.coreElements || analysis.core_elements)) ||
@@ -18,7 +20,8 @@ export default function CoreElements({ analysis, elements }) {
 
   return (
     <section className="mb-6">
-      <h3>Core Elements</h3>
+      <h3 title="Distribution of Fire, Earth, Air and Water in your chart">Core Elements</h3>
+      <p className="help-text">These percentages indicate your dominant energies.</p>
       <ul>
         {entries.map(([elem, val]) => (
           <li key={elem}>

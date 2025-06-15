@@ -1,11 +1,14 @@
 // src/components/PlanetTable.jsx
 import React from 'react';
 
+// Lists where each planet sits in the zodiac at your time of birth.
+
 export default function PlanetTable({ planets }) {
   if (!Array.isArray(planets) || planets.length === 0) return null;
   return (
     <section className="mb-6">
-      <h3>Planetary Positions</h3>
+      <h3 title="The sign and degree of each planet at birth">Planetary Positions</h3>
+      <p className="help-text">Use these positions to understand planetary influences.</p>
       <table>
         <thead>
           <tr>

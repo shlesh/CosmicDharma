@@ -1,11 +1,15 @@
 // src/components/BasicInfo.jsx
 import React from 'react';
 
+// Displays the birth data used for all calculations so users can verify
+// the core information driving their profile.
+
 export default function BasicInfo({ birth }) {
   if (!birth) return null;
   return (
     <section className="mb-6">
-      <h2>Birth Details</h2>
+      <h2 title="Your basic birth information used for all further analysis">Birth Details</h2>
+      <p className="help-text">These details form the foundation of your horoscope.</p>
       {birth.date && (
         <p>
           <strong>Date:</strong> {birth.date}

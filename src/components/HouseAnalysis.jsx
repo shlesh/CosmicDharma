@@ -2,6 +2,8 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 
+// Summarizes how each astrological house influences life areas.
+
 export default function HouseAnalysis({ houses }) {
   if (!houses) return null;
 
@@ -11,7 +13,8 @@ export default function HouseAnalysis({ houses }) {
 
   return (
     <section className="mb-6">
-      <h3>House Analysis</h3>
+      <h3 title="How each house shapes your experiences">House Analysis</h3>
+      <p className="help-text">Review these notes for insight on different life themes.</p>
       <ul>
         {entries.map(([num, value]) => {
           let text;

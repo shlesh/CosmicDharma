@@ -158,6 +158,7 @@ function App() {
 
       <div className="glass-container">
         <h1>🕉️ Complete Vedic Astrological Profile</h1>
+        <p className="help-text">Enter your birth information below to reveal detailed astrological insights.</p>
 
       <ProfileForm
         form={form}
