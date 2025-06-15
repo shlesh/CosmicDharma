@@ -59,7 +59,20 @@ def get_birth_info(date, time, latitude, longitude, timezone,
     # get ayanamsa (sidereal offset)
     sidereal_offset = swe.get_ayanamsa(jd_ut)
     # compute houses and ascendant
-    hsys = house_system.upper().encode()
+    # SwissEph expects a single character identifying the house system.
+    # Map the user-friendly name to the correct byte code, defaulting to
+    # Placidus if the provided option is unknown.
+    # Users may pass the single-letter code directly (e.g. "P" or "W")
+    # or a full name like "placidus". Normalize both cases.
+    if isinstance(house_system, bytes):
+        hsys = house_system[:1]
+    else:
+        key = house_system.lower()
+        hsys = HOUSE_MAP.get(key)
+        if not hsys and len(house_system) == 1:
+            hsys = house_system.upper().encode()[:1]
+    if not hsys:
+        hsys = b"P"
     cusps, ascmc = swe.houses(jd_ut, latitude, longitude, hsys)
     asc = ascmc[0]
     return {
