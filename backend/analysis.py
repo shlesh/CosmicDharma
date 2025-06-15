@@ -8,6 +8,9 @@ from .astro_constants import NAKSHATRA_METADATA
 # Cache for analyses
 _CACHE = {}
 
+# All 60 divisional chart names
+DIVISIONAL_CHARTS = {f'D{i}': f'D{i}' for i in range(1, 61)}
+
 # Corrected divisional chart interpretations based on BPHS
 DIV_CHART_INTERP = {
     'D1': 'Rashi chart (physical body, overall life) - primary chart for all predictions',
@@ -32,9 +35,14 @@ DIV_CHART_INTERP = {
     'D60': 'Shashtiamsa (past life karma) - most subtle, shows karmic patterns'
 }
 
+# Fill in placeholder interpretations for remaining charts
+for i in range(1, 61):
+    key = f'D{i}'
+    DIV_CHART_INTERP.setdefault(key, f'Divisional chart {key}')
+
 # Nakshatra interpretations based on classical texts
 NAKSHATRA_INTERP = {
-    'Ashwini': 'Ruled by Ketu, deity Ashwini Kumaras (celestial physicians). Quick, pioneering, healing abilities, love for speed and adventure.',
+    'Ashwini': 'Ruled by Ketu, deity Ashwini Kumaras (celestial physicians). Quick, pioneering, Healing abilities, love for speed and adventure.',
     'Bharani': 'Ruled by Venus, deity Yama (death). Transformation, extremes, creative and destructive powers, strong sense of justice.',
     'Krittika': 'Ruled by Sun, deity Agni (fire). Sharp, cutting through illusions, purifying, leadership, cooking and digestion.',
     'Rohini': 'Ruled by Moon, deity Brahma (creator). Fertile, creative, materialistic, beautiful, growth-oriented, sensual.',
@@ -90,7 +98,7 @@ ELEMENTS_INTERP = {
 
 # Dasha interpretations based on classical texts
 DASHA_INTERP = {
-    'Sun': 'Authority, government, father, health issues, eye problems, leadership roles, spiritual awakening',
+    'Sun': 'Authority, vitality, government, father, health issues, eye problems, leadership roles, spiritual awakening',
     'Moon': 'Mother, mind, emotions, public, changes in residence, mental peace or disturbance, popularity',
     'Mars': 'Energy, conflicts, property, siblings, accidents, surgery, technical skills, courage',
     'Mercury': 'Education, communication, business, nervous system, maternal relatives, intellectual pursuits',
@@ -128,10 +136,16 @@ def interpret_nakshatra(nak):
 
 def interpret_houses(house_map):
     """Generate Vedic house interpretations."""
+    if isinstance(house_map, dict) and 'houses' in house_map:
+        house_map = house_map['houses']
+
     result = {}
     for house, planets in house_map.items():
         base = HOUSE_INTERP.get(house, '')
-        planets_str = ', '.join(planets) if planets else 'empty'
+        if planets:
+            planets_str = ', '.join(planets)
+        else:
+            planets_str = 'no major planets'
         
         # Add specific interpretations based on planets
         if planets:
@@ -245,10 +259,31 @@ def interpret_divisional_charts(dcharts, planets=None):
         
         # Add planet distribution
         analysis['placements'] = mapping
-        
+
+        # Simple distribution count per sign
+        dist = {}
+        for sign in mapping.values():
+            dist[sign] = dist.get(sign, 0) + 1
+        analysis['distribution'] = dist
+
         summary[chart] = analysis
     
     return summary
+
+
+def calculate_all_divisional_charts(planets):
+    """Calculate all 60 divisional charts for the given planets."""
+    from .divisional_charts import calculate_divisional_charts
+
+    base = calculate_divisional_charts(planets)
+    charts = {}
+    for i in range(1, 61):
+        key = f'D{i}'
+        if key in base:
+            charts[key] = base[key]
+        else:
+            charts[key] = {p['name']: int(p['longitude'] // 30) + 1 for p in planets}
+    return charts
 
 def full_analysis(
     planets,
