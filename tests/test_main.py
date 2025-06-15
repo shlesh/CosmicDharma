@@ -61,3 +61,52 @@ def test_dasha(monkeypatch):
     assert resp.status_code == 200
     data = main.ProfileResponse.model_validate(resp.json())
     assert data.vimshottariDasha == [{"lord": "Sun"}]
+
+
+def test_geocode_error(monkeypatch):
+    def fail(loc):
+        raise ValueError("bad location")
+
+    monkeypatch.setattr(main, "geocode_location", fail)
+
+    resp = client.post(
+        "/profile",
+        json={"date": "2020-01-01", "time": "12:00:00", "location": "Nowhere"},
+    )
+    assert resp.status_code == 400
+    assert resp.json()["detail"] == "bad location"
+
+
+def test_birth_info_invalid(monkeypatch):
+    monkeypatch.setattr(main, "geocode_location", lambda loc: (10.0, 20.0, "UTC"))
+
+    def bad_birth(**kwargs):
+        raise ValueError("date out of range")
+
+    monkeypatch.setattr(main, "get_birth_info", bad_birth)
+
+    resp = client.post(
+        "/profile",
+        json={"date": "1600-01-01", "time": "12:00:00", "location": "Delhi"},
+    )
+    assert resp.status_code == 400
+    assert "date out of range" in resp.json()["detail"]
+
+
+def test_swisseph_failure(monkeypatch):
+    monkeypatch.setattr(main, "geocode_location", lambda loc: (10.0, 20.0, "UTC"))
+    monkeypatch.setattr(main, "get_birth_info", lambda **k: {"jd_ut": 0, "cusps": [0]*12, "sidereal_offset": 0})
+
+    import swisseph as swe
+
+    def boom(*a, **k):
+        raise swe.Error("calc failed")
+
+    monkeypatch.setattr(main, "calculate_planets", boom)
+
+    resp = client.post(
+        "/profile",
+        json={"date": "2020-01-01", "time": "12:00:00", "location": "Delhi"},
+    )
+    assert resp.status_code == 500
+    assert "SwissEph" in resp.json()["detail"]
