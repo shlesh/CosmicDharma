@@ -47,23 +47,7 @@ def test_pratyantar_depth():
 def test_all_divisional_charts_full():
     planets = [{"name": "Sun", "longitude": 15.0}]
     charts = calculate_divisional_charts(planets)
-    expected = {
-        "D1",
-        "D2",
-        "D3",
-        "D4",
-        "D7",
-        "D9",
-        "D10",
-        "D12",
-        "D16",
-        "D20",
-        "D24",
-        "D30",
-        "D40",
-        "D45",
-        "D60",
-    }
+    expected = {f"D{i}" for i in range(1, 61)}
     assert set(charts.keys()) == expected
     for mapping in charts.values():
         val = mapping["Sun"]
