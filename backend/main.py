@@ -36,6 +36,7 @@ from backend.yogas import calculate_all_yogas
 from backend.shadbala import calculate_shadbala, calculate_bhava_bala
 from backend.ashtakavarga import calculate_ashtakavarga
 from backend.analysis import full_analysis
+import swisseph as swe
 
 # FastAPI app init
 app = FastAPI(
@@ -99,7 +100,7 @@ class ProfileResponse(BaseModel):
 
 def _compute_vedic_profile(request: ProfileRequest):
     """Compute complete Vedic astrological profile."""
-    
+
     # Geocoding
     loc_str = request.location.strip()
     logger.info("Geocoding '%s'", loc_str)
@@ -108,74 +109,122 @@ def _compute_vedic_profile(request: ProfileRequest):
     except ValueError as ex:
         logger.error(str(ex))
         raise HTTPException(status_code=400, detail=str(ex))
+    except Exception as ex:  # pragma: no cover - unexpected
+        logger.exception("Geocoding failed")
+        raise HTTPException(status_code=500, detail="Geocoding failed") from ex
     logger.info("Computed coordinates %s, %s timezone %s", lat, lon, tz)
 
-    # Basic calculations
     logger.info("Calculating Vedic charts")
-    binfo = get_birth_info(
-        date=request.birth_date,
-        time=request.birth_time,
-        latitude=lat,
-        longitude=lon,
-        timezone=tz,
-        ayanamsha=request.ayanamsa,
-        house_system=request.house_system,
-    )
-    
-    # Planetary positions (now includes Ketu and sidereal positions)
-    planets = calculate_planets(binfo, node_type=request.node_type)
-    
-    # Vimshottari Dasha with depth
-    dashas = calculate_vimshottari_dasha(binfo, planets, depth=3)
-    
-    # Nakshatra
-    nak = get_nakshatra(planets)
-    
-    # Houses
-    houses = analyze_houses(binfo, planets)
+    try:
+        binfo = get_birth_info(
+            date=request.birth_date,
+            time=request.birth_time,
+            latitude=lat,
+            longitude=lon,
+            timezone=tz,
+            ayanamsha=request.ayanamsa,
+            house_system=request.house_system,
+        )
+    except ValueError as ex:
+        logger.error("Invalid birth data: %s", ex)
+        raise HTTPException(status_code=400, detail=str(ex))
+    except swe.Error as ex:
+        logger.error("SwissEph error: %s", ex)
+        raise HTTPException(status_code=500, detail=f"SwissEph error: {ex}")
+    except Exception as ex:  # pragma: no cover - unexpected
+        logger.exception("Failed to compute birth info")
+        raise HTTPException(status_code=500, detail="Failed to compute birth information") from ex
+
+    try:
+        planets = calculate_planets(binfo, node_type=request.node_type)
+    except swe.Error as ex:
+        logger.error("SwissEph error: %s", ex)
+        raise HTTPException(status_code=500, detail=f"SwissEph error: {ex}")
+    except Exception as ex:  # pragma: no cover - unexpected
+        logger.exception("Failed to compute planetary positions")
+        raise HTTPException(status_code=500, detail="Failed to compute planetary positions") from ex
+
+    try:
+        dashas = calculate_vimshottari_dasha(binfo, planets, depth=3)
+    except Exception as ex:  # pragma: no cover - unexpected
+        logger.exception("Failed to compute dasha")
+        raise HTTPException(status_code=500, detail="Failed to compute vimshottari dasha") from ex
+
+    try:
+        nak = get_nakshatra(planets)
+    except Exception as ex:  # pragma: no cover - unexpected
+        logger.exception("Failed to compute nakshatra")
+        raise HTTPException(status_code=500, detail="Failed to compute nakshatra") from ex
+
+    try:
+        houses = analyze_houses(binfo, planets)
+    except Exception as ex:  # pragma: no cover - unexpected
+        logger.exception("Failed to compute houses")
+        raise HTTPException(status_code=500, detail="Failed to compute houses") from ex
     if isinstance(houses, dict) and 'houses' not in houses:
         houses = {'houses': houses, 'placements': {}, 'aspects': {}}
-    
-    # Core elements with modalities
-    core = calculate_core_elements(planets, include_modalities=True)
-    
-    # Proper divisional charts
-    dcharts = calculate_divisional_charts(planets)
-    
-    # Vargottama planets
-    vargottama = get_vargottama_planets(
-        dcharts.get('D1', {}),
-        dcharts.get('D9', {})
-    )
-    
-    # Vedic aspects
-    graha_drishti = calculate_vedic_aspects(planets, houses)
-    rasi_drishti = calculate_sign_aspects(planets)
-    
-    # Yogas (planetary combinations)
-    yogas = calculate_all_yogas(planets, houses, graha_drishti)
-    
-    # Planetary strengths (Shadbala)
-    shadbala = calculate_shadbala(planets, binfo, houses)
-    
-    # House strengths (Bhava Bala)
-    bhava_bala = calculate_bhava_bala(houses, planets, binfo)
-    
-    # Ashtakavarga
-    ashtakavarga = calculate_ashtakavarga(planets)
-    
-    # Analysis with all components
-    analysis_results = full_analysis(
-        planets, dashas, nak, houses, core, dcharts,
-        jd=binfo["jd_ut"],
-        include_nakshatra=True,
-        include_houses=True,
-        include_core=True,
-        include_dashas=True,
-        include_divisional_charts=True,
-    )
-    
-    # Add Vedic-specific analysis
+
+    try:
+        core = calculate_core_elements(planets, include_modalities=True)
+    except Exception as ex:  # pragma: no cover - unexpected
+        logger.exception("Failed to compute core elements")
+        raise HTTPException(status_code=500, detail="Failed to compute core elements") from ex
+
+    try:
+        dcharts = calculate_divisional_charts(planets)
+    except Exception as ex:  # pragma: no cover - unexpected
+        logger.exception("Failed to compute divisional charts")
+        raise HTTPException(status_code=500, detail="Failed to compute divisional charts") from ex
+
+    try:
+        vargottama = get_vargottama_planets(
+            dcharts.get('D1', {}),
+            dcharts.get('D9', {})
+        )
+    except Exception as ex:  # pragma: no cover - unexpected
+        logger.exception("Failed to compute vargottama planets")
+        raise HTTPException(status_code=500, detail="Failed to compute vargottama planets") from ex
+
+    try:
+        graha_drishti = calculate_vedic_aspects(planets, houses)
+        rasi_drishti = calculate_sign_aspects(planets)
+    except Exception as ex:  # pragma: no cover - unexpected
+        logger.exception("Failed to compute aspects")
+        raise HTTPException(status_code=500, detail="Failed to compute aspects") from ex
+
+    try:
+        yogas = calculate_all_yogas(planets, houses, graha_drishti)
+    except Exception as ex:  # pragma: no cover - unexpected
+        logger.exception("Failed to compute yogas")
+        raise HTTPException(status_code=500, detail="Failed to compute yogas") from ex
+
+    try:
+        shadbala = calculate_shadbala(planets, binfo, houses)
+        bhava_bala = calculate_bhava_bala(houses, planets, binfo)
+    except Exception as ex:  # pragma: no cover - unexpected
+        logger.exception("Failed to compute strengths")
+        raise HTTPException(status_code=500, detail="Failed to compute strengths") from ex
+
+    try:
+        ashtakavarga = calculate_ashtakavarga(planets)
+    except Exception as ex:  # pragma: no cover - unexpected
+        logger.exception("Failed to compute ashtakavarga")
+        raise HTTPException(status_code=500, detail="Failed to compute ashtakavarga") from ex
+
+    try:
+        analysis_results = full_analysis(
+            planets, dashas, nak, houses, core, dcharts,
+            jd=binfo["jd_ut"],
+            include_nakshatra=True,
+            include_houses=True,
+            include_core=True,
+            include_dashas=True,
+            include_divisional_charts=True,
+        )
+    except Exception as ex:  # pragma: no cover - unexpected
+        logger.exception("Failed to compute analysis")
+        raise HTTPException(status_code=500, detail="Failed to compute analysis") from ex
+
     analysis_results['yogas'] = yogas
     analysis_results['shadbala'] = shadbala
     analysis_results['bhavaBala'] = bhava_bala
