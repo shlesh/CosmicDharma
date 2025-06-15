@@ -1,0 +1,7 @@
+[build]
+  command = "npm run build"
+  publish = "dist"
+
+[context.production.environment]
+  # Set the backend API URL in Netlify settings or override here
+  VITE_API_BASE_URL = ""

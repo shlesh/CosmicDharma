@@ -73,3 +73,12 @@ The interface is composed of several reusable React components:
 - **HouseAnalysis** – explains how each astrological house influences life areas.
 - **DashaTable** – lists major planetary periods with start and end dates.
 - **DashaChart** – visual timeline of those periods; hover to read descriptions.
+
+## Deployment
+
+The frontend is deployed to Netlify while the FastAPI backend stays on Hostinger.
+
+1. Set the `VITE_API_BASE_URL` variable in Netlify to the full URL of your backend (e.g. `https://api.cosmicdharma.app`).
+2. Connect this repository to Netlify so pushes to `main` trigger a build. Netlify uses `npm run build` and publishes the `dist` directory as defined in `netlify.toml`.
+3. Point your `cosmicdharma.app` domain to Netlify and add it as a custom domain in the Netlify dashboard.
+4. GitHub Actions deploy the backend over SSH and trigger a Netlify deploy using the `NETLIFY_AUTH_TOKEN` and `NETLIFY_SITE_ID` secrets.

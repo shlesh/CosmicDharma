@@ -52,6 +52,7 @@ function App() {
   const [profile, setProfile] = useState(null);
 
   const { name, birthDate, birthTime, location } = form;
+  const API_BASE = import.meta.env.VITE_API_BASE_URL || '';
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -60,7 +61,7 @@ function App() {
     setError('');
 
     try {
-      const res = await fetch('/profile', {
+      const res = await fetch(`${API_BASE}/profile`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ date: birthDate, time: birthTime, location }),

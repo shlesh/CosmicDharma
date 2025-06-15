@@ -23,14 +23,13 @@ jobs:
       - run: backend/venv/bin/pip install pytest pytest-asyncio
       - run: PYTHONPATH=. backend/venv/bin/pytest -q
       - run: npm run build
-      - name: Upload frontend via FTP
-        uses: SamKirkland/FTP-Deploy-Action@v4.3.4
+      - name: Deploy frontend to Netlify
+        uses: netlify/actions/cli@v2
         with:
-          server: ${{ secrets.HOSTINGER_FTP_HOST }}
-          username: ${{ secrets.HOSTINGER_FTP_USER }}
-          password: ${{ secrets.HOSTINGER_FTP_PASSWORD }}
-          local-dir: dist
-          server-dir: public_html/
+          args: deploy --dir=dist --prod
+        env:
+          NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
+          NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID }}
       - name: Deploy backend over SSH
         uses: appleboy/ssh-action@v1.0.3
         with:
