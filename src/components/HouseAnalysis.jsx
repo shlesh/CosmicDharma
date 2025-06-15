@@ -13,11 +13,18 @@ export default function HouseAnalysis({ houses }) {
     <section className="mb-6">
       <h3>House Analysis</h3>
       <ul>
-        {entries.map(([num, plist]) => {
-          const list = Array.isArray(plist) ? plist.join(', ') : String(plist ?? '');
+        {entries.map(([num, value]) => {
+          let text;
+          if (Array.isArray(value)) {
+            text = value.join(', ');
+          } else if (typeof value === 'string') {
+            text = value;
+          } else {
+            text = String(value ?? '');
+          }
           return (
             <li key={num}>
-              <strong>House {num}:</strong> {list || '—'}
+              <strong>House {num}:</strong> {text || '—'}
             </li>
           );
         })}
@@ -27,8 +34,5 @@ export default function HouseAnalysis({ houses }) {
 }
 
 HouseAnalysis.propTypes = {
-  houses: PropTypes.oneOfType([
-    PropTypes.objectOf(PropTypes.array),
-    PropTypes.arrayOf(PropTypes.array),
-  ]),
+  houses: PropTypes.object,
 };
