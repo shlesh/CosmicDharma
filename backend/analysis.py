@@ -7,12 +7,8 @@ Comprehensive analysis module:
 from datetime import date
 from .astro_constants import NAKSHATRA_METADATA
 
-# Extended divisional charts
-DIVISIONAL_CHARTS = {
-    'D1': 1, 'D2': 2, 'D3': 3, 'D4': 4, 'D5': 5, 'D6': 6,
-    'D7': 7, 'D8': 8, 'D9': 9, 'D10': 10, 'D12': 12, 'D16': 16,
-    'D20': 20, 'D30': 30, 'D40': 40, 'D45': 45, 'D60': 60
-}
+# Extended divisional charts (D1–D60)
+DIVISIONAL_CHARTS = {f"D{n}": n for n in range(1, 61)}
 
 def calculate_all_divisional_charts(planets):
     """
@@ -75,9 +71,66 @@ DASHA_INTERP = {
 }
 
 DIV_CHART_INTERP = {
+    'D1': 'Rashi chart shows overall life themes and the physical body.',
+    'D2': 'Hora chart relates to wealth and possessions.',
+    'D3': 'Drekkana focuses on siblings and courage.',
+    'D4': 'Chaturthamsha indicates property and fortune.',
+    'D5': 'Panchamsha reveals spiritual practices and learning.',
+    'D6': 'Shashthamsa highlights health issues and obstacles.',
+    'D7': 'Saptamsa reflects children and creativity.',
+    'D8': 'Ashtamsa deals with longevity and transformation.',
     'D9': 'Navamsa reflects marriage, spirituality, and inner strength.',
     'D10': 'Dasamsa highlights career, vocation, and public life.',
-    # Add for other divisional charts if desired...
+    'D11': 'Rudramsa reveals power and challenges.',
+    'D12': 'Dvadashamsa relates to parents and heritage.',
+    'D13': 'Trayodashamsa gives insight into hidden talents.',
+    'D14': 'Chaturdamsa outlines stability and comforts.',
+    'D15': 'Panchadasamsa indicates prosperity and luxury.',
+    'D16': 'Shodashamsa explores vehicles and happiness.',
+    'D17': 'Saptadasamsa shows strength over adversity.',
+    'D18': 'Ashtadasamsa deals with debts and misfortune.',
+    'D19': 'Navadasamsa indicates morality and principles.',
+    'D20': 'Vimsamsa highlights spiritual practice and devotion.',
+    'D21': 'Ekavimsamsa focuses on leadership and authority.',
+    'D22': 'Dvavimsamsa reflects battles and courage.',
+    'D23': 'Trayovimsamsa points to skills and craftsmanship.',
+    'D24': 'Chaturvimshamsa shows education and knowledge.',
+    'D25': 'Panchavimsamsa concerns learning aptitude and wisdom.',
+    'D26': 'Shadvimsamsa indicates personal strengths and flaws.',
+    'D27': 'Bhamsha explores overall stamina and weaknesses.',
+    'D28': 'Ashtavimsamsa reveals stability and assets.',
+    'D29': 'Navavimsamsa deals with travel and movement.',
+    'D30': 'Trimshamsa uncovers misfortunes and karmic debts.',
+    'D31': 'Ekatrimshamsa deals with inner motives and drives.',
+    'D32': 'Dvatrimshamsa indicates ancestral patterns.',
+    'D33': 'Trayatrimshamsa reveals grace and blessings.',
+    'D34': 'Chatustrimshamsa shows learning and communication.',
+    'D35': 'Panchatrimshamsa relates to alliances and social circle.',
+    'D36': 'Shattrimshamsa highlights financial growth.',
+    'D37': 'Saptatrimshamsa deals with desire and ambitions.',
+    'D38': 'Ashtatrimshamsa reveals obstacles and enemies.',
+    'D39': 'Navatrimshamsa reflects good fortune and dharma.',
+    'D40': 'Khavedamsa explores auspicious and inauspicious deeds.',
+    'D41': 'Ekachattvarimsamsa deals with subtle strengths.',
+    'D42': 'Dvadchattvarimsamsa reveals wealth from family.',
+    'D43': 'Traychattvarimsamsa points to dharma and ethics.',
+    'D44': 'Chaturchattvarimsamsa relates to comforts and luxuries.',
+    'D45': 'Akshavedamsa highlights innate talent and spiritual power.',
+    'D46': 'Shadchattvarimsamsa reveals obstacles to progress.',
+    'D47': 'Saptchattvarimsamsa explores mysticism and secrets.',
+    'D48': 'Ashtchattvarimsamsa covers achievements and recognition.',
+    'D49': 'Navchattvarimsamsa deals with leadership potential.',
+    'D50': 'Panchashamsa shows karmic influences on success.',
+    'D51': 'Ekapanchashamsa deals with personal transformation.',
+    'D52': 'Dvipanchashamsa focuses on alliances and partners.',
+    'D53': 'Tripanchashamsa reveals resilience and recovery.',
+    'D54': 'Chaturpanchashamsa relates to creativity and knowledge.',
+    'D55': 'Panchapanchashamsa highlights prestige and fame.',
+    'D56': 'Shatpanchashamsa indicates spiritual development.',
+    'D57': 'Saptpanchashamsa shows perseverance and duty.',
+    'D58': 'Ashtpanchashamsa covers obstacles in vocation.',
+    'D59': 'Navpanchashamsa reveals karmic healing and insight.',
+    'D60': 'Shashtiamsa details past-life karma and subtle nuances.'
 }
 
 # Interpretation functions
