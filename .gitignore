@@ -108,7 +108,7 @@ dist
 /node_modules
 /.pnp
 .pnp.js
-backend/venv/
+backend/venv
 backend/__pycache__
 *.env
 
