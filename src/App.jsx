@@ -71,21 +71,41 @@ function App() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ date: birthDate, time: birthTime, location }),
       });
-      const payload = await res.json();
+
+      const text = await res.text();
+      let payload;
+      try {
+        payload = text ? JSON.parse(text) : {};
+      } catch {
+        payload = text;
+      }
 
       if (!res.ok) {
-        if (Array.isArray(payload.detail)) {
+        if (
+          payload &&
+          typeof payload === 'object' &&
+          Array.isArray(payload.detail)
+        ) {
           setError(
             payload.detail
               .map(err => `${err.loc.join('.')}: ${err.msg}`)
               .join('\n')
           );
+        } else if (payload && typeof payload === 'object' && payload.detail) {
+          setError(payload.detail);
+        } else if (typeof payload === 'string') {
+          setError(payload || res.statusText);
         } else {
-          setError(payload.detail || JSON.stringify(payload, null, 2));
+          setError(JSON.stringify(payload, null, 2));
         }
         setProfile(null);
       } else {
-        setProfile({ ...payload, request: form });
+        if (payload && typeof payload === 'object') {
+          setProfile({ ...payload, request: form });
+        } else {
+          setError('Invalid server response');
+          setProfile(null);
+        }
       }
     } catch (err) {
       setError(err.message);
