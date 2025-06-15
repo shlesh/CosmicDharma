@@ -27,11 +27,14 @@ from backend.house_analysis import analyze_houses
 from backend.core_elements import calculate_core_elements
 
 # New Vedic modules
-from backend.divisional_charts import get_vargottama_planets
+from backend.divisional_charts import (
+    get_vargottama_planets,
+    calculate_divisional_charts,
+)
 from backend.aspects import calculate_vedic_aspects, calculate_sign_aspects
 from backend.yogas import calculate_all_yogas
 from backend.shadbala import calculate_shadbala, calculate_bhava_bala
-from backend.analysis import full_analysis, calculate_all_divisional_charts
+from backend.analysis import full_analysis
 
 # FastAPI app init
 app = FastAPI(
@@ -118,7 +121,7 @@ def _compute_vedic_profile(request: ProfileRequest):
     core = calculate_core_elements(planets, include_modalities=True)
     
     # Proper divisional charts
-    dcharts = calculate_all_divisional_charts(planets)
+    dcharts = calculate_divisional_charts(planets)
     
     # Vargottama planets
     vargottama = get_vargottama_planets(
