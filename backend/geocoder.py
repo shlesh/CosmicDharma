@@ -1,6 +1,7 @@
 import os
 import time
 import logging
+from functools import lru_cache
 
 from geopy.geocoders import Nominatim
 from timezonefinder import TimezoneFinder
@@ -44,6 +45,7 @@ def _geocode_once(query: str):
     return lat, lon, tz
 
 
+@lru_cache(maxsize=128)
 def geocode_location(query: str):
     """Return (lat, lon, timezone) for a place string."""
     tokens = [t.strip() for t in query.split(',')]
