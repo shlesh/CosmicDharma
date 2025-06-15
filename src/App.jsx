@@ -8,6 +8,7 @@ import PlanetTable from './components/PlanetTable';
 import DashaTable from './components/DashaTable';
 import DashaChart from './components/DashaChart';
 import HouseAnalysis from './components/HouseAnalysis';
+import { generatePdf } from './pdf';
 
 function App() {
   // Load & persist form state in localStorage
@@ -174,6 +175,16 @@ function App() {
             dasha={profile.vimshottariDasha}
             analysis={profile.analysis && profile.analysis.vimshottariDasha}
           />
+          <button
+            type="button"
+            onClick={() => {
+              const doc = generatePdf(profile);
+              doc.save('natal-chart.pdf');
+            }}
+            className="glass-button"
+          >
+            Download PDF
+          </button>
         </section>
       )}
     </div>
