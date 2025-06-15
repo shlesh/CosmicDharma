@@ -1,30 +1,16 @@
 # backend/main.py
 
-import os
-import time as _time
 import logging
+from datetime import date as dt_date, time as dt_time
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field, ConfigDict
-from datetime import date as dt_date, time as dt_time
 
-# Optional Google Maps geocoding
-try:
-    import googlemaps
-    GMAPS_API_KEY = os.getenv("GOOGLE_MAPS_API_KEY")
-    if GMAPS_API_KEY:
-        gmaps = googlemaps.Client(key=GMAPS_API_KEY)
-    else:
-        gmaps = None
-except ImportError:
-    gmaps = None
+from backend.config import load_config
+from backend.geocoder import geocode_location
 
-# Fallback geocoding & timezone detection
-from geopy.geocoders import Nominatim
-from timezonefinder import TimezoneFinder
+CONFIG = load_config()
 
-google_fallback = Nominatim(user_agent="vedic-astrology-geocoder")
-timezone_finder = TimezoneFinder()
 
 # Setup basic logging
 logging.basicConfig(level=logging.INFO)
@@ -63,92 +49,56 @@ class ProfileRequest(BaseModel):
     birth_date: dt_date = Field(..., alias="date")
     birth_time: dt_time = Field(..., alias="time")
     location: str = Field(...)
+    ayanamsa: str = Field(default=CONFIG.get("ayanamsa", "fagan_bradley"))
+    node_type: str = Field(default=CONFIG.get("node_type", "mean"), alias="lunar_node")
+    house_system: str = Field(default=CONFIG.get("house_system", "placidus"))
+
+
+def _compute_profile(request: ProfileRequest):
+    loc_str = request.location.strip()
+    logger.info("Geocoding '%s'", loc_str)
+    try:
+        lat, lon, tz = geocode_location(loc_str)
+    except ValueError as ex:
+        logger.error(str(ex))
+        raise HTTPException(status_code=400, detail=str(ex))
+    logger.info("Computed coordinates %s, %s timezone %s", lat, lon, tz)
+
+    logger.info("Calculating charts")
+    binfo = get_birth_info(
+        date=request.birth_date,
+        time=request.birth_time,
+        latitude=lat,
+        longitude=lon,
+        timezone=tz,
+        ayanamsa=request.ayanamsa,
+        house_system=request.house_system,
+    )
+    planets = calculate_planets(binfo, node_type=request.node_type)
+    dashas = calculate_vimshottari_dasha(binfo, planets)
+    nak = get_nakshatra(planets)
+    houses = analyze_houses(binfo, planets)
+    core = calculate_core_elements(planets)
+    dcharts = calculate_all_divisional_charts(planets)
+    analysis_results = full_analysis(planets, dashas, nak, houses, core, dcharts)
+
+    result = {
+        "birthInfo": {**binfo, "latitude": lat, "longitude": lon, "timezone": tz},
+        "planetaryPositions": planets,
+        "vimshottariDasha": dashas,
+        "nakshatra": nak,
+        "houses": houses,
+        "coreElements": core,
+        "divisionalCharts": dcharts,
+        "analysis": analysis_results,
+    }
+    return result
 
 @app.post("/profile")
 async def get_profile(request: ProfileRequest):
     logger.info("Received profile request: %s", request)
     try:
-        loc_str = request.location.strip()
-        logger.info("Geocoding '%s'", loc_str)
-        lat = lon = None
-
-        # 1. Try Google Maps geocoding if available
-        if gmaps:
-            try:
-                results = gmaps.geocode(loc_str)
-                if results:
-                    loc = results[0]["geometry"]["location"]
-                    lat, lon = loc.get("lat"), loc.get("lng")
-                    # determine timezone via Google if desired:
-                    tz_info = gmaps.timezone({
-                        "location": (lat, lon),
-                        "timestamp": int(_time.time()),
-                    })
-                    tz = tz_info.get("timeZoneId")
-                else:
-                    tz = None
-            except Exception:
-                lat = lon = tz = None
-        else:
-            tz = None
-
-        # 2. Fallback to geopy + suffix-based search if Google failed or not configured
-        if lat is None or lon is None:
-            # primary fuzzy search
-            try:
-                candidates = google_fallback.geocode(loc_str, exactly_one=False, limit=5)
-            except Exception as ex:
-                logger.warning("Primary geocode failed: %s", ex)
-                candidates = None
-            if candidates:
-                geo = candidates[0]
-                lat, lon = geo.latitude, geo.longitude
-            else:
-                # suffix-based fallback
-                parts = [p.strip() for p in loc_str.split(",") if p.strip()]
-                for i in range(1, len(parts)):
-                    trial = ", ".join(parts[i:])
-                    try:
-                        candidates = google_fallback.geocode(trial, exactly_one=False, limit=5)
-                    except Exception as ex:
-                        logger.warning("Fallback geocode failed for '%s': %s", trial, ex)
-                        candidates = None
-                    if candidates:
-                        geo = candidates[0]
-                        lat, lon = geo.latitude, geo.longitude
-                        break
-        
-        if lat is None or lon is None:
-            logger.error("Failed to geocode '%s'", loc_str)
-            raise HTTPException(status_code=400, detail=f"Could not geocode location '{loc_str}'")
-
-        # 3. Timezone determination if not from Google
-        if not tz:
-            tz = timezone_finder.timezone_at(lat=lat, lng=lon) or 'UTC'
-        logger.info("Computed coordinates %s, %s timezone %s", lat, lon, tz)
-
-        # 4. Compute birth info & charts
-        logger.info("Calculating charts")
-        binfo = get_birth_info(date=request.birth_date, time=request.birth_time,
-                               latitude=lat, longitude=lon, timezone=tz)
-        planets = calculate_planets(binfo)
-        dashas = calculate_vimshottari_dasha(binfo, planets)
-        nak = get_nakshatra(planets)
-        houses = analyze_houses(binfo, planets)
-        core = calculate_core_elements(planets)
-        dcharts = calculate_all_divisional_charts(planets)
-        analysis_results = full_analysis(planets, dashas, nak, houses, core, dcharts)
-
-        result = {
-            "birthInfo": {**binfo, "latitude": lat, "longitude": lon, "timezone": tz},
-            "planetaryPositions": planets,
-            "vimshottariDasha": dashas,
-            "nakshatra": nak,
-            "houses": houses,
-            "coreElements": core,
-            "divisionalCharts": dcharts,
-            "analysis": analysis_results,
-        }
+        result = _compute_profile(request)
         logger.info("Profile computation completed")
         return result
 
@@ -157,3 +107,17 @@ async def get_profile(request: ProfileRequest):
     except Exception as e:
         logger.exception("Unhandled error")
         raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/divisional-charts")
+async def get_divisional_charts(request: ProfileRequest):
+    """Return only divisional charts based on profile input."""
+    data = _compute_profile(request)
+    return {"divisionalCharts": data["divisionalCharts"]}
+
+
+@app.post("/dasha")
+async def get_dasha(request: ProfileRequest):
+    """Return only Vimshottari dasha sequence based on profile input."""
+    data = _compute_profile(request)
+    return {"vimshottariDasha": data["vimshottariDasha"]}

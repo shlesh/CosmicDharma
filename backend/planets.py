@@ -1,6 +1,6 @@
 import swisseph as swe
 
-def calculate_planets(binfo):
+def calculate_planets(binfo, *, node_type: str = "mean"):
     """
     Calculate geocentric planetary longitudes for core planets.
     Returns list of dicts: name, longitude, sign, degree_in_sign.
@@ -13,7 +13,7 @@ def calculate_planets(binfo):
         'Mars': swe.MARS,
         'Jupiter': swe.JUPITER,
         'Saturn': swe.SATURN,
-        'Rahu': swe.MEAN_NODE,
+        'Rahu': swe.MEAN_NODE if node_type.lower() == "mean" else swe.TRUE_NODE,
     }
     results = []
     for name, pid in planet_ids.items():
