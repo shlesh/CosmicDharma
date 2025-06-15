@@ -5,6 +5,7 @@ Comprehensive analysis module:
 - Textual interpretations for nakshatra, houses, core elements, dasha sequence, divisional charts
 """
 from datetime import date
+from .astro_constants import NAKSHATRA_METADATA
 
 # Extended divisional charts
 DIVISIONAL_CHARTS = {
@@ -32,10 +33,10 @@ def calculate_all_divisional_charts(planets):
     return charts
 
 # Interpretations dictionaries
+# Build simple interpretations for each nakshatra using its trait keywords
 NAKSHATRA_INTERP = {
-    'Ashwini': 'Courageous, energetic, pioneering spirit.',
-    'Bharani': 'Transformative, intense, enduring hardships.',
-    # Add entries for all 27 nakshatras...
+    info["name"]: f"{', '.join(info.get('traits', []))} qualities." 
+    for info in NAKSHATRA_METADATA
 }
 
 HOUSE_INTERP = {
