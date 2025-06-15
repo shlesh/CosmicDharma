@@ -23,8 +23,6 @@ export default function ProfileForm({ form, onChange, onSubmit, loading }) {
           value={form.birthDate}
           onChange={onChange}
           required
-          pattern="\\d{4}-\\d{2}-\\d{2}"
-          title="YYYY-MM-DD"
           className="glass-input"
         />
       </label>
@@ -36,8 +34,6 @@ export default function ProfileForm({ form, onChange, onSubmit, loading }) {
           value={form.birthTime}
           onChange={onChange}
           required
-          pattern="\\d{2}:\\d{2}"
-          title="HH:MM"
           className="glass-input"
         />
       </label>
@@ -52,49 +48,6 @@ export default function ProfileForm({ form, onChange, onSubmit, loading }) {
           className="glass-input"
         />
       </label>
-      <details>
-        <summary>Advanced Options</summary>
-        <div className="space-y-2 mt-2">
-          <label>
-            Ayanāṅśā:
-            <select
-              name="ayanamsa"
-              value={form.ayanamsa}
-              onChange={onChange}
-              className="glass-input"
-            >
-              <option value="fagan_bradley">Fagan-Bradley</option>
-              <option value="lahiri">Lahiri</option>
-              <option value="raman">Raman</option>
-              <option value="kp">Krishnamurti (KP)</option>
-            </select>
-          </label>
-          <label>
-            House System:
-            <select
-              name="houseSystem"
-              value={form.houseSystem}
-              onChange={onChange}
-              className="glass-input"
-            >
-              <option value="placidus">Placidus</option>
-              <option value="whole_sign">Whole Sign</option>
-            </select>
-          </label>
-          <label>
-            Node Type:
-            <select
-              name="nodeType"
-              value={form.nodeType}
-              onChange={onChange}
-              className="glass-input"
-            >
-              <option value="mean">Mean</option>
-              <option value="true">True</option>
-            </select>
-          </label>
-        </div>
-      </details>
       <button type="submit" disabled={loading} className="glass-button">
         {loading ? 'Calculating…' : 'Submit'}
       </button>
