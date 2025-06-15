@@ -5,6 +5,7 @@ from backend import geocoder
 
 
 def test_geocode_exact(monkeypatch):
+    geocoder.geocode_location.cache_clear()
     monkeypatch.setattr(geocoder, "gmaps", None)
 
     def fake_geocode(q, exactly_one=True):
@@ -22,6 +23,7 @@ def test_geocode_exact(monkeypatch):
 
 
 def test_geocode_fallback(monkeypatch):
+    geocoder.geocode_location.cache_clear()
     monkeypatch.setattr(geocoder, "gmaps", None)
     calls = []
 
@@ -50,8 +52,26 @@ def test_geocode_fallback(monkeypatch):
 
 
 def test_geocode_failure(monkeypatch):
+    geocoder.geocode_location.cache_clear()
     monkeypatch.setattr(geocoder, "gmaps", None)
     monkeypatch.setattr(geocoder._geopy, "geocode", lambda q, exactly_one=True: None)
 
     with pytest.raises(ValueError):
         geocoder.geocode_location("Unknown Place")
+
+
+def test_geocode_cached(monkeypatch):
+    geocoder.geocode_location.cache_clear()
+    monkeypatch.setattr(geocoder, "gmaps", None)
+    call_count = {"n": 0}
+
+    def fake_once(q):
+        call_count["n"] += 1
+        return 1.0, 2.0, "Asia/Kolkata"
+
+    monkeypatch.setattr(geocoder, "_geocode_once", fake_once)
+    for _ in range(2):
+        lat, lon, tz = geocoder.geocode_location("Renukoot, Sonbhadra, India")
+        assert (lat, lon, tz) == (1.0, 2.0, "Asia/Kolkata")
+
+    assert call_count["n"] == 1
