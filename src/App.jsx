@@ -1,12 +1,16 @@
 import { useState } from "react";
 
 export default function App() {
-  const [form, setForm] = useState({ name: "", dob: "", tob: "", pob: "" });
+  // Pre-fill form with sample data for quick testing
+  const [form, setForm] = useState({
+    name: "Shailesh Tiwari",
+    dob: "2001-06-23",
+    tob: "04:26",
+    pob: "Renukoot, Sonebhadra",
+  });
   const [result, setResult] = useState(null);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
-
-  const apiUrl = import.meta.env.VITE_API_URL || "http://localhost:8000";
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -19,7 +23,7 @@ export default function App() {
     setError("");
     setResult(null);
     try {
-      const res = await fetch(`${apiUrl}/profile`, {
+      const res = await fetch(`/profile`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(form),
@@ -43,6 +47,7 @@ export default function App() {
           <input
             name="name"
             value={form.name}
+            placeholder="Shailesh Tiwari"
             onChange={handleChange}
             required
           />
@@ -75,6 +80,7 @@ export default function App() {
           <input
             name="pob"
             value={form.pob}
+            placeholder="Renukoot, Sonebhadra"
             onChange={handleChange}
             required
           />
@@ -91,6 +97,7 @@ export default function App() {
         <div className="result">
           <h2>Profile Results</h2>
           <ul>
+            <li><strong>Lagna (Ascendant):</strong> {result.lagna}</li>
             <li><strong>Moon Longitude:</strong> {result.moon_longitude.toFixed(4)}</li>
             <li><strong>Rashi:</strong> {result.rashi}</li>
             <li><strong>Nakshatra:</strong> {result.nakshatra}</li>
