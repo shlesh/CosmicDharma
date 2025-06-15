@@ -162,7 +162,7 @@ function App() {
             elements={profile.coreElements}
           />
           <PlanetTable planets={profile.planetaryPositions} />
-          <HouseAnalysis houses={profile.houses} />
+          <HouseAnalysis houses={profile.analysis?.houses || profile.houses} />
           <DashaTable dasha={profile.vimshottariDasha} />
           <DashaChart dasha={profile.vimshottariDasha} />
         </section>
