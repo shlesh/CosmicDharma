@@ -49,3 +49,7 @@ PYTHONPATH=. pytest -q
 ```
 
 The backend tests stub all external dependencies so no API keys or internet access are required.
+
+## Continuous integration
+
+Automated tests run on GitHub Actions for every push and pull request. The workflow installs Node and Python dependencies and executes both the frontend and backend test suites.
