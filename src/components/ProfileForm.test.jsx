@@ -2,7 +2,15 @@ import { render, screen, fireEvent } from '@testing-library/react';
 import { expect, test, vi } from 'vitest';
 import ProfileForm from './ProfileForm';
 
-const filled = { name: 'Test', birthDate: '2000-01-01', birthTime: '12:00', location: 'Delhi' };
+const filled = {
+  name: 'Test',
+  birthDate: '2000-01-01',
+  birthTime: '12:00',
+  location: 'Delhi',
+  ayanamsa: 'fagan_bradley',
+  houseSystem: 'placidus',
+  nodeType: 'mean',
+};
 
 test('handles input and submit', () => {
   const handleChange = vi.fn();
