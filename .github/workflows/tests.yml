@@ -1,0 +1,24 @@
+name: CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+      - run: npm install
+      - run: npm test
+      - uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+      - run: python -m venv backend/venv
+      - run: backend/venv/bin/pip install -r backend/requirements.txt
+      - run: backend/venv/bin/pip install pytest
+      - run: PYTHONPATH=. backend/venv/bin/pytest -q
