@@ -1,16 +1,17 @@
 // src/components/ProfileSummary.jsx
 import React from 'react';
 
-export default function ProfileSummary({ data }) {
-  if (!data) return null;
+export default function ProfileSummary({ analysis }) {
+  if (!analysis) return null;
+  const nak = analysis.nakshatra;
   return (
     <section className="mb-6">
-      <h2>Core Profile</h2>
-      <ul>
-        <li><strong>Lagna (Ascendant):</strong> {data.lagna.name}</li>
-        <li><strong>Moon Sign:</strong> {data.moon_sign.name}</li>
-        <li><strong>Nakshatra:</strong> {data.nakshatra.name} (Pada {data.pada})</li>
-      </ul>
+      <h2>Profile Highlights</h2>
+      {nak && (
+        <p>
+          <strong>Nakshatra:</strong> {nak.nakshatra} (Pada {nak.pada}) – {nak.description}
+        </p>
+      )}
     </section>
   );
 }

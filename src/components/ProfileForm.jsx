@@ -6,21 +6,49 @@ export default function ProfileForm({ form, onChange, onSubmit, loading }) {
     <form onSubmit={onSubmit} className="mb-6 space-y-4">
       <label>
         Name:
-        <input name="name" value={form.name} placeholder="Shailesh Tiwari" onChange={onChange} required />
+        <input
+          name="name"
+          value={form.name}
+          placeholder="Shailesh Tiwari"
+          onChange={onChange}
+          required
+          className="neo-input"
+        />
       </label>
       <label>
         Date of Birth:
-        <input type="date" name="dob" value={form.dob} onChange={onChange} required />
+        <input
+          type="date"
+          name="birthDate"
+          value={form.birthDate}
+          onChange={onChange}
+          required
+          className="neo-input"
+        />
       </label>
       <label>
         Time of Birth:
-        <input type="time" name="tob" value={form.tob} onChange={onChange} required />
+        <input
+          type="time"
+          name="birthTime"
+          value={form.birthTime}
+          onChange={onChange}
+          required
+          className="neo-input"
+        />
       </label>
       <label>
         Place of Birth:
-        <input name="pob" value={form.pob} placeholder="Renukoot, Sonebhadra" onChange={onChange} required />
+        <input
+          name="location"
+          value={form.location}
+          placeholder="Renukoot, India"
+          onChange={onChange}
+          required
+          className="neo-input"
+        />
       </label>
-      <button type="submit" disabled={loading}>
+      <button type="submit" disabled={loading} className="neo-button">
         {loading ? 'Calculating…' : 'Submit'}
       </button>
     </form>
