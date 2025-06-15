@@ -26,6 +26,24 @@ body {
   border: 1px solid rgba(255, 255, 255, 0.4);
 }
 
+/* Layout for page with ad slots */
+.page-wrapper {
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+}
+
+.ad-slot {
+  flex: 0 0 120px;
+  margin: 0 1rem;
+}
+
+@media (max-width: 768px) {
+  .ad-slot {
+    display: none;
+  }
+}
+
 /* Inputs styled with glassmorphism */
 .glass-input {
   display: block;

@@ -31,6 +31,15 @@ function App() {
   }, []);
 
   useEffect(() => {
+    // Load ads after mount
+    try {
+      (window.adsbygoogle = window.adsbygoogle || []).push({});
+    } catch (err) {
+      console.error('Adsense error', err);
+    }
+  }, []);
+
+  useEffect(() => {
     // Persist form values
     const toSave = { name, birthDate, birthTime, location };
     localStorage.setItem('vedicForm', JSON.stringify(toSave));
@@ -135,8 +144,20 @@ function App() {
   };
 
   return (
-    <div className="glass-container">
-      <h1>🕉️ Complete Vedic Astrological Profile</h1>
+    <div className="page-wrapper">
+      <aside className="ad-slot left-ad">
+        <ins
+          className="adsbygoogle"
+          style={{ display: 'block' }}
+          data-ad-client="ca-pub-8703960708388611"
+          data-ad-slot="LEFT_SLOT_ID"
+          data-ad-format="auto"
+          data-full-width-responsive="true"
+        ></ins>
+      </aside>
+
+      <div className="glass-container">
+        <h1>🕉️ Complete Vedic Astrological Profile</h1>
 
       <ProfileForm
         form={form}
@@ -187,6 +208,18 @@ function App() {
           </button>
         </section>
       )}
+      </div>
+
+      <aside className="ad-slot right-ad">
+        <ins
+          className="adsbygoogle"
+          style={{ display: 'block' }}
+          data-ad-client="ca-pub-8703960708388611"
+          data-ad-slot="RIGHT_SLOT_ID"
+          data-ad-format="auto"
+          data-full-width-responsive="true"
+        ></ins>
+      </aside>
     </div>
   );
 }
