@@ -103,6 +103,12 @@ function App() {
           setError(payload.detail);
         } else if (typeof payload === 'string') {
           setError(payload || res.statusText);
+        } else if (
+          payload &&
+          typeof payload === 'object' &&
+          Object.keys(payload).length === 0
+        ) {
+          setError(res.statusText || 'Unknown error');
         } else {
           setError(JSON.stringify(payload, null, 2));
         }
