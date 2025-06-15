@@ -20,7 +20,7 @@
     "frontend":"BROWSER=none WDS_SOCKET_PORT=0 vite --port 3000",
     "build":   "vite build",
     "preview": "vite preview",
-    "test":    "vitest",
+    "test":    "vitest run",
     "dev":     "concurrently \"npm:frontend\" \"npm:backend\"",
     "backend": "bash -lc \"source backend/venv/bin/activate && uvicorn backend.main:app --reload --host ${BACKEND_HOST:-0.0.0.0} --port ${BACKEND_PORT:-8000}\""
   },

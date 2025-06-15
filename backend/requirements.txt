@@ -2,7 +2,9 @@ fastapi
 uvicorn[standard]
 pydantic
 swisseph
+pyswisseph
 timezonefinder
 pytz
 geopy
 geopy[speedups]
+httpx
