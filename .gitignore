@@ -109,6 +109,7 @@ dist
 /.pnp
 .pnp.js
 backend/venv/
+backend/__pycache__
 *.env
 
 # testing
