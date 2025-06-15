@@ -23,7 +23,10 @@ export default function BasicInfo({ birth }) {
       )}
       <p>
         <strong>Coordinates:</strong>{" "}
-        {birth.latitude.toFixed(2)}°, {birth.longitude.toFixed(2)}°
+        {Math.abs(birth.latitude).toFixed(4)}°{" "}
+        {birth.latitude >= 0 ? "N" : "S"},{" "}
+        {Math.abs(birth.longitude).toFixed(4)}°{" "}
+        {birth.longitude >= 0 ? "E" : "W"}
       </p>
       <p>
         <strong>Timezone:</strong> {birth.timezone}
