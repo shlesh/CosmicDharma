@@ -17,8 +17,8 @@ _geopy = Nominatim(user_agent="vedic-astrology-geocoder")
 _tzfinder = TimezoneFinder()
 
 
-def geocode_location(query: str):
-    """Return (lat, lon, timezone) for a place string."""
+def _geocode_once(query: str):
+    """Return (lat, lon, tz) for a single geocode query."""
     lat = lon = tz = None
 
     if gmaps:
@@ -40,6 +40,22 @@ def geocode_location(query: str):
                 lat, lon = geo.latitude, geo.longitude
         except Exception as ex:  # pragma: no cover - network
             logger.warning("Geopy geocode failed: %s", ex)
+
+    return lat, lon, tz
+
+
+def geocode_location(query: str):
+    """Return (lat, lon, timezone) for a place string."""
+    tokens = [t.strip() for t in query.split(',')]
+    candidates = [', '.join(tokens[:i]) for i in range(len(tokens), 0, -1)]
+    if len(tokens) > 1:
+        candidates.extend(', '.join(tokens[i:]) for i in range(1, len(tokens)))
+
+    lat = lon = tz = None
+    for cand in candidates:
+        lat, lon, tz = _geocode_once(cand)
+        if lat is not None and lon is not None:
+            break
 
     if lat is None or lon is None:
         raise ValueError(f"Could not resolve location '{query}'")
