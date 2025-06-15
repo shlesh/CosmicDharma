@@ -13,7 +13,7 @@ DIVISIONAL_CHARTS = {
     'D20': 20, 'D30': 30, 'D40': 40, 'D45': 45, 'D60': 60
 }
 
-def calculate_all_divisional_charts(binfo, planets):
+def calculate_all_divisional_charts(planets):
     """
     Generate all standard divisional charts by dividing each 30° sign into n parts.
     Returns a dict of chart name to mapping of planet to sign number.
@@ -144,7 +144,7 @@ def interpret_divisional_charts(dcharts):
 
 # Combined analysis
 
-def full_analysis(binfo, planets, dashas, nak, houses, core, dcharts):
+def full_analysis(planets, dashas, nak, houses, core, dcharts):
     """
     Returns a dict of all textual interpretations.
     """

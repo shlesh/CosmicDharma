@@ -120,12 +120,12 @@ async def get_profile(request: ProfileRequest):
         binfo = get_birth_info(date=request.birth_date, time=request.birth_time,
                                latitude=lat, longitude=lon, timezone=tz)
         planets = calculate_planets(binfo)
-        dashas = calculate_vimshottari_dasha(binfo)
-        nak = get_nakshatra(binfo)
+        dashas = calculate_vimshottari_dasha(binfo, planets)
+        nak = get_nakshatra(planets)
         houses = analyze_houses(binfo, planets)
-        core = calculate_core_elements(binfo, planets)
-        dcharts = calculate_all_divisional_charts(binfo, planets)
-        analysis_results = full_analysis(binfo, planets, dashas, nak, houses, core, dcharts)
+        core = calculate_core_elements(planets)
+        dcharts = calculate_all_divisional_charts(planets)
+        analysis_results = full_analysis(planets, dashas, nak, houses, core, dcharts)
 
         return {
             "birthInfo": {**binfo, "latitude": lat, "longitude": lon, "timezone": tz},
