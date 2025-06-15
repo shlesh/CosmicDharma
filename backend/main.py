@@ -18,6 +18,13 @@ CONFIG = load_config()
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+# Simple in-memory cache for computed profiles
+_PROFILE_CACHE: dict[tuple, dict] = {}
+
+def clear_profile_cache():
+    """Utility for tests to clear the in-memory cache."""
+    _PROFILE_CACHE.clear()
+
 # Core astrology modules
 from backend.birth_info import get_birth_info
 from backend.planets import calculate_planets
@@ -100,6 +107,18 @@ class ProfileResponse(BaseModel):
 
 def _compute_vedic_profile(request: ProfileRequest):
     """Compute complete Vedic astrological profile."""
+    key = (
+        request.birth_date.isoformat(),
+        request.birth_time.isoformat(),
+        request.location.strip().lower(),
+        request.ayanamsa,
+        request.house_system,
+        request.node_type,
+    )
+
+    if CONFIG.get("cache_enabled", "true") == "true" and key in _PROFILE_CACHE:
+        logger.info("Cache hit for profile %s", key)
+        return _PROFILE_CACHE[key]
 
     # Geocoding
     loc_str = request.location.strip()
@@ -248,6 +267,8 @@ def _compute_vedic_profile(request: ProfileRequest):
         "ashtakavarga": ashtakavarga,
         "analysis": analysis_results,
     }
+    if CONFIG.get("cache_enabled", "true") == "true":
+        _PROFILE_CACHE[key] = result
     return result
 
 @app.post("/profile", response_model=ProfileResponse)

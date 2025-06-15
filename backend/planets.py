@@ -1,11 +1,19 @@
 # backend/planets.py - CORRECTED VERSION
 import swisseph as swe
+from functools import lru_cache
 
 def calculate_planets(binfo, *, node_type: str = "mean"):
     """
     Calculate sidereal planetary longitudes for Vedic astrology.
     Returns list of dicts: name, longitude, sign, degree_in_sign, nakshatra_pada.
     """
+    return _calculate_cached(
+        binfo['jd_ut'], binfo['sidereal_offset'], node_type
+    )
+
+
+@lru_cache(maxsize=128)
+def _calculate_cached(jd_ut: float, sidereal_offset: float, node_type: str):
     planet_ids = {
         'Sun': swe.SUN,
         'Moon': swe.MOON,
@@ -19,11 +27,11 @@ def calculate_planets(binfo, *, node_type: str = "mean"):
     
     results = []
     for name, pid in planet_ids.items():
-        values, _ = swe.calc_ut(binfo['jd_ut'], pid)
+        values, _ = swe.calc_ut(jd_ut, pid)
         lon, lat, dist = values[:3]
         
         # Apply ayanamsa to get sidereal longitude
-        sidereal_lon = (lon - binfo['sidereal_offset']) % 360
+        sidereal_lon = (lon - sidereal_offset) % 360
         
         sign = int(sidereal_lon // 30) + 1
         deg_in_sign = sidereal_lon % 30
@@ -41,7 +49,7 @@ def calculate_planets(binfo, *, node_type: str = "mean"):
             'degree': deg_in_sign,
             'nakshatra_index': nakshatra_idx,
             'pada': pada,
-            'retrograde': _is_retrograde(name, binfo['jd_ut'], pid)
+            'retrograde': _is_retrograde(name, jd_ut, pid)
         })
     
     # Add Ketu (always opposite to Rahu)
@@ -65,6 +73,11 @@ def calculate_planets(binfo, *, node_type: str = "mean"):
     })
     
     return results
+
+
+def clear_planet_cache():
+    """Clear cached planetary calculations (for tests)."""
+    _calculate_cached.cache_clear()
 
 def _is_retrograde(planet_name, jd, planet_id):
     """Check if planet is retrograde."""
