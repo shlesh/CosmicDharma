@@ -3,6 +3,7 @@ import './App.css';
 import ProfileForm from './components/ProfileForm';
 import BasicInfo from './components/BasicInfo';
 import ProfileSummary from './components/ProfileSummary';
+import CoreElements from './components/CoreElements';
 import PlanetTable from './components/PlanetTable';
 import DashaTable from './components/DashaTable';
 import HouseAnalysis from './components/HouseAnalysis';
@@ -155,6 +156,10 @@ function App() {
             }}
           />
           <ProfileSummary analysis={profile.analysis} />
+          <CoreElements
+            analysis={profile.analysis}
+            elements={profile.coreElements}
+          />
           <PlanetTable planets={profile.planetaryPositions} />
           <HouseAnalysis houses={profile.houses} />
           <DashaTable dasha={profile.vimshottariDasha} />
