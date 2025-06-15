@@ -1,17 +1,27 @@
-def calculate_divisional_charts(planets):
-    """
-    Generate major divisional (Varga) charts: Navamsa (D9), Dasamsa (D10).
-    Returns dict with 'D9' and 'D10' charts as mappings of planet to sign.
-    """
-    def varga_sign(lon, divisions):
-        # divide 360° into (12*divisions) equal parts
-        part = 360/(12*divisions)
-        idx = int(lon/part)
-        return (idx // divisions) + 1
-    d9 = {}
-    d10 = {}
-    for p in planets:
-        lon = p['longitude']
-        d9[p['name']] = varga_sign(lon, 9)
-        d10[p['name']] = varga_sign(lon, 10)
-    return {'D9': d9, 'D10': d10}
+"""Simple divisional chart calculations."""
+
+from .analysis import DIVISIONAL_CHARTS
+
+__all__ = ["calculate_basic_divisional_charts"]
+
+
+def _varga_sign(lon: float, divisions: int) -> int:
+    """Return sign number for a longitude in a divisional chart."""
+    part = 360 / (12 * divisions)
+    idx = int(lon / part)
+    return (idx // divisions) + 1
+
+
+def calculate_basic_divisional_charts(planets, charts=("D9", "D10")):
+    """Return mapping for selected divisional charts (prototype)."""
+    result = {}
+    for code in charts:
+        divisions = DIVISIONAL_CHARTS.get(code)
+        if not divisions:
+            continue
+        mapping = {}
+        for p in planets:
+            mapping[p["name"]] = _varga_sign(p["longitude"], divisions)
+        result[code] = mapping
+    return result
+
