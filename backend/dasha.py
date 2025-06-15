@@ -1,6 +1,6 @@
 from datetime import timedelta, datetime
 
-def calculate_vimshottari_dasha(binfo):
+def calculate_vimshottari_dasha(binfo, planets):
     """
     Generate Vimshottari Dasha sequence starting at birth.
     Each dasha: lord, start, end (dates).
@@ -13,7 +13,7 @@ def calculate_vimshottari_dasha(binfo):
     # sequence order
     order = ['Ketu','Venus','Sun','Moon','Mars','Rahu','Jupiter','Saturn','Mercury']
     # calculate fraction of first dasha elapsed at birth
-    moon = next(p for p in binfo.get('planetaryPositions', []) if p['name']=='Moon')
+    moon = next(p for p in planets if p['name'] == 'Moon')
     lon = moon['longitude']
     # find nakshatra position fraction
     frac = (lon % (360/27)) / (360/27)

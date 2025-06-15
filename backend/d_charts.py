@@ -1,4 +1,4 @@
-def calculate_divisional_charts(binfo, planets):
+def calculate_divisional_charts(planets):
     """
     Generate major divisional (Varga) charts: Navamsa (D9), Dasamsa (D10).
     Returns dict with 'D9' and 'D10' charts as mappings of planet to sign.

@@ -1,10 +1,10 @@
 from math import floor
 
-def get_nakshatra(binfo):
+def get_nakshatra(planets):
     """
     Determine Nakshatra and pada from Moon longitude.
     """
-    moon = next(p for p in binfo.get('planetaryPositions', []) if p['name']=='Moon')
+    moon = next(p for p in planets if p['name'] == 'Moon')
     lon = moon['longitude']
     nak_index = int(lon / (360/27))
     pada = int((lon % (360/27)) / ((360/27)/4)) + 1

@@ -1,4 +1,4 @@
-def calculate_core_elements(binfo, planets):
+def calculate_core_elements(planets):
     """
     Compute elemental balances based on signs of planets.
     Returns dict of five tattvas percentages.
@@ -15,3 +15,4 @@ def calculate_core_elements(binfo, planets):
     for k in elements:
         elements[k] = round((elements[k]/total)*100, 1)
     return elements
+

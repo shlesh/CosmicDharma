@@ -12,10 +12,9 @@ def get_birth_info(date, time, latitude, longitude, timezone):
     jd_ut = swe.julday(dt.year, dt.month, dt.day, dt.hour + dt.minute/60 + dt.second/3600)
     # set sidereal ayanamsha (Fagan/Bradley)
     swe.set_sid_mode(swe.SIDM_FAGAN_BRADLEY)
-    # compute ascendant
-    asc, mc = swe.houses(jd_ut, latitude, longitude)[0:2]
-    # compute house cusps
-    cusps = swe.houses(jd_ut, latitude, longitude)[1]
+    # compute houses and ascendant
+    cusps, ascmc = swe.houses(jd_ut, latitude, longitude)
+    asc = ascmc[0]
     return {
         "jd_ut": jd_ut,
         "ascendant": asc,
