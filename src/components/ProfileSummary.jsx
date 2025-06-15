@@ -1,5 +1,6 @@
 // src/components/ProfileSummary.jsx
 import React from 'react';
+import PropTypes from 'prop-types';
 
 // Presents key insights from the analysis at a glance.
 
@@ -18,3 +19,7 @@ export default function ProfileSummary({ analysis }) {
     </section>
   );
 }
+
+ProfileSummary.propTypes = {
+  analysis: PropTypes.object,
+};

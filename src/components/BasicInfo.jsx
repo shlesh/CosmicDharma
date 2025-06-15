@@ -1,5 +1,6 @@
 // src/components/BasicInfo.jsx
 import React from 'react';
+import PropTypes from 'prop-types';
 
 // Displays the birth data used for all calculations so users can verify
 // the core information driving their profile.
@@ -38,3 +39,14 @@ export default function BasicInfo({ birth }) {
     </section>
   );
 }
+
+BasicInfo.propTypes = {
+  birth: PropTypes.shape({
+    date: PropTypes.string,
+    time: PropTypes.string,
+    location: PropTypes.string,
+    latitude: PropTypes.number,
+    longitude: PropTypes.number,
+    timezone: PropTypes.string,
+  }),
+};
