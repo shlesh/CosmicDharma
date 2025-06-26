@@ -1,6 +1,6 @@
 # Vedic Astrology App
 
-This project contains a Next.js frontend and a FastAPI backend used to generate Vedic astrology profiles.
+This project contains a Next.js frontend and a FastAPI backend used to generate Vedic astrology profiles. It also features a simple blog where posts are written in Markdown, donor-only endpoints and an admin dashboard with basic metrics.
 
 ## Setup
 
@@ -49,6 +49,7 @@ PYTHONPATH=. python backend/seed_demo.py
 This creates two accounts:
 * **admin** / **admin** – full admin access
 * **user** / **password** – regular account with one post
+* **donor** / **donor** – donor account with access to extra prompts and reports
 
 ## Running the application
 
@@ -57,6 +58,13 @@ Run the helper script to install dependencies and launch the servers:
 ```bash
 ./scripts/dev.sh
 ```
+
+After the initial setup you can simply run:
+
+```bash
+npm run dev
+```
+to start the Next.js frontend and FastAPI backend concurrently.
 
 The frontend runs on port 3000 and uses environment variables to reach the backend on port 8000.
 
@@ -141,11 +149,11 @@ Repository structure
         FastAPI application with endpoints for astrology profile generation and blog post CRUD operations.
         Key files: main.py, auth.py, models.py, services/astro.py, db.py.
 
-        User model includes is_admin for admin-only post management.
+        User model includes `is_admin` for admin-only post management and `is_donor` for donor accounts.
 
         SQLite or external DB configured via DATABASE_URL.
 
-        Provides /register, /login, /posts, /admin/posts, etc.
+        Provides /register, /login, /posts, /admin/posts, /admin/metrics, etc.
 
     Frontend
 
@@ -153,7 +161,7 @@ Repository structure
 
         Blog-related pages:
 
-            /posts (listing), [id].js (view post), editor.js (create post with React Quill), admin.js (manage posts).
+            /posts (listing), [id].js (view post), editor.js (create Markdown post with React MDE), admin.js (manage posts and view metrics).
 
             /login and /register pages for user auth.
 
@@ -163,9 +171,11 @@ Repository structure
 
     Configuration and tooling
 
-        package.json with Next.js 15, React 19, React Quill for rich text editing, and Vitest for tests.
+        package.json with Next.js 15, React 19, React MDE for Markdown editing, and Vitest for tests.
 
         Python requirements and virtual environment under backend/.
+
+        scripts/dev.sh bootstraps dependencies and then runs both servers.
 
         CI workflows in .github/workflows/.
 
