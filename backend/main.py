@@ -1,13 +1,24 @@
 # backend/main.py - UPDATED WITH COMPLETE VEDIC FEATURES
 
 import logging
-from datetime import date as dt_date, time as dt_time
-from fastapi import FastAPI, HTTPException
+from datetime import date as dt_date, time as dt_time, datetime
+from fastapi import FastAPI, HTTPException, Depends, status, Response
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
+from fastapi.security import OAuth2PasswordRequestForm
 from pydantic import BaseModel, Field, ConfigDict
 from typing import Literal, Optional, Any
+from sqlalchemy.orm import Session
+
+from backend.db import Base, engine, get_session
+from backend.models import User, BlogPost
+from backend.auth import (
+    create_access_token,
+    get_password_hash,
+    authenticate_user,
+    get_current_user,
+)
 
 from backend.config import load_config
 from backend.geocoder import geocode_location
@@ -57,6 +68,8 @@ app.add_middleware(
     allow_methods=["*"], allow_headers=["*"],
 )
 
+Base.metadata.create_all(bind=engine)
+
 
 @app.exception_handler(RequestValidationError)
 async def validation_exception_handler(request, exc):
@@ -103,6 +116,34 @@ class ProfileResponse(BaseModel):
     bhavaBala: Optional[dict] = None
     ashtakavarga: Optional[dict] = None
     analysis: Optional[dict] = None
+
+
+class UserCreate(BaseModel):
+    username: str
+    email: str
+    password: str
+
+
+class Token(BaseModel):
+    access_token: str
+    token_type: str = "bearer"
+
+
+class BlogPostCreate(BaseModel):
+    title: str
+    content: str
+
+
+class BlogPostOut(BaseModel):
+    id: int
+    title: str
+    content: str
+    created_at: datetime
+    updated_at: datetime
+    owner: str
+
+    class Config:
+        orm_mode = True
 
 
 def _compute_vedic_profile(request: ProfileRequest):
@@ -333,3 +374,131 @@ async def get_strengths(request: ProfileRequest):
 async def health_check():
     """Health check endpoint."""
     return {"status": "healthy", "version": "2.0"}
+
+
+@app.post("/register", response_model=Token)
+def register(user: UserCreate, db: Session = Depends(get_session)):
+    if db.query(User).filter(
+        (User.username == user.username) | (User.email == user.email)
+    ).first():
+        raise HTTPException(status_code=400, detail="User already exists")
+    db_user = User(
+        username=user.username,
+        email=user.email,
+        hashed_password=get_password_hash(user.password),
+    )
+    db.add(db_user)
+    db.commit()
+    db.refresh(db_user)
+    token = create_access_token({"sub": db_user.username})
+    return {"access_token": token, "token_type": "bearer"}
+
+
+@app.post("/login", response_model=Token)
+def login(
+    form_data: OAuth2PasswordRequestForm = Depends(),
+    db: Session = Depends(get_session),
+):
+    user = authenticate_user(db, form_data.username, form_data.password)
+    if not user:
+        raise HTTPException(status_code=400, detail="Incorrect username or password")
+    token = create_access_token({"sub": user.username})
+    return {"access_token": token, "token_type": "bearer"}
+
+
+@app.post("/logout")
+def logout():
+    return {"message": "Logged out"}
+
+
+@app.post("/posts", response_model=BlogPostOut)
+def create_post(
+    post: BlogPostCreate,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_session),
+):
+    db_post = BlogPost(title=post.title, content=post.content, owner=current_user)
+    db.add(db_post)
+    db.commit()
+    db.refresh(db_post)
+    return BlogPostOut(
+        id=db_post.id,
+        title=db_post.title,
+        content=db_post.content,
+        created_at=db_post.created_at,
+        updated_at=db_post.updated_at,
+        owner=current_user.username,
+    )
+
+
+@app.get("/posts", response_model=list[BlogPostOut])
+def list_posts(db: Session = Depends(get_session)):
+    posts = db.query(BlogPost).order_by(BlogPost.created_at.desc()).all()
+    return [
+        BlogPostOut(
+            id=p.id,
+            title=p.title,
+            content=p.content,
+            created_at=p.created_at,
+            updated_at=p.updated_at,
+            owner=p.owner.username,
+        )
+        for p in posts
+    ]
+
+
+@app.get("/posts/{post_id}", response_model=BlogPostOut)
+def get_post(post_id: int, db: Session = Depends(get_session)):
+    p = db.query(BlogPost).get(post_id)
+    if not p:
+        raise HTTPException(status_code=404, detail="Post not found")
+    return BlogPostOut(
+        id=p.id,
+        title=p.title,
+        content=p.content,
+        created_at=p.created_at,
+        updated_at=p.updated_at,
+        owner=p.owner.username,
+    )
+
+
+@app.put("/posts/{post_id}", response_model=BlogPostOut)
+def update_post(
+    post_id: int,
+    post: BlogPostCreate,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_session),
+):
+    db_post = db.query(BlogPost).get(post_id)
+    if not db_post:
+        raise HTTPException(status_code=404, detail="Post not found")
+    if db_post.user_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Not allowed")
+    db_post.title = post.title
+    db_post.content = post.content
+    db.commit()
+    db.refresh(db_post)
+    return BlogPostOut(
+        id=db_post.id,
+        title=db_post.title,
+        content=db_post.content,
+        created_at=db_post.created_at,
+        updated_at=db_post.updated_at,
+        owner=current_user.username,
+    )
+
+
+@app.delete("/posts/{post_id}", status_code=204)
+def delete_post(
+    post_id: int,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_session),
+):
+    db_post = db.query(BlogPost).get(post_id)
+    if not db_post:
+        raise HTTPException(status_code=404, detail="Post not found")
+    if db_post.user_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Not allowed")
+    db.delete(db_post)
+    db.commit()
+    return Response(status_code=204)
