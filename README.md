@@ -13,6 +13,13 @@ npm install --legacy-peer-deps
 ```
 Run this after cloning to install all runtime and development packages.
 
+### Tailwind CSS
+
+Tailwind is configured in `tailwind.config.js` and the directives are imported
+in `styles/globals.css`. Next.js compiles the CSS via PostCSS so no extra build
+step is required. Run `npm run dev` while developing and `npm run build` to
+produce the optimized styles for production.
+
 ### Setup Python environment
 
 ```bash

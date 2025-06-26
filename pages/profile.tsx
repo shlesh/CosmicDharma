@@ -83,7 +83,7 @@ export default function ProfilePage() {
     <main className="page-wrapper">
       <h1>Vedic Astrology</h1>
       <ProfileForm form={form} onChange={handleChange} onSubmit={handleSubmit} loading={loading} />
-      {error && <p style={{ color: 'red' }}>{error}</p>}
+      {error && <p className="text-red-500">{error}</p>}
       {profile && (
         <section>
           <BasicInfo birth={{ ...profile.birthInfo, ...form }} />
