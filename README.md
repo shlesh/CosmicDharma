@@ -46,6 +46,7 @@ reads these environment variables:
 * `NODE_TYPE` – lunar node calculation (`mean` or `true`).
 * `HOUSE_SYSTEM` – astrological house system (`whole_sign` by default).
 * `CACHE_ENABLED` – enable or disable caching.
+* `REDIS_URL` – connection string for Redis used by the background job queue.
 
 To seed the database with demo accounts and posts run from the repository root:
 
@@ -72,6 +73,13 @@ After the initial setup you can simply run:
 npm run dev
 ```
 to start the Next.js frontend and FastAPI backend concurrently.
+
+Background profile jobs are handled by an RQ worker. Start one in a
+separate terminal:
+
+```bash
+rq worker profiles
+```
 
 The frontend runs on port 3000 and uses environment variables to reach the backend on port 8000.
 

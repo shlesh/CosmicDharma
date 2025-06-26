@@ -7,6 +7,7 @@ DEFAULTS = {
     "node_type": "mean",
     "house_system": "whole_sign",
     "cache_enabled": "true",
+    "redis_url": "redis://localhost:6379/0",
 }
 
 _cfg = None
