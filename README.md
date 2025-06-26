@@ -57,6 +57,9 @@ npm run dev
 
 The frontend runs on port 3000 and uses environment variables to reach the backend on port 8000.
 
+Set `NEXT_PUBLIC_API_BASE_URL` (for example in `.env.local`) to the URL of an
+external backend if you want the frontend to reach it during development.
+
 ## Tests
 
 Install the extra Python packages used during testing and run the frontend and backend tests separately or together using NPM scripts:
