@@ -14,9 +14,9 @@
     "react": "^18.2.0",
     "react-chartjs-2": "^5.3.0",
     "react-dom": "^18.2.0",
-    "react-router-dom": "^6.22.0",
     "react-quill": "^2.0.0",
-    "web-vitals": "^3.1.0"
+    "web-vitals": "^3.1.0",
+    "next": "14.2.3"
   },
   "overrides": {
     "@svgr/webpack": "^8.0.1",
@@ -24,12 +24,10 @@
     "postcss": "^8.4.31"
   },
   "scripts": {
-    "start": "BROWSER=none WDS_SOCKET_PORT=0 vite --port 3000",
-    "frontend": "BROWSER=none WDS_SOCKET_PORT=0 vite --port 3000",
-    "build": "vite build",
-    "preview": "vite preview",
+    "start": "next start",
+    "build": "next build",
     "test": "vitest run",
-    "dev": "concurrently \"npm:frontend\" \"npm:backend\"",
+    "dev": "concurrently \"next dev\" \"npm:backend\"",
     "backend": "bash -lc \"source backend/venv/bin/activate && uvicorn backend.main:app --reload --host ${BACKEND_HOST:-0.0.0.0} --port ${BACKEND_PORT:-8000}\""
   },
   "eslintConfig": {
@@ -51,12 +49,10 @@
     ]
   },
   "devDependencies": {
-    "@vitejs/plugin-react": "^4.1.1",
     "autoprefixer": "^10.4.21",
     "concurrently": "^8.2.2",
     "jsdom": "^22.1.0",
     "tailwindcss": "^4.1.10",
-    "vite": "^4.5.9",
     "vitest": "^0.34.6"
   }
 }

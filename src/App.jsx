@@ -1,14 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import useFormFields from './hooks/useFormFields';
 import './App.css';
-import ProfileForm from './components/ProfileForm';
-import BasicInfo from './components/BasicInfo';
-import ProfileSummary from './components/ProfileSummary';
-import CoreElements from './components/CoreElements';
-import PlanetTable from './components/PlanetTable';
-import DashaTable from './components/DashaTable';
-import DashaChart from './components/DashaChart';
-import HouseAnalysis from './components/HouseAnalysis';
+import ProfileForm from '../next-app/components/ProfileForm';
+import BasicInfo from '../next-app/components/BasicInfo';
+import ProfileSummary from '../next-app/components/ProfileSummary';
+import CoreElements from '../next-app/components/CoreElements';
+import PlanetTable from '../next-app/components/PlanetTable';
+import DashaTable from '../next-app/components/DashaTable';
+import DashaChart from '../next-app/components/DashaChart';
+import HouseAnalysis from '../next-app/components/HouseAnalysis';
 import { generatePdf } from './pdf';
 
 function App() {
@@ -53,7 +53,7 @@ function App() {
   const [jobId, setJobId] = useState(null);
 
   const { name, birthDate, birthTime, location } = form;
-  const API_BASE = import.meta.env.VITE_API_BASE_URL || '';
+  const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || '';
 
   const handleSubmit = async (e) => {
     e.preventDefault();
