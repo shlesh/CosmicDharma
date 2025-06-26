@@ -91,19 +91,19 @@ password to finish the process.
 
 ## Running the application
 
-Run the helper script during the first setup:
+Run the helper script during the first setup. It installs Node and Python dependencies if needed and starts the frontend, backend and worker:
 
 ```bash
 ./scripts/dev.sh
 ```
 
-The script installs Node and Python dependencies if they are missing and then runs
+Internally it runs
 
 ```bash
 npx concurrently "npm run dev" "npm run worker"
 ```
 
-to start the Next.js frontend, FastAPI backend and RQ worker. After the initial setup you can simply run:
+to launch the Next.js frontend, FastAPI backend and RQ worker. After the initial setup you can simply run:
 
 ```bash
 npm run dev
@@ -158,22 +158,26 @@ adjust `DATABASE_URL` or `CACHE_URL` there as needed.
 
 ## Tests
 
-Install the extra Python packages used during testing and run the frontend and backend tests separately or together using NPM scripts:
+Install the extra Python packages used during testing:
 
 ```bash
 pip install -r backend/requirements-dev.txt
 source backend/venv/bin/activate
 ```
 
+
+Use the following scripts to run the tests:
+
 ```bash
-# frontend only
-npm run test:frontend
+npm run test:frontend   # frontend only
+npm run test:backend    # backend only
+npm run test:all        # both suites
+```
 
-# backend only
-npm run test:backend
+Backend tests can also be run directly:
 
-# run both suites
-npm run test:all
+```bash
+PYTHONPATH=. pytest -q
 ```
 
 The `pytest.ini` file stores default options for `pytest` and Vitest outputs
