@@ -52,10 +52,10 @@ This creates two accounts:
 
 ## Running the application
 
-Start both servers in development mode:
+Run the helper script to install dependencies and launch the servers:
 
 ```bash
-npm run dev
+./scripts/dev.sh
 ```
 
 The frontend runs on port 3000 and uses environment variables to reach the backend on port 8000.
