@@ -2,11 +2,19 @@
 
 This project contains a Next.js frontend and a FastAPI backend used to generate Vedic astrology profiles. It also features a simple blog where posts are written in Markdown, donor-only endpoints and an admin dashboard with basic metrics.
 
+## Features
+
+* Astrology profile generation with an optional background job queue
+* Blog with a Markdown editor and admin metrics
+* Donor-only prompts and reports
+* Password reset functionality
+* Progressive Web App support
+
 ## Setup
 
 ### Install Node dependencies
 
-Ensure you have **Node.js 18** or later installed. Install packages with:
+Install **Node.js 18** or later (for example via `nvm` or your package manager) and run:
 
 ```bash
 npm install --legacy-peer-deps
@@ -21,6 +29,8 @@ step is required. Run `npm run dev` while developing and `npm run build` to
 produce the optimized styles for production.
 
 ### Setup Python environment
+
+Install **Python 3** and create a virtual environment under `backend/venv`:
 
 ```bash
 cd backend
@@ -54,6 +64,10 @@ reads these environment variables:
 * `SMTP_USER` – SMTP username if authentication is required.
 * `SMTP_PASS` – SMTP password for the above user.
 * `FROM_EMAIL` – default sender address for outgoing mail.
+
+For the Next.js frontend, create `.env.local` and set `NEXT_PUBLIC_API_BASE_URL`
+to the URL of your backend. During local development this is usually
+`http://localhost:8000`.
 
 To seed the database with demo accounts and posts run from the repository root:
 
@@ -89,12 +103,12 @@ npm run worker
 ```
 
 The frontend runs on port 3000 and uses environment variables to reach the backend on port 8000.
+Create a `.env.local` file if it doesn't exist and set `NEXT_PUBLIC_API_BASE_URL` to the URL of the backend.
+For local development use:
 
-Set `NEXT_PUBLIC_API_BASE_URL` (for example in `.env.local`) to the URL of an
-external backend if you want the frontend to reach it during development.
-
-add this to .env.local(create the file if it doesnt exist)
-`NEXT_PUBLIC_API_BASE_URL=http://localhost:8000`
+```bash
+NEXT_PUBLIC_API_BASE_URL=http://localhost:8000
+```
 
 ## Docker Compose
 
@@ -193,6 +207,7 @@ First. Deploys on Netlify automatically serve the generated service worker.
 1. Install dependencies and set up the Python virtual environment as described above.
 2. Run `npm run test:all` and ensure all tests pass before opening a pull request.
 3. Format any new code consistently with the existing style.
+4. Write commit messages in the imperative mood, keep the subject under 72 characters and add a body if more context is needed.
 
 
 Repository structure
