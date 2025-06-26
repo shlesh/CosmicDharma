@@ -76,6 +76,12 @@ class Token(BaseModel):
     token_type: str = "bearer"
 
 
+class UserOut(BaseModel):
+    username: str
+    email: str
+    is_admin: bool
+
+
 class BlogPostCreate(BaseModel):
     title: str
     content: str
@@ -209,6 +215,15 @@ def logout():
     return {"message": "Logged out"}
 
 
+@app.get("/users/me", response_model=UserOut)
+def read_current_user(current_user: User = Depends(get_current_user)):
+    return UserOut(
+        username=current_user.username,
+        email=current_user.email,
+        is_admin=current_user.is_admin,
+    )
+
+
 @app.post("/posts", response_model=BlogPostOut)
 def create_post(
     post: BlogPostCreate,
@@ -270,7 +285,7 @@ def update_post(
     db_post = db.query(BlogPost).get(post_id)
     if not db_post:
         raise HTTPException(status_code=404, detail="Post not found")
-    if db_post.user_id != current_user.id:
+    if db_post.user_id != current_user.id and not current_user.is_admin:
         raise HTTPException(status_code=403, detail="Not allowed")
     db_post.title = post.title
     db_post.content = post.content
@@ -295,8 +310,71 @@ def delete_post(
     db_post = db.query(BlogPost).get(post_id)
     if not db_post:
         raise HTTPException(status_code=404, detail="Post not found")
-    if db_post.user_id != current_user.id:
+    if db_post.user_id != current_user.id and not current_user.is_admin:
         raise HTTPException(status_code=403, detail="Not allowed")
+    db.delete(db_post)
+    db.commit()
+    return Response(status_code=204)
+
+
+def require_admin(current_user: User = Depends(get_current_user)) -> User:
+    if not current_user.is_admin:
+        raise HTTPException(status_code=403, detail="Admin access required")
+    return current_user
+
+
+@app.get("/admin/posts", response_model=list[BlogPostOut])
+def admin_list_posts(
+    current_user: User = Depends(require_admin),
+    db: Session = Depends(get_session),
+):
+    posts = db.query(BlogPost).order_by(BlogPost.created_at.desc()).all()
+    return [
+        BlogPostOut(
+            id=p.id,
+            title=p.title,
+            content=p.content,
+            created_at=p.created_at,
+            updated_at=p.updated_at,
+            owner=p.owner.username,
+        )
+        for p in posts
+    ]
+
+
+@app.put("/admin/posts/{post_id}", response_model=BlogPostOut)
+def admin_update_post(
+    post_id: int,
+    post: BlogPostCreate,
+    current_user: User = Depends(require_admin),
+    db: Session = Depends(get_session),
+):
+    db_post = db.query(BlogPost).get(post_id)
+    if not db_post:
+        raise HTTPException(status_code=404, detail="Post not found")
+    db_post.title = post.title
+    db_post.content = post.content
+    db.commit()
+    db.refresh(db_post)
+    return BlogPostOut(
+        id=db_post.id,
+        title=db_post.title,
+        content=db_post.content,
+        created_at=db_post.created_at,
+        updated_at=db_post.updated_at,
+        owner=db_post.owner.username,
+    )
+
+
+@app.delete("/admin/posts/{post_id}", status_code=204)
+def admin_delete_post(
+    post_id: int,
+    current_user: User = Depends(require_admin),
+    db: Session = Depends(get_session),
+):
+    db_post = db.query(BlogPost).get(post_id)
+    if not db_post:
+        raise HTTPException(status_code=404, detail="Post not found")
     db.delete(db_post)
     db.commit()
     return Response(status_code=204)
