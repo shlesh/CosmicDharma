@@ -59,7 +59,11 @@ The frontend runs on port 3000 and uses environment variables to reach the backe
 
 ## Tests
 
-Run the frontend and backend tests separately or together using NPM scripts:
+Install the extra Python packages used during testing and run the frontend and backend tests separately or together using NPM scripts:
+
+```bash
+pip install -r backend/requirements-dev.txt
+```
 
 ```bash
 # frontend only
