@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { useToast } from './ToastProvider';
 
 interface Post {
   id: number;
@@ -32,6 +33,7 @@ export default function AdminDashboard() {
   const [form, setForm] = useState<{ title: string; content: string }>({ title: '', content: '' });
   const [selectedTab, setSelectedTab] = useState('write');
   const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+  const toast = useToast();
   const headers = {
     'Content-Type': 'application/json',
     Authorization: `Bearer ${token}`,
@@ -42,11 +44,11 @@ export default function AdminDashboard() {
     apiFetch('admin/posts', { headers })
       .then(res => res.json())
       .then(setPosts)
-      .catch(() => setPosts([]));
+      .catch(() => toast('Failed to load posts'));
     apiFetch('admin/users', { headers })
       .then(res => res.json())
       .then(setUsers)
-      .catch(() => setUsers([]));
+      .catch(() => toast('Failed to load users'));
   };
 
   useEffect(() => {
@@ -71,7 +73,7 @@ export default function AdminDashboard() {
       setEditingId(null);
       load();
     } else {
-      alert('Save failed');
+      toast('Save failed');
     }
   };
 
@@ -82,7 +84,7 @@ export default function AdminDashboard() {
       headers,
     });
     if (res.ok) load();
-    else alert('Delete failed');
+    else toast('Delete failed');
   };
 
   if (!token) return <p>Please login.</p>;

@@ -2,6 +2,7 @@ import { useRouter } from 'next/router';
 import { useEffect, useState } from 'react';
 import ReactMarkdown from 'react-markdown';
 import apiFetch from '../../util/api';
+import { useToast } from '../../components/ToastProvider';
 
 interface BlogPost {
   id: number;
@@ -11,6 +12,7 @@ interface BlogPost {
 
 export default function PostViewPage() {
   const router = useRouter();
+  const toast = useToast();
   const { id } = router.query;
   const [post, setPost] = useState<BlogPost | null>(null);
 
@@ -19,7 +21,10 @@ export default function PostViewPage() {
     apiFetch(`posts/${id}`)
       .then(res => res.json())
       .then(data => setPost(data))
-      .catch(() => setPost(null));
+      .catch(() => {
+        toast('Failed to load post');
+        setPost(null);
+      });
   }, [id]);
 
   if (!post) return <p>Loading...</p>;

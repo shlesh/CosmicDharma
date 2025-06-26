@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import apiFetch from '../util/api';
+import { useToast } from './ToastProvider';
 
 export interface BlogPost {
   id: number;
@@ -13,13 +14,14 @@ export interface PostListProps {
 
 export default function PostList({ posts: initialPosts }: PostListProps = {}) {
   const [posts, setPosts] = useState<BlogPost[]>(initialPosts ?? []);
+  const toast = useToast();
 
   useEffect(() => {
     if (initialPosts) return;
     apiFetch('posts')
       .then(res => res.json())
       .then(data => setPosts(data))
-      .catch(() => setPosts([]));
+      .catch(() => toast('Failed to load posts'));
   }, [initialPosts]);
 
   return (

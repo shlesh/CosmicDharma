@@ -1,18 +1,24 @@
 import { useState } from 'react';
 import apiFetch from '../util/api';
+import { useToast } from '../components/ToastProvider';
 
 export default function RequestResetPage() {
   const [email, setEmail] = useState('');
   const [done, setDone] = useState(false);
+  const toast = useToast();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    await apiFetch('/request-reset', {
+    const res = await apiFetch('/request-reset', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email })
     });
-    setDone(true);
+    if (res.ok) {
+      setDone(true);
+    } else {
+      toast('Request failed');
+    }
   };
 
   if (done) return <p>Check your email for a reset token.</p>;

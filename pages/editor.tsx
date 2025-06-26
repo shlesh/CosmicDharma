@@ -4,6 +4,7 @@ import 'react-mde/lib/styles/css/react-mde-all.css';
 import ReactMarkdown from 'react-markdown';
 import { useRouter } from 'next/router';
 import apiFetch from '../util/api';
+import { useToast } from '../components/ToastProvider';
 
 interface EditorForm {
   title: string;
@@ -12,6 +13,7 @@ interface EditorForm {
 
 export default function PostEditorPage() {
   const router = useRouter();
+  const toast = useToast();
   const [form, setForm] = useState<EditorForm>({ title: '', content: '' });
   const [selectedTab, setSelectedTab] = useState<'write' | 'preview'>('write');
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) =>
@@ -33,7 +35,7 @@ export default function PostEditorPage() {
       const data = await res.json();
       router.push(`/posts/${data.id}`);
     } else {
-      alert('Save failed');
+      toast('Save failed');
     }
   };
 

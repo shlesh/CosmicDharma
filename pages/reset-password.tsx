@@ -1,9 +1,11 @@
 import { useState } from 'react';
 import { useRouter } from 'next/router';
 import apiFetch from '../util/api';
+import { useToast } from '../components/ToastProvider';
 
 export default function ResetPasswordPage() {
   const router = useRouter();
+  const toast = useToast();
   const [form, setForm] = useState({ token: '', new_password: '' });
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) =>
@@ -19,7 +21,7 @@ export default function ResetPasswordPage() {
     if (res.ok) {
       router.push('/login');
     } else {
-      alert('Reset failed');
+      toast('Reset failed');
     }
   };
 

@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/router';
 import apiFetch from '../util/api';
+import { useToast } from '../components/ToastProvider';
 
 interface RegisterForm {
   username: string;
@@ -10,6 +11,7 @@ interface RegisterForm {
 
 export default function RegisterPage() {
   const router = useRouter();
+  const toast = useToast();
   const [form, setForm] = useState<RegisterForm>({ username: '', email: '', password: '' });
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) =>
     setForm({ ...form, [e.target.name]: e.target.value });
@@ -26,7 +28,7 @@ export default function RegisterPage() {
       localStorage.setItem('token', data.access_token);
       router.push('/posts');
     } else {
-      alert('Registration failed');
+      toast('Registration failed');
     }
   };
 
