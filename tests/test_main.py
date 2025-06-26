@@ -270,3 +270,38 @@ def test_admin_metrics_and_donor_endpoints():
     resp = client.get("/reports", headers={"Authorization": f"Bearer {token_donor}"})
     assert resp.status_code == 200 and resp.json() == {"reports": []}
 
+
+def test_yogas_route(monkeypatch):
+    monkeypatch.setattr(main, "compute_vedic_profile", lambda req: {
+        "yogas": {"TestYoga": {}},
+        "analysis": {"yogas": {"TestYoga": {}}}
+    })
+    resp = client.post(
+        "/yogas",
+        json={"date": "2020-01-01", "time": "12:00:00", "location": "Delhi"},
+    )
+    assert resp.status_code == 200
+    data = _parse_response(resp.json())
+    assert data.yogas == {"TestYoga": {}}
+    assert data.analysis == {"TestYoga": {}}
+
+
+def test_strengths_route(monkeypatch):
+    monkeypatch.setattr(main, "compute_vedic_profile", lambda req: {
+        "shadbala": {"Sun": 1},
+        "bhavaBala": {"1": 10}
+    })
+    resp = client.post(
+        "/strengths",
+        json={"date": "2020-01-01", "time": "12:00:00", "location": "Delhi"},
+    )
+    assert resp.status_code == 200
+    data = _parse_response(resp.json())
+    assert data.shadbala == {"Sun": 1}
+    assert data.bhavaBala == {"1": 10}
+
+
+def test_health_route():
+    resp = client.get("/health")
+    assert resp.status_code == 200
+    assert resp.json()["status"] == "healthy"
