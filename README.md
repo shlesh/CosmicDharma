@@ -11,6 +11,7 @@ Ensure you have **Node.js 18** or later installed. Install packages with:
 ```bash
 npm install --legacy-peer-deps
 ```
+Run this after cloning to install all runtime and development packages.
 
 ### Setup Python environment
 
@@ -19,6 +20,7 @@ cd backend
 python3 -m venv venv
 source venv/bin/activate
 pip install -r requirements.txt
+pip install -r requirements-dev.txt
 cd ..
 ```
 Activate this environment whenever you run tests or start the backend.
