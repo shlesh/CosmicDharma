@@ -161,11 +161,11 @@ Repository structure
 
         Blog-related pages:
 
-            /posts (listing), [id].js (view post), editor.js (create Markdown post with React MDE), admin.js (manage posts and view metrics).
+            /posts (listing), [id].tsx (view post), editor.tsx (create Markdown post with React MDE), admin.tsx (manage posts and view metrics).
 
             /login and /register pages for user auth.
 
-        Util functions for API calls in util/api.js.
+        Util functions for API calls in util/api.ts.
 
         Global CSS styles in styles/.
 

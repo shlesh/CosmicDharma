@@ -1,9 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { fetchJson } from '../../util/api';
 
+interface DashboardUser {
+  is_admin?: boolean;
+  is_donor?: boolean;
+  [key: string]: unknown;
+}
+
 export default function DashboardPage() {
-  const [user, setUser] = useState(null);
-  const [tab, setTab] = useState('Profile');
+  const [user, setUser] = useState<DashboardUser | null>(null);
+  const [tab, setTab] = useState<string>('Profile');
   const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
 
   useEffect(() => {

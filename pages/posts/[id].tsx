@@ -3,10 +3,16 @@ import { useEffect, useState } from 'react';
 import ReactMarkdown from 'react-markdown';
 import apiFetch from '../../util/api';
 
+interface BlogPost {
+  id: number;
+  title: string;
+  content: string;
+}
+
 export default function PostViewPage() {
   const router = useRouter();
   const { id } = router.query;
-  const [post, setPost] = useState(null);
+  const [post, setPost] = useState<BlogPost | null>(null);
 
   useEffect(() => {
     if (!id) return;

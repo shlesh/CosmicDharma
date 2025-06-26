@@ -2,8 +2,13 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import apiFetch from '../../util/api';
 
+interface BlogPost {
+  id: number;
+  title: string;
+}
+
 export default function PostListPage() {
-  const [posts, setPosts] = useState([]);
+  const [posts, setPosts] = useState<BlogPost[]>([]);
 
   useEffect(() => {
     apiFetch('posts')

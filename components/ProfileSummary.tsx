@@ -1,10 +1,13 @@
 // src/components/ProfileSummary.jsx
 import React from 'react';
-import PropTypes from 'prop-types';
+
+export interface ProfileSummaryProps {
+  analysis?: { nakshatra?: { nakshatra: string; pada: number; description: string } } | null;
+}
 
 // Presents key insights from the analysis at a glance.
 
-export default function ProfileSummary({ analysis }) {
+export default function ProfileSummary({ analysis }: ProfileSummaryProps) {
   if (!analysis) return null;
   const nak = analysis.nakshatra;
   return (
@@ -19,7 +22,3 @@ export default function ProfileSummary({ analysis }) {
     </section>
   );
 }
-
-ProfileSummary.propTypes = {
-  analysis: PropTypes.object,
-};

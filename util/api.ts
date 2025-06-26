@@ -1,4 +1,4 @@
-export default function apiFetch(path, options = {}) {
+export default function apiFetch(path: string, options: RequestInit = {}): Promise<Response> {
   const base = process.env.NEXT_PUBLIC_API_BASE_URL;
   const prefix = base ? base.replace(/\/$/, '') : '';
   const urlPath = path.startsWith('/') ? path : `/${path}`;
@@ -12,16 +12,17 @@ export default function apiFetch(path, options = {}) {
  * @param {RequestInit} [options] - fetch options
  * @returns {Promise<any>} - parsed JSON body
  */
-export async function fetchJson(path, options = {}) {
+export async function fetchJson<T = unknown>(path: string, options: RequestInit = {}): Promise<T> {
   const res = await apiFetch(path, options);
-  let data;
+  let data: T;
   try {
     data = await res.json();
   } catch {
     throw new Error('Invalid JSON response');
   }
   if (!res.ok) {
-    throw new Error(data.detail || res.statusText);
+    const err = (data as any as { detail?: string }).detail ?? res.statusText;
+    throw new Error(err);
   }
   return data;
 }

@@ -1,9 +1,13 @@
 import React from 'react';
-import PropTypes from 'prop-types';
+
+export interface CoreElementsProps {
+  analysis?: Record<string, unknown> | null;
+  elements?: Record<string, unknown> | null;
+}
 
 // Shows the balance of the four classical elements based on the user's chart.
 
-export default function CoreElements({ analysis, elements }) {
+export default function CoreElements({ analysis, elements }: CoreElementsProps) {
   const data =
     (analysis && (analysis.coreElements || analysis.core_elements)) ||
     elements;
@@ -33,8 +37,3 @@ export default function CoreElements({ analysis, elements }) {
     </section>
   );
 }
-
-CoreElements.propTypes = {
-  analysis: PropTypes.object,
-  elements: PropTypes.object,
-};

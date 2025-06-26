@@ -1,10 +1,19 @@
 // src/components/PlanetTable.jsx
 import React from 'react';
-import PropTypes from 'prop-types';
+
+export interface PlanetData {
+  name: string;
+  sign: string;
+  degree: number;
+}
+
+export interface PlanetTableProps {
+  planets?: PlanetData[];
+}
 
 // Lists where each planet sits in the zodiac at your time of birth.
 
-export default function PlanetTable({ planets }) {
+export default function PlanetTable({ planets }: PlanetTableProps) {
   if (!Array.isArray(planets) || planets.length === 0) return null;
   return (
     <section className="mb-6">
@@ -31,13 +40,3 @@ export default function PlanetTable({ planets }) {
     </section>
   );
 }
-
-PlanetTable.propTypes = {
-  planets: PropTypes.arrayOf(
-    PropTypes.shape({
-      name: PropTypes.string.isRequired,
-      sign: PropTypes.string.isRequired,
-      degree: PropTypes.number.isRequired,
-    })
-  ),
-};

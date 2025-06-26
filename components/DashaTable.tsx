@@ -1,10 +1,19 @@
 // src/components/DashaTable.jsx
 import React from 'react';
-import PropTypes from 'prop-types';
+
+export interface DashaPeriod {
+  lord: string;
+  start: string;
+  end: string;
+}
+
+export interface DashaTableProps {
+  dasha?: DashaPeriod[];
+}
 
 // Tabular listing of each planetary period with start and end dates.
 
-export default function DashaTable({ dasha }) {
+export default function DashaTable({ dasha }: DashaTableProps) {
   if (!Array.isArray(dasha) || dasha.length === 0) return null;
   return (
     <section className="mb-6">
@@ -31,13 +40,3 @@ export default function DashaTable({ dasha }) {
     </section>
   );
 }
-
-DashaTable.propTypes = {
-  dasha: PropTypes.arrayOf(
-    PropTypes.shape({
-      lord: PropTypes.string.isRequired,
-      start: PropTypes.string.isRequired,
-      end: PropTypes.string.isRequired,
-    })
-  ),
-};

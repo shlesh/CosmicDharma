@@ -1,10 +1,23 @@
 // src/components/ProfileForm.jsx
 import React from 'react';
-import PropTypes from 'prop-types';
+
+export interface ProfileFormState {
+  name: string;
+  birthDate: string;
+  birthTime: string;
+  location: string;
+}
+
+export interface ProfileFormProps {
+  form: ProfileFormState;
+  onChange: React.ChangeEventHandler<HTMLInputElement>;
+  onSubmit: React.FormEventHandler<HTMLFormElement>;
+  loading?: boolean;
+}
 
 // Collects birth information from the visitor to generate their horoscope.
 
-export default function ProfileForm({ form, onChange, onSubmit, loading }) {
+export default function ProfileForm({ form, onChange, onSubmit, loading }: ProfileFormProps) {
   return (
     <form onSubmit={onSubmit} className="mb-6 space-y-4">
       <p className="help-text">Fill out your birth details to generate a personalized chart.</p>
@@ -62,15 +75,3 @@ export default function ProfileForm({ form, onChange, onSubmit, loading }) {
     </form>
   );
 }
-
-ProfileForm.propTypes = {
-  form: PropTypes.shape({
-    name: PropTypes.string,
-    birthDate: PropTypes.string,
-    birthTime: PropTypes.string,
-    location: PropTypes.string,
-  }).isRequired,
-  onChange: PropTypes.func.isRequired,
-  onSubmit: PropTypes.func.isRequired,
-  loading: PropTypes.bool,
-};
