@@ -34,7 +34,8 @@
     "test:backend": "PYTHONPATH=. pytest -q",
     "test:all": "npm run test:frontend && npm run test:backend",
     "dev": "concurrently \"next dev\" \"npm:backend\"",
-    "backend": "bash -lc \"source backend/venv/bin/activate && uvicorn backend.main:app --reload --host ${BACKEND_HOST:-0.0.0.0} --port ${BACKEND_PORT:-8000}\""
+    "backend": "bash -lc \"source backend/venv/bin/activate && uvicorn backend.main:app --reload --host ${BACKEND_HOST:-0.0.0.0} --port ${BACKEND_PORT:-8000}\"",
+    "worker": "bash -lc \"source backend/venv/bin/activate && rq worker profiles\""
   },
   "eslintConfig": {
     "extends": [

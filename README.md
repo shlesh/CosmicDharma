@@ -48,6 +48,12 @@ reads these environment variables:
 * `CACHE_ENABLED` – enable or disable caching.
 * `CACHE_URL` – Redis URL used for the profile cache.
 * `REDIS_URL` – connection string for Redis used by the background job queue.
+* `CACHE_TTL` – cache lifetime in seconds.
+* `SMTP_SERVER` – hostname of your SMTP server for sending email.
+* `SMTP_PORT` – port of the SMTP server (`587` by default).
+* `SMTP_USER` – SMTP username if authentication is required.
+* `SMTP_PASS` – SMTP password for the above user.
+* `FROM_EMAIL` – default sender address for outgoing mail.
 
 To seed the database with demo accounts and posts run from the repository root:
 
@@ -75,11 +81,11 @@ npm run dev
 ```
 to start the Next.js frontend and FastAPI backend concurrently.
 
-Background profile jobs are handled by an RQ worker. Start one in a
-separate terminal:
+The helper script also starts a background RQ worker. If you prefer to manage it
+manually, run:
 
 ```bash
-rq worker profiles
+npm run worker
 ```
 
 The frontend runs on port 3000 and uses environment variables to reach the backend on port 8000.
@@ -143,8 +149,8 @@ The interface is composed of several reusable React components:
 
 The frontend is deployed to Netlify while the FastAPI backend stays on Hostinger.
 
-1. Set the `NEXT_PUBLIC_API_BASE_URL` variable in Netlify to the full URL of your backend (e.g. `https://api.cosmicdharma.app`).
-2. Netlify reads `netlify.toml` for the build command and publish directory. You can override additional environment variables in that file or in the Netlify UI.
+1. Set the `NEXT_PUBLIC_API_BASE_URL`, `CACHE_URL` and mail variables (`SMTP_SERVER`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`, `FROM_EMAIL`) in Netlify to match your backend configuration.
+2. Netlify reads `netlify.toml` for the build command and publish directory. Those variables can also be defined in that file.
 3. Connect this repository to Netlify so pushes to `main` trigger a build. Netlify installs dependencies, runs `npm run build` and uploads the `.next` directory.
 4. Point your `cosmicdharma.app` domain to Netlify and add it as a custom domain in the Netlify dashboard.
 5. GitHub Actions deploy the backend over SSH and trigger a Netlify deploy using the `NETLIFY_AUTH_TOKEN` and `NETLIFY_SITE_ID` secrets.
@@ -205,7 +211,7 @@ Repository structure
 
         Python requirements and virtual environment under backend/.
 
-        scripts/dev.sh bootstraps dependencies and then runs both servers.
+        scripts/dev.sh bootstraps dependencies and then runs both servers and the background worker.
 
         CI workflows in .github/workflows/.
 
