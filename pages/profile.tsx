@@ -9,16 +9,33 @@ import HouseAnalysis from '../components/HouseAnalysis';
 import DashaTable from '../components/DashaTable';
 import DashaChart from '../components/DashaChart';
 
+interface ProfileFormData {
+  name: string;
+  birthDate: string;
+  birthTime: string;
+  location: string;
+}
+
+interface ProfileData {
+  birthInfo: Record<string, unknown>;
+  analysis?: Record<string, any>;
+  coreElements?: Record<string, any>;
+  planetaryPositions?: any[];
+  houses?: Record<string, any>;
+  vimshottariDasha?: any[];
+}
+
 export default function ProfilePage() {
-  const [form, setForm] = useState({ name: '', birthDate: '', birthTime: '', location: '' });
+  const [form, setForm] = useState<ProfileFormData>({ name: '', birthDate: '', birthTime: '', location: '' });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [profile, setProfile] = useState(null);
-  const [jobId, setJobId] = useState(null);
+  const [profile, setProfile] = useState<ProfileData | null>(null);
+  const [jobId, setJobId] = useState<string | null>(null);
 
-  const handleChange = e => setForm({ ...form, [e.target.name]: e.target.value });
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) =>
+    setForm({ ...form, [e.target.name]: e.target.value });
 
-  const handleSubmit = async e => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setError('');

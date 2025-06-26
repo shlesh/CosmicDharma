@@ -5,14 +5,20 @@ import ReactMarkdown from 'react-markdown';
 import { useRouter } from 'next/router';
 import apiFetch from '../util/api';
 
+interface EditorForm {
+  title: string;
+  content: string;
+}
+
 export default function PostEditorPage() {
   const router = useRouter();
-  const [form, setForm] = useState({ title: '', content: '' });
-  const [selectedTab, setSelectedTab] = useState('write');
-  const handleChange = e => setForm({ ...form, [e.target.name]: e.target.value });
-  const handleContentChange = value => setForm({ ...form, content: value });
+  const [form, setForm] = useState<EditorForm>({ title: '', content: '' });
+  const [selectedTab, setSelectedTab] = useState<'write' | 'preview'>('write');
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) =>
+    setForm({ ...form, [e.target.name]: e.target.value });
+  const handleContentChange = (value: string) => setForm({ ...form, content: value });
 
-  const handleSubmit = async e => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const token = localStorage.getItem('token');
     const res = await apiFetch('posts', {

@@ -1,11 +1,23 @@
 // src/components/BasicInfo.jsx
 import React from 'react';
-import PropTypes from 'prop-types';
+
+export interface BirthInfo {
+  date?: string;
+  time?: string;
+  location?: string;
+  latitude: number;
+  longitude: number;
+  timezone: string;
+}
+
+export interface BasicInfoProps {
+  birth?: BirthInfo;
+}
 
 // Displays the birth data used for all calculations so users can verify
 // the core information driving their profile.
 
-export default function BasicInfo({ birth }) {
+export default function BasicInfo({ birth }: BasicInfoProps) {
   if (!birth) return null;
   return (
     <section className="mb-6">
@@ -39,14 +51,3 @@ export default function BasicInfo({ birth }) {
     </section>
   );
 }
-
-BasicInfo.propTypes = {
-  birth: PropTypes.shape({
-    date: PropTypes.string,
-    time: PropTypes.string,
-    location: PropTypes.string,
-    latitude: PropTypes.number,
-    longitude: PropTypes.number,
-    timezone: PropTypes.string,
-  }),
-};

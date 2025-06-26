@@ -1,7 +1,7 @@
 import React from 'react';
 import { render, screen } from '@testing-library/react';
 import { expect, test, vi } from 'vitest';
-import DashboardPage from '../pages/dashboard/index.jsx';
+import DashboardPage from '../pages/dashboard/index';
 
 import { fetchJson } from '../util/api';
 vi.mock('../util/api', () => ({

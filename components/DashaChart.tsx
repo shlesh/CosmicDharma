@@ -1,5 +1,16 @@
 import React, { useMemo } from 'react';
-import PropTypes from 'prop-types';
+
+export interface DashaChartPeriod {
+  lord: string;
+  start: string;
+  end: string;
+  description?: string;
+}
+
+export interface DashaChartProps {
+  dasha?: DashaChartPeriod[];
+  analysis?: { description?: string }[];
+}
 
 // Visualizes planetary periods so visitors can grasp upcoming life phases.
 import { Line } from 'react-chartjs-2';
@@ -28,7 +39,7 @@ const FALLBACK_DESCRIPTIONS = {
   Ketu: 'Detachment, spirituality, liberation.',
 };
 
-export default function DashaChart({ dasha, analysis }) {
+export default function DashaChart({ dasha, analysis }: DashaChartProps) {
   const descriptions = useMemo(() => {
     if (analysis && Array.isArray(analysis)) {
       return analysis.map(d => d.description || '');
@@ -94,14 +105,3 @@ export default function DashaChart({ dasha, analysis }) {
     </section>
   );
 }
-
-DashaChart.propTypes = {
-  dasha: PropTypes.arrayOf(
-    PropTypes.shape({
-      lord: PropTypes.string.isRequired,
-      start: PropTypes.string.isRequired,
-      end: PropTypes.string.isRequired,
-    })
-  ),
-  analysis: PropTypes.array,
-};

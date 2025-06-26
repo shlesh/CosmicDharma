@@ -1,4 +1,15 @@
 import React, { useEffect, useState } from 'react';
+
+interface Post {
+  id: number;
+  title: string;
+  content: string;
+}
+
+interface User {
+  id: number;
+  username: string;
+}
 import ReactMde from 'react-mde';
 import ReactMarkdown from 'react-markdown';
 import { Bar } from 'react-chartjs-2';
@@ -15,10 +26,10 @@ import apiFetch from '../util/api';
 Chart.register(BarElement, CategoryScale, LinearScale, Tooltip, Legend);
 
 export default function AdminDashboard() {
-  const [posts, setPosts] = useState([]);
-  const [users, setUsers] = useState([]);
-  const [editingId, setEditingId] = useState(null);
-  const [form, setForm] = useState({ title: '', content: '' });
+  const [posts, setPosts] = useState<Post[]>([]);
+  const [users, setUsers] = useState<User[]>([]);
+  const [editingId, setEditingId] = useState<number | null>(null);
+  const [form, setForm] = useState<{ title: string; content: string }>({ title: '', content: '' });
   const [selectedTab, setSelectedTab] = useState('write');
   const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
   const headers = {

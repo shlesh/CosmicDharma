@@ -1,10 +1,13 @@
 // src/components/HouseAnalysis.jsx
 import React from 'react';
-import PropTypes from 'prop-types';
+
+export interface HouseAnalysisProps {
+  houses?: Record<string, unknown> | null;
+}
 
 // Summarizes how each astrological house influences life areas.
 
-export default function HouseAnalysis({ houses }) {
+export default function HouseAnalysis({ houses }: HouseAnalysisProps) {
   if (!houses) return null;
 
   const entries = Object.entries(houses).sort(
@@ -35,7 +38,3 @@ export default function HouseAnalysis({ houses }) {
     </section>
   );
 }
-
-HouseAnalysis.propTypes = {
-  houses: PropTypes.object,
-};
