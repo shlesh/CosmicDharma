@@ -9,6 +9,7 @@ import RegisterPage from './pages/RegisterPage';
 import PostListPage from './pages/PostListPage';
 import PostViewPage from './pages/PostViewPage';
 import PostEditorPage from './pages/PostEditorPage';
+import AdminPage from './pages/AdminPage';
 
 const root = ReactDOM.createRoot(document.getElementById('root'));
 root.render(
@@ -21,6 +22,7 @@ root.render(
         <Route path="/posts" element={<PostListPage />} />
         <Route path="/posts/:id" element={<PostViewPage />} />
         <Route path="/editor" element={<PostEditorPage />} />
+        <Route path="/admin" element={<AdminPage />} />
       </Routes>
     </BrowserRouter>
   </React.StrictMode>
