@@ -1,5 +1,6 @@
 import { useRouter } from 'next/router';
 import { useEffect, useState } from 'react';
+import apiFetch from '../../util/api';
 
 export default function PostViewPage() {
   const router = useRouter();
@@ -8,7 +9,7 @@ export default function PostViewPage() {
 
   useEffect(() => {
     if (!id) return;
-    fetch(`/posts/${id}`)
+    apiFetch(`posts/${id}`)
       .then(res => res.json())
       .then(data => setPost(data))
       .catch(() => setPost(null));

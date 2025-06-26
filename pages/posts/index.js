@@ -1,11 +1,12 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
+import apiFetch from '../../util/api';
 
 export default function PostListPage() {
   const [posts, setPosts] = useState([]);
 
   useEffect(() => {
-    fetch('/posts')
+    apiFetch('posts')
       .then(res => res.json())
       .then(data => setPosts(data))
       .catch(() => setPosts([]));

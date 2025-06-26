@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useRouter } from 'next/router';
+import apiFetch from '../util/api';
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -8,7 +9,7 @@ export default function RegisterPage() {
 
   const handleSubmit = async e => {
     e.preventDefault();
-    const res = await fetch('/register', {
+    const res = await apiFetch('register', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(form)
