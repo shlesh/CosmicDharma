@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import logging
+import json
 from typing import Literal, Optional, Dict
 from datetime import date as dt_date, time as dt_time
 
@@ -33,8 +34,10 @@ from backend.analysis import full_analysis
 CONFIG = load_config()
 logger = logging.getLogger(__name__)
 
-# Simple in-memory cache for computed profiles
-_PROFILE_CACHE: Dict[tuple, dict] = {}
+# Redis-backed cache for computed profiles
+CACHE_URL = CONFIG.get("cache_url", CONFIG.get("redis_url", "redis://localhost:6379/1"))
+CACHE_TTL = int(CONFIG.get("cache_ttl", "3600"))
+_CACHE = redis.from_url(CACHE_URL)
 
 # Redis connection for background jobs
 REDIS_URL = CONFIG.get("redis_url", "redis://localhost:6379/0")
@@ -43,8 +46,9 @@ _JOB_QUEUE = Queue("profiles", connection=_REDIS)
 
 
 def clear_profile_cache() -> None:
-    """Utility for tests to clear the in-memory cache."""
-    _PROFILE_CACHE.clear()
+    """Utility for tests to clear the cache."""
+    for key in _CACHE.scan_iter("profile:*"):
+        _CACHE.delete(key)
 
 
 class ProfileRequest(BaseModel):
@@ -89,9 +93,12 @@ def compute_vedic_profile(request: ProfileRequest) -> dict:
         request.node_type,
     )
 
-    if CONFIG.get("cache_enabled", "true") == "true" and key in _PROFILE_CACHE:
-        logger.info("Cache hit for profile %s", key)
-        return _PROFILE_CACHE[key]
+    cache_key = "profile:" + "|".join(key)
+    if CONFIG.get("cache_enabled", "true") == "true":
+        cached = _CACHE.get(cache_key)
+        if cached:
+            logger.info("Cache hit for profile %s", key)
+            return json.loads(cached)
 
     loc_str = request.location.strip()
     logger.info("Geocoding '%s'", loc_str)
@@ -240,7 +247,7 @@ def compute_vedic_profile(request: ProfileRequest) -> dict:
         "analysis": analysis_results,
     }
     if CONFIG.get("cache_enabled", "true") == "true":
-        _PROFILE_CACHE[key] = result
+        _CACHE.setex(cache_key, CACHE_TTL, json.dumps(result))
     return result
 
 

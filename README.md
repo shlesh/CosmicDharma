@@ -46,6 +46,7 @@ reads these environment variables:
 * `NODE_TYPE` – lunar node calculation (`mean` or `true`).
 * `HOUSE_SYSTEM` – astrological house system (`whole_sign` by default).
 * `CACHE_ENABLED` – enable or disable caching.
+* `CACHE_URL` – Redis URL used for the profile cache.
 * `REDIS_URL` – connection string for Redis used by the background job queue.
 
 To seed the database with demo accounts and posts run from the repository root:

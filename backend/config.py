@@ -8,6 +8,8 @@ DEFAULTS = {
     "house_system": "whole_sign",
     "cache_enabled": "true",
     "redis_url": "redis://localhost:6379/0",
+    "cache_url": "redis://localhost:6379/1",
+    "cache_ttl": "3600",
 }
 
 _cfg = None

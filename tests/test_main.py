@@ -1,6 +1,7 @@
 from fastapi.testclient import TestClient
 from backend import main
 from backend.services import astro
+import fakeredis
 from backend import models, auth
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
@@ -18,6 +19,8 @@ def _parse_response(data: dict):
 
 
 def test_profile(monkeypatch):
+    fake = fakeredis.FakeRedis()
+    monkeypatch.setattr(astro, "_CACHE", fake)
     astro.clear_profile_cache()
     # stub external services
     monkeypatch.setattr(astro, "geocode_location", lambda loc: (10.0, 20.0, "UTC"))
@@ -41,6 +44,8 @@ def test_profile(monkeypatch):
 
 
 def test_divisional_charts(monkeypatch):
+    fake = fakeredis.FakeRedis()
+    monkeypatch.setattr(astro, "_CACHE", fake)
     astro.clear_profile_cache()
     monkeypatch.setattr(astro, "geocode_location", lambda loc: (10.0, 20.0, "UTC"))
     monkeypatch.setattr(astro, "get_birth_info", lambda **k: {"jd_ut": 0, "cusps": [0]*12})
@@ -60,6 +65,8 @@ def test_divisional_charts(monkeypatch):
 
 
 def test_dasha(monkeypatch):
+    fake = fakeredis.FakeRedis()
+    monkeypatch.setattr(astro, "_CACHE", fake)
     astro.clear_profile_cache()
     monkeypatch.setattr(astro, "geocode_location", lambda loc: (10.0, 20.0, "UTC"))
     monkeypatch.setattr(astro, "get_birth_info", lambda **k: {"jd_ut": 0, "cusps": [0]*12})
@@ -79,6 +86,8 @@ def test_dasha(monkeypatch):
 
 
 def test_geocode_error(monkeypatch):
+    fake = fakeredis.FakeRedis()
+    monkeypatch.setattr(astro, "_CACHE", fake)
     astro.clear_profile_cache()
     def fail(loc):
         raise ValueError("bad location")
@@ -94,6 +103,8 @@ def test_geocode_error(monkeypatch):
 
 
 def test_birth_info_invalid(monkeypatch):
+    fake = fakeredis.FakeRedis()
+    monkeypatch.setattr(astro, "_CACHE", fake)
     astro.clear_profile_cache()
     monkeypatch.setattr(astro, "geocode_location", lambda loc: (10.0, 20.0, "UTC"))
 
@@ -111,6 +122,8 @@ def test_birth_info_invalid(monkeypatch):
 
 
 def test_swisseph_failure(monkeypatch):
+    fake = fakeredis.FakeRedis()
+    monkeypatch.setattr(astro, "_CACHE", fake)
     astro.clear_profile_cache()
     monkeypatch.setattr(astro, "geocode_location", lambda loc: (10.0, 20.0, "UTC"))
     monkeypatch.setattr(astro, "get_birth_info", lambda **k: {"jd_ut": 0, "cusps": [0]*12, "sidereal_offset": 0})
