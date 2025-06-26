@@ -133,3 +133,42 @@ The frontend is deployed to Netlify while the FastAPI backend stays on Hostinger
 2. Run `npm run test:all` and ensure all tests pass before opening a pull request.
 3. Format any new code consistently with the existing style.
 
+
+Repository structure
+
+    Backend (backend/)
+
+        FastAPI application with endpoints for astrology profile generation and blog post CRUD operations.
+        Key files: main.py, auth.py, models.py, services/astro.py, db.py.
+
+        User model includes is_admin for admin-only post management.
+
+        SQLite or external DB configured via DATABASE_URL.
+
+        Provides /register, /login, /posts, /admin/posts, etc.
+
+    Frontend
+
+        Next.js app under pages/ with React components in components/.
+
+        Blog-related pages:
+
+            /posts (listing), [id].js (view post), editor.js (create post with React Quill), admin.js (manage posts).
+
+            /login and /register pages for user auth.
+
+        Util functions for API calls in util/api.js.
+
+        Global CSS styles in styles/.
+
+    Configuration and tooling
+
+        package.json with Next.js 15, React 19, React Quill for rich text editing, and Vitest for tests.
+
+        Python requirements and virtual environment under backend/.
+
+        CI workflows in .github/workflows/.
+
+        Netlify deploy configuration in netlify.toml.
+
+        Tests covering backend endpoints and astrology calculations in tests/.
