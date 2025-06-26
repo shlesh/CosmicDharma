@@ -74,7 +74,7 @@ async def _async_geocode_once(query: str, locale: str | None = None):
                 logger.warning("Google geocode failed: %s", ex)
             return None, None, None
 
-        lat, lon, tz = await asyncio.get_event_loop().run_in_executor(None, sync_call)
+        lat, lon, tz = await asyncio.get_running_loop().run_in_executor(None, sync_call)
     else:
         params = {"q": query, "format": "json", "limit": 1}
         if locale:
