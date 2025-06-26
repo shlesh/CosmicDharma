@@ -1,4 +1,5 @@
 from datetime import date, time
+import fakeredis
 from backend.services import astro
 
 
@@ -26,6 +27,8 @@ def test_profile_cache(monkeypatch):
     monkeypatch.setattr(astro, "full_analysis", lambda *a, **k: {})
 
     astro.CONFIG["cache_enabled"] = "true"
+    fake = fakeredis.FakeRedis()
+    monkeypatch.setattr(astro, "_CACHE", fake)
     astro.clear_profile_cache()
 
     req = astro.ProfileRequest(date=date(2020,1,1), time=time(12,0), location="Delhi")
