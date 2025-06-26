@@ -69,6 +69,7 @@ class UserCreate(BaseModel):
     username: str
     email: str
     password: str
+    is_donor: bool = False
 
 
 class Token(BaseModel):
@@ -80,6 +81,7 @@ class UserOut(BaseModel):
     username: str
     email: str
     is_admin: bool
+    is_donor: bool
 
 
 class BlogPostCreate(BaseModel):
@@ -190,6 +192,7 @@ def register(user: UserCreate, db: Session = Depends(get_session)):
         username=user.username,
         email=user.email,
         hashed_password=get_password_hash(user.password),
+        is_donor=user.is_donor,
     )
     db.add(db_user)
     db.commit()
@@ -221,6 +224,7 @@ def read_current_user(current_user: User = Depends(get_current_user)):
         username=current_user.username,
         email=current_user.email,
         is_admin=current_user.is_admin,
+        is_donor=current_user.is_donor,
     )
 
 
