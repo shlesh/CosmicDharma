@@ -17,7 +17,7 @@ from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
 from backend.db import Base, engine, get_session
-from backend.models import User, BlogPost
+from backend.models import User, BlogPost, Prompt, Report
 from backend.auth import (
     create_access_token,
     get_password_hash,
@@ -99,6 +99,26 @@ class BlogPostOut(BaseModel):
 
     class Config:
         orm_mode = True
+
+
+class PromptCreate(BaseModel):
+    text: str
+
+
+class PromptOut(BaseModel):
+    id: int
+    text: str
+    created_at: datetime
+
+
+class ReportCreate(BaseModel):
+    content: str
+
+
+class ReportOut(BaseModel):
+    id: int
+    content: str
+    created_at: datetime
 
 
 
@@ -420,14 +440,55 @@ def require_donor(current_user: User = Depends(get_current_user)) -> User:
         raise HTTPException(status_code=403, detail="Donor access required")
     return current_user
 
+@app.post("/prompts", response_model=PromptOut)
+def create_prompt(
+    prompt: PromptCreate,
+    current_user: User = Depends(require_donor),
+    db: Session = Depends(get_session),
+):
+    db_prompt = Prompt(text=prompt.text, user=current_user)
+    db.add(db_prompt)
+    db.commit()
+    db.refresh(db_prompt)
+    return PromptOut(id=db_prompt.id, text=db_prompt.text, created_at=db_prompt.created_at)
 
-@app.get("/prompts")
-def get_prompts(current_user: User = Depends(require_donor)):
-    """Stub endpoint for donor-only prompts."""
-    return {"prompts": []}
+
+@app.get("/prompts", response_model=list[PromptOut])
+def get_prompts(
+    current_user: User = Depends(require_donor),
+    db: Session = Depends(get_session),
+):
+    prompts = (
+        db.query(Prompt)
+        .filter(Prompt.user_id == current_user.id)
+        .order_by(Prompt.created_at.desc())
+        .all()
+    )
+    return [PromptOut(id=p.id, text=p.text, created_at=p.created_at) for p in prompts]
 
 
-@app.get("/reports")
-def get_reports(current_user: User = Depends(require_donor)):
-    """Stub endpoint for donor-only reports."""
-    return {"reports": []}
+@app.post("/reports", response_model=ReportOut)
+def create_report(
+    report: ReportCreate,
+    current_user: User = Depends(require_donor),
+    db: Session = Depends(get_session),
+):
+    db_report = Report(content=report.content, user=current_user)
+    db.add(db_report)
+    db.commit()
+    db.refresh(db_report)
+    return ReportOut(id=db_report.id, content=db_report.content, created_at=db_report.created_at)
+
+
+@app.get("/reports", response_model=list[ReportOut])
+def get_reports(
+    current_user: User = Depends(require_donor),
+    db: Session = Depends(get_session),
+):
+    reports = (
+        db.query(Report)
+        .filter(Report.user_id == current_user.id)
+        .order_by(Report.created_at.desc())
+        .all()
+    )
+    return [ReportOut(id=r.id, content=r.content, created_at=r.created_at) for r in reports]
