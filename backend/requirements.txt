@@ -9,3 +9,7 @@ geopy
 geopy[speedups]
 httpx<0.25
 pytest-asyncio>=0.21
+sqlalchemy
+passlib[bcrypt]
+python-jose[cryptography]
+python-multipart

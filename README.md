@@ -20,6 +20,14 @@ pip install -r requirements.txt
 cd ..
 ```
 
+### Configure the database
+
+By default the backend uses SQLite. The database file `app.db` will be created in
+`backend/`. To use another database provide the `DATABASE_URL` environment variab
+le (e.g. `postgresql://user:pass@localhost/dbname`). Authentication tokens are e
+ncrypted with `SECRET_KEY` and their lifetime can be adjusted with
+`ACCESS_TOKEN_EXPIRE_MINUTES`.
+
 ## Running the application
 
 Start both servers in development mode:
