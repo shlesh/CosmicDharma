@@ -223,17 +223,23 @@ The frontend is deployed to Netlify while the FastAPI backend stays on Hostinger
 
 ## Progressive Web App
 
-The app is configured as a PWA using **next-pwa**. The manifest lives in
-`public/manifest.json` and a service worker is generated during the production
-build. Run:
+The app is configured as a PWA using **next-pwa**. Metadata like the name,
+colors and icons live in `public/manifest.json`. Edit that file to customize
+how the app looks when installed. During a production build a service worker is
+created automatically. Run:
 
 ```bash
 npm run build
 ```
 
-to output `service-worker.js` alongside the Next.js files. Static assets are
-cached with a Cache First strategy and API requests are cached with Network
-First. Deploys on Netlify automatically serve the generated service worker.
+and `service-worker.js` will be generated alongside the Next.js output. Static
+assets are cached with a Cache First strategy and API requests with Network
+First. Netlify deploys automatically serve the generated service worker.
+
+To install the app, open the site in Chrome or Safari on mobile and choose
+**Add to Home Screen** from the browser menu. On desktop browsers like Chrome or
+Edge an install button appears in the address bar; click it to create a
+standalone window.
 
 ## Contributing
 
