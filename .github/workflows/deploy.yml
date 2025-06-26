@@ -26,7 +26,7 @@ jobs:
       - name: Deploy frontend to Netlify
         uses: netlify/actions/cli@v2
         with:
-          args: deploy --dir=dist --prod
+          args: deploy --dir=.next --prod
         env:
           NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
           NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID }}
