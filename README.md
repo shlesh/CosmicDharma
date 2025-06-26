@@ -91,7 +91,7 @@ password to finish the process.
 
 ## Running the application
 
-Run the helper script during the first setup. It installs Node and Python dependencies if needed and starts the frontend, backend and worker:
+Run the helper script during the first setup. It verifies that **Node.js 18+** and **Python 3** are available, installs dependencies if required and then starts the frontend, backend and worker:
 
 ```bash
 ./scripts/dev.sh
@@ -100,7 +100,7 @@ Run the helper script during the first setup. It installs Node and Python depend
 Internally it runs
 
 ```bash
-npx concurrently "npm run dev" "npm run worker"
+npx concurrently --kill-others-on-fail "npm run dev" "npm run worker"
 ```
 
 to launch the Next.js frontend, FastAPI backend and RQ worker. After the initial setup you can simply run:
