@@ -30,7 +30,11 @@ export default function AdminDashboard() {
   const [posts, setPosts] = useState<Post[]>([]);
   const [users, setUsers] = useState<User[]>([]);
   const [editingId, setEditingId] = useState<number | null>(null);
-  const [form, setForm] = useState<{ title: string; content: string }>({ title: '', content: '' });
+  const [isCreating, setIsCreating] = useState(false);
+  const [form, setForm] = useState<{ title: string; content: string }>({
+    title: '',
+    content: '',
+  });
   const [selectedTab, setSelectedTab] = useState('write');
   const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
   const toast = useToast();
@@ -60,17 +64,26 @@ export default function AdminDashboard() {
     setForm({ title: post.title, content: post.content });
   };
 
+  const startCreate = () => {
+    setEditingId(null);
+    setIsCreating(true);
+    setForm({ title: '', content: '' });
+  };
+
   const handleChange = e => setForm({ ...form, [e.target.name]: e.target.value });
   const handleContentChange = val => setForm({ ...form, content: val });
 
   const handleSave = async () => {
-    const res = await apiFetch(`admin/posts/${editingId}`, {
-      method: 'PUT',
+    const url = editingId ? `admin/posts/${editingId}` : 'admin/posts';
+    const method = editingId ? 'PUT' : 'POST';
+    const res = await apiFetch(url, {
+      method,
       headers,
       body: JSON.stringify(form),
     });
     if (res.ok) {
       setEditingId(null);
+      setIsCreating(false);
       load();
     } else {
       toast('Save failed');
@@ -110,6 +123,9 @@ export default function AdminDashboard() {
       <h2>Admin Dashboard</h2>
       {(posts.length > 0 || users.length > 0) && <Bar data={data} options={options} />}
       <h3>Posts</h3>
+      {!editingId && !isCreating && (
+        <button onClick={startCreate}>New Post</button>
+      )}
       <ul>
         {posts.map(p => (
           <li key={p.id}>
@@ -119,7 +135,7 @@ export default function AdminDashboard() {
           </li>
         ))}
       </ul>
-      {editingId && (
+      {(editingId || isCreating) && (
         <div className="mt-5">
           <input name="title" value={form.title} onChange={handleChange} />
           <ReactMde
@@ -130,7 +146,10 @@ export default function AdminDashboard() {
             generateMarkdownPreview={md => Promise.resolve(<ReactMarkdown>{md}</ReactMarkdown>)}
           />
           <button onClick={handleSave}>Save</button>
-          <button onClick={() => setEditingId(null)}>Cancel</button>
+          <button onClick={() => {
+            setEditingId(null);
+            setIsCreating(false);
+          }}>Cancel</button>
         </div>
       )}
     </div>
