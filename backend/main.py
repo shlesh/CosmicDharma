@@ -1,7 +1,8 @@
 # backend/main.py - UPDATED WITH COMPLETE VEDIC FEATURES
 
 import logging
-from datetime import datetime
+from datetime import datetime, timedelta
+from secrets import token_urlsafe
 from fastapi import (
     FastAPI,
     HTTPException,
@@ -17,7 +18,7 @@ from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
 from backend.db import Base, engine, get_session
-from backend.models import User, BlogPost, Prompt, Report
+from backend.models import User, BlogPost, Prompt, Report, PasswordResetToken
 from backend.auth import (
     create_access_token,
     get_password_hash,
@@ -34,6 +35,7 @@ from backend.services.astro import (
     clear_profile_cache,
 )
 from backend.config import load_config
+from backend.utils.email_utils import send_email
 
 CONFIG = load_config()
 
@@ -119,6 +121,15 @@ class ReportOut(BaseModel):
     id: int
     content: str
     created_at: datetime
+
+
+class ResetRequest(BaseModel):
+    email: str
+
+
+class PasswordReset(BaseModel):
+    token: str
+    new_password: str
 
 
 
@@ -236,6 +247,45 @@ def login(
 @app.post("/logout")
 def logout():
     return {"message": "Logged out"}
+
+
+@app.post("/request-reset")
+def request_password_reset(
+    payload: ResetRequest,
+    db: Session = Depends(get_session),
+):
+    user = db.query(User).filter(User.email == payload.email).first()
+    if not user:
+        return {"message": "If the email exists, a reset link was sent."}
+    token = token_urlsafe(32)
+    expires = datetime.utcnow() + timedelta(hours=1)
+    db_token = PasswordResetToken(user_id=user.id, token=token, expires_at=expires)
+    db.add(db_token)
+    db.commit()
+    send_email(user.email, "Password Reset", f"Your reset token is: {token}")
+    return {"message": "If the email exists, a reset link was sent."}
+
+
+@app.post("/reset-password")
+def reset_password(
+    payload: PasswordReset,
+    db: Session = Depends(get_session),
+):
+    db_token = (
+        db.query(PasswordResetToken)
+        .filter(
+            PasswordResetToken.token == payload.token,
+            PasswordResetToken.used.is_(False),
+        )
+        .first()
+    )
+    if not db_token or db_token.expires_at < datetime.utcnow():
+        raise HTTPException(status_code=400, detail="Invalid or expired token")
+    user = db.query(User).get(db_token.user_id)
+    user.hashed_password = get_password_hash(payload.new_password)
+    db_token.used = True
+    db.commit()
+    return {"message": "Password updated"}
 
 
 @app.get("/users/me", response_model=UserOut)
