@@ -1,5 +1,6 @@
 from fastapi.testclient import TestClient
 from backend import main
+from backend.routes import profile
 from backend.services import astro
 import fakeredis
 from backend import models, auth
@@ -13,9 +14,9 @@ client = TestClient(main.app)
 
 def _parse_response(data: dict):
     """Helper to parse responses across Pydantic versions."""
-    if hasattr(main.ProfileResponse, "model_validate"):
-        return main.ProfileResponse.model_validate(data)
-    return main.ProfileResponse.parse_obj(data)
+    if hasattr(profile.ProfileResponse, "model_validate"):
+        return profile.ProfileResponse.model_validate(data)
+    return profile.ProfileResponse.parse_obj(data)
 
 
 def test_profile(monkeypatch):
@@ -320,7 +321,7 @@ def test_donor_prompt_report_crud():
 
 
 def test_yogas_route(monkeypatch):
-    monkeypatch.setattr(main, "compute_vedic_profile", lambda req: {
+    monkeypatch.setattr(profile, "compute_vedic_profile", lambda req: {
         "yogas": {"TestYoga": {}},
         "analysis": {"yogas": {"TestYoga": {}}}
     })
@@ -335,7 +336,7 @@ def test_yogas_route(monkeypatch):
 
 
 def test_strengths_route(monkeypatch):
-    monkeypatch.setattr(main, "compute_vedic_profile", lambda req: {
+    monkeypatch.setattr(profile, "compute_vedic_profile", lambda req: {
         "shadbala": {"Sun": 1},
         "bhavaBala": {"1": 10}
     })
