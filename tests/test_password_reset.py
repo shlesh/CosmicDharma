@@ -1,5 +1,6 @@
 from fastapi.testclient import TestClient
 from backend import main, models, auth
+from backend.routes import auth as auth_routes
 from backend.utils import email_utils
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
@@ -36,7 +37,7 @@ def test_password_reset_flow(monkeypatch):
         sent["to"] = to
         sent["body"] = body
 
-    monkeypatch.setattr(main, "send_email", fake_send)
+    monkeypatch.setattr(auth_routes, "send_email", fake_send)
 
     with Session() as db:
         user = models.User(
