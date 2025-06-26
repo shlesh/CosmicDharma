@@ -96,6 +96,23 @@ external backend if you want the frontend to reach it during development.
 add this to .env.local(create the file if it doesnt exist)
 `NEXT_PUBLIC_API_BASE_URL=http://localhost:8000`
 
+## Docker Compose
+
+You can run the backend together with Redis and Postgres using Docker
+Compose. Build and start all services with:
+
+```bash
+docker compose up --build
+```
+
+This starts three containers:
+* **backend** – FastAPI app from `backend/Dockerfile` on port 8000
+* **redis** – caching and RQ broker on port 6379
+* **db** – Postgres database on port 5432 stored in the `db_data` volume
+
+The backend container reads environment variables from `backend/.env` so
+adjust `DATABASE_URL` or `CACHE_URL` there as needed.
+
 ## Tests
 
 Install the extra Python packages used during testing and run the frontend and backend tests separately or together using NPM scripts:
