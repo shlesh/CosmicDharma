@@ -382,3 +382,21 @@ def admin_delete_post(
     db.delete(db_post)
     db.commit()
     return Response(status_code=204)
+
+
+@app.get("/admin/users", response_model=list[UserOut])
+def admin_list_users(
+    current_user: User = Depends(require_admin),
+    db: Session = Depends(get_session),
+):
+    """Return all registered users for admin dashboard."""
+    users = db.query(User).order_by(User.created_at.desc()).all()
+    return [
+        UserOut(
+            username=u.username,
+            email=u.email,
+            is_admin=u.is_admin,
+            is_donor=u.is_donor,
+        )
+        for u in users
+    ]

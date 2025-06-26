@@ -197,3 +197,30 @@ def test_admin_can_update_post():
     assert resp.status_code == 200
     assert resp.json()["title"] == "new"
 
+
+def test_admin_can_list_users():
+    client, Session = setup_test_app()
+    with Session() as db:
+        admin = models.User(
+            username="admin",
+            email="admin@example.com",
+            hashed_password=auth.get_password_hash("pw"),
+            is_admin=True,
+        )
+        user = models.User(
+            username="user",
+            email="user@example.com",
+            hashed_password=auth.get_password_hash("pw"),
+            is_admin=False,
+        )
+        db.add_all([admin, user])
+        db.commit()
+    token = auth.create_access_token({"sub": "admin"})
+    resp = client.get(
+        "/admin/users",
+        headers={"Authorization": f"Bearer {token}"},
+    )
+    assert resp.status_code == 200
+    data = resp.json()
+    assert any(u["username"] == "user" for u in data)
+
