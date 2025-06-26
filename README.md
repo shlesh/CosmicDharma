@@ -91,21 +91,25 @@ password to finish the process.
 
 ## Running the application
 
-Run the helper script to install dependencies and launch the servers:
+Run the helper script during the first setup:
 
 ```bash
 ./scripts/dev.sh
 ```
 
-After the initial setup you can simply run:
+The script installs Node and Python dependencies if they are missing and then runs
+
+```bash
+npx concurrently "npm run dev" "npm run worker"
+```
+
+to start the Next.js frontend, FastAPI backend and RQ worker. After the initial setup you can simply run:
 
 ```bash
 npm run dev
 ```
-to start the Next.js frontend and FastAPI backend concurrently.
 
-The helper script also starts a background RQ worker. If you prefer to manage it
-manually, run:
+to launch the frontend and backend. You may run the worker separately if you prefer:
 
 ```bash
 npm run worker
@@ -118,6 +122,22 @@ For local development use:
 ```bash
 NEXT_PUBLIC_API_BASE_URL=http://localhost:8000
 ```
+
+To compute a profile asynchronously, send a request to `/profile/job`:
+
+```bash
+curl -X POST http://localhost:8000/profile/job \
+  -H "Content-Type: application/json" \
+  -d '{"date":"1990-01-01","time":"10:00","location":"New York"}'
+```
+
+This returns a job ID. Poll `/jobs/{id}` to retrieve the status:
+
+```bash
+curl http://localhost:8000/jobs/<job_id>
+```
+
+When the job completes, the response includes the generated profile data.
 
 ## Docker Compose
 
