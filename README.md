@@ -148,6 +148,12 @@ curl http://localhost:8000/jobs/<job_id>
 
 When the job completes, the response includes the generated profile data.
 
+### Common issues
+
+If you see `Cannot find module 'next-pwa'` when running `scripts/dev.sh` or
+`npm run dev`, run `npm install --legacy-peer-deps` again to ensure all
+packages are installed.
+
 ## Docker Compose
 
 You can run the backend together with Redis and Postgres using Docker
