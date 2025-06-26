@@ -1,5 +1,6 @@
 import { useRouter } from 'next/router';
 import { useEffect, useState } from 'react';
+import ReactMarkdown from 'react-markdown';
 import apiFetch from '../../util/api';
 
 export default function PostViewPage() {
@@ -20,7 +21,7 @@ export default function PostViewPage() {
   return (
     <article>
       <h2>{post.title}</h2>
-      <p>{post.content}</p>
+      <ReactMarkdown>{post.content}</ReactMarkdown>
     </article>
   );
 }

@@ -1,12 +1,14 @@
 import { useState } from 'react';
-import ReactQuill from 'react-quill';
-import 'react-quill/dist/quill.snow.css';
+import ReactMde from 'react-mde';
+import 'react-mde/lib/styles/css/react-mde-all.css';
+import ReactMarkdown from 'react-markdown';
 import { useRouter } from 'next/router';
 import apiFetch from '../util/api';
 
 export default function PostEditorPage() {
   const router = useRouter();
   const [form, setForm] = useState({ title: '', content: '' });
+  const [selectedTab, setSelectedTab] = useState('write');
   const handleChange = e => setForm({ ...form, [e.target.name]: e.target.value });
   const handleContentChange = value => setForm({ ...form, content: value });
 
@@ -33,7 +35,13 @@ export default function PostEditorPage() {
     <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
       <h2>New Post</h2>
       <input name="title" value={form.title} onChange={handleChange} placeholder="Title" />
-      <ReactQuill value={form.content} onChange={handleContentChange} />
+      <ReactMde
+        value={form.content}
+        onChange={handleContentChange}
+        selectedTab={selectedTab}
+        onTabChange={setSelectedTab}
+        generateMarkdownPreview={md => Promise.resolve(<ReactMarkdown>{md}</ReactMarkdown>)}
+      />
       <button type="submit">Save</button>
     </form>
   );

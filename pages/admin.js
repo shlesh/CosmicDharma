@@ -1,12 +1,14 @@
 import { useEffect, useState } from 'react';
-import ReactQuill from 'react-quill';
-import 'react-quill/dist/quill.snow.css';
+import ReactMde from 'react-mde';
+import 'react-mde/lib/styles/css/react-mde-all.css';
+import ReactMarkdown from 'react-markdown';
 import apiFetch from '../util/api';
 
 export default function AdminPage() {
   const [posts, setPosts] = useState([]);
   const [editingId, setEditingId] = useState(null);
   const [form, setForm] = useState({ title: '', content: '' });
+  const [selectedTab, setSelectedTab] = useState('write');
   const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
   const headers = {
     'Content-Type': 'application/json',
@@ -73,7 +75,13 @@ export default function AdminPage() {
       {editingId && (
         <div style={{ marginTop: 20 }}>
           <input name="title" value={form.title} onChange={handleChange} />
-          <ReactQuill value={form.content} onChange={handleContentChange} />
+          <ReactMde
+            value={form.content}
+            onChange={handleContentChange}
+            selectedTab={selectedTab}
+            onTabChange={setSelectedTab}
+            generateMarkdownPreview={md => Promise.resolve(<ReactMarkdown>{md}</ReactMarkdown>)}
+          />
           <button onClick={handleSave}>Save</button>
           <button onClick={() => setEditingId(null)}>Cancel</button>
         </div>
