@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { fetchJson } from '../../util/api';
 
 export default function DashboardPage() {
