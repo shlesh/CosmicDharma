@@ -10,6 +10,13 @@ from types import SimpleNamespace
 client = TestClient(main.app)
 
 
+def _parse_response(data: dict):
+    """Helper to parse responses across Pydantic versions."""
+    if hasattr(main.ProfileResponse, "model_validate"):
+        return main.ProfileResponse.model_validate(data)
+    return main.ProfileResponse.parse_obj(data)
+
+
 def test_profile(monkeypatch):
     astro.clear_profile_cache()
     # stub external services
@@ -28,7 +35,7 @@ def test_profile(monkeypatch):
 
     resp = client.post("/profile", json={"date": "2020-01-01", "time": "12:00:00", "location": "Delhi"})
     assert resp.status_code == 200
-    data = main.ProfileResponse.model_validate(resp.json())
+    data = _parse_response(resp.json())
     assert data.birthInfo["latitude"] == 10.0
     assert data.birthInfo["longitude"] == 20.0
 
@@ -48,7 +55,7 @@ def test_divisional_charts(monkeypatch):
 
     resp = client.post("/divisional-charts", json={"date": "2020-01-01", "time": "12:00:00", "location": "Delhi"})
     assert resp.status_code == 200
-    data = main.ProfileResponse.model_validate(resp.json())
+    data = _parse_response(resp.json())
     assert data.divisionalCharts == {"D1": {}}
 
 
@@ -67,7 +74,7 @@ def test_dasha(monkeypatch):
 
     resp = client.post("/dasha", json={"date": "2020-01-01", "time": "12:00:00", "location": "Delhi"})
     assert resp.status_code == 200
-    data = main.ProfileResponse.model_validate(resp.json())
+    data = _parse_response(resp.json())
     assert data.vimshottariDasha == [{"lord": "Sun"}]
 
 
