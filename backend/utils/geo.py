@@ -4,7 +4,7 @@ from geopy.geocoders import Nominatim
 from geopy.exc import GeocoderServiceError
 
 # initialize once
-genolocator = Nominatim(user_agent="astro_app/1.0")
+geolocator = Nominatim(user_agent="astro_app/1.0")
 
 @lru_cache(maxsize=64)
 def geocode_place(query: str, timeout: int = 10):
@@ -27,7 +27,7 @@ def geocode_place(query: str, timeout: int = 10):
     for q in candidates:
         tried.append(q)
         try:
-            loc = genolocator.geocode(q, timeout=timeout)
+            loc = geolocator.geocode(q, timeout=timeout)
         except GeocoderServiceError:
             continue
         if loc:
