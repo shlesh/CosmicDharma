@@ -6,8 +6,10 @@ This project contains a Next.js frontend and a FastAPI backend used to generate 
 
 ### Install Node dependencies
 
+The project targets **Node.js 18** or later. Install packages with:
+
 ```bash
-npm install
+npm install --legacy-peer-deps
 ```
 
 ### Setup Python environment
@@ -51,12 +53,21 @@ The frontend runs on port 3000 and uses environment variables to reach the backe
 
 ## Tests
 
-Run all tests before committing:
+Run the frontend and backend tests separately or together using NPM scripts:
 
 ```bash
-npm test
-PYTHONPATH=. pytest -q
+# frontend only
+npm run test:frontend
+
+# backend only
+npm run test:backend
+
+# run both suites
+npm run test:all
 ```
+
+The `pytest.ini` file stores default options for `pytest` and Vitest outputs
+coverage reports to `coverage/` when the tests run.
 
 The backend tests stub all external dependencies so no API keys or internet access are required.
 
@@ -89,7 +100,14 @@ The interface is composed of several reusable React components:
 The frontend is deployed to Netlify while the FastAPI backend stays on Hostinger.
 
 1. Set the `NEXT_PUBLIC_API_BASE_URL` variable in Netlify to the full URL of your backend (e.g. `https://api.cosmicdharma.app`).
-2. Connect this repository to Netlify so pushes to `main` trigger a build. Netlify uses `npm run build` and publishes the `.next` directory as defined in `netlify.toml`.
-3. Point your `cosmicdharma.app` domain to Netlify and add it as a custom domain in the Netlify dashboard.
-4. GitHub Actions deploy the backend over SSH and trigger a Netlify deploy using the `NETLIFY_AUTH_TOKEN` and `NETLIFY_SITE_ID` secrets.
+2. Netlify reads `netlify.toml` for the build command and publish directory. You can override additional environment variables in that file or in the Netlify UI.
+3. Connect this repository to Netlify so pushes to `main` trigger a build. Netlify installs dependencies, runs `npm run build` and uploads the `.next` directory.
+4. Point your `cosmicdharma.app` domain to Netlify and add it as a custom domain in the Netlify dashboard.
+5. GitHub Actions deploy the backend over SSH and trigger a Netlify deploy using the `NETLIFY_AUTH_TOKEN` and `NETLIFY_SITE_ID` secrets.
+
+## Contributing
+
+1. Install dependencies and set up the Python virtual environment as described above.
+2. Run `npm run test:all` and ensure all tests pass before opening a pull request.
+3. Format any new code consistently with the existing style.
 
