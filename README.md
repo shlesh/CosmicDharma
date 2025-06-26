@@ -51,19 +51,10 @@ The frontend runs on port 3000 and uses environment variables to reach the backe
 
 ## Tests
 
-### Frontend
-
-Run the frontend unit tests with Vitest:
+Run all tests before committing:
 
 ```bash
 npm test
-```
-
-### Backend
-
-Execute the FastAPI tests using pytest:
-
-```bash
 PYTHONPATH=. pytest -q
 ```
 
