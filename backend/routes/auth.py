@@ -119,7 +119,7 @@ def reset_password(
     )
     if not db_token or db_token.expires_at < datetime.utcnow():
         raise HTTPException(status_code=400, detail="Invalid or expired token")
-    user = db.query(User).get(db_token.user_id)
+    user = db.get(User, db_token.user_id)
     user.hashed_password = get_password_hash(payload.new_password)
     db_token.used = True
     db.commit()
