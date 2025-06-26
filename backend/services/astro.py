@@ -7,7 +7,7 @@ from typing import Literal, Optional, Dict
 from datetime import date as dt_date, time as dt_time
 
 from fastapi import BackgroundTasks, HTTPException
-from pydantic import BaseModel, Field, ConfigDict
+from pydantic import BaseModel, Field, ConfigDict, field_validator
 import swisseph as swe
 import redis
 from rq import Queue
@@ -62,6 +62,22 @@ class ProfileRequest(BaseModel):
     ayanamsa: Literal["lahiri", "raman", "kp"] = Field(default="lahiri")
     node_type: Literal["mean", "true"] = Field(default="mean", alias="lunar_node")
     house_system: Literal["whole_sign", "equal", "sripati"] = Field(default="whole_sign")
+
+    @field_validator("birth_date")
+    @classmethod
+    def _no_future_date(cls, v: dt_date) -> dt_date:
+        if v > dt_date.today():
+            raise ValueError("birth date cannot be in the future")
+        return v
+
+    @field_validator("birth_time")
+    @classmethod
+    def _valid_time(cls, v: dt_time) -> dt_time:
+        if v < dt_time(0, 0) or v > dt_time(23, 59):
+            raise ValueError("birth time must be between 00:00 and 23:59")
+        if v.second != 0 or v.microsecond != 0:
+            raise ValueError("birth time must not include seconds")
+        return v
 
 
 class ProfileResponse(BaseModel):
