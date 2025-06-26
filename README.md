@@ -22,11 +22,19 @@ cd ..
 
 ### Configure the database
 
-By default the backend uses SQLite. The database file `app.db` will be created in
-`backend/`. To use another database provide the `DATABASE_URL` environment variab
-le (e.g. `postgresql://user:pass@localhost/dbname`). Authentication tokens are e
-ncrypted with `SECRET_KEY` and their lifetime can be adjusted with
-`ACCESS_TOKEN_EXPIRE_MINUTES`.
+By default the backend uses SQLite. The database file `app.db` will be created in `backend/`. To use another database provide the `DATABASE_URL` environment variable (e.g. `postgresql://user:pass@localhost/dbname`). Authentication tokens are encrypted with `SECRET_KEY` and their lifetime can be adjusted with `ACCESS_TOKEN_EXPIRE_MINUTES`.
+
+### Seed sample data
+
+Populate the local SQLite database with demo users and posts:
+
+```bash
+python backend/seed_demo.py
+```
+
+This creates two accounts:
+* **admin** / **admin** – full admin access
+* **user** / **password** – regular account with one post
 
 ## Running the application
 
