@@ -38,10 +38,10 @@ reads these environment variables:
 * `HOUSE_SYSTEM` – astrological house system (`whole_sign` by default).
 * `CACHE_ENABLED` – enable or disable caching.
 
-To seed the database with demo accounts and posts run:
+To seed the database with demo accounts and posts run from the repository root:
 
 ```bash
-python backend/seed_demo.py
+PYTHONPATH=. python backend/seed_demo.py
 ```
 
 This creates two accounts:
