@@ -76,9 +76,18 @@ PYTHONPATH=. python backend/seed_demo.py
 ```
 
 This creates two accounts:
+
 * **admin** / **admin** – full admin access
 * **user** / **password** – regular account with one post
 * **donor** / **donor** – donor account with access to extra prompts and reports
+
+### Password Reset
+
+Use the `request-reset.tsx` page or send a `POST` to `/request-reset` with an
+email address. The backend emails a token via SMTP using the `SMTP_SERVER`,
+`SMTP_PORT`, `SMTP_USER`, `SMTP_PASS` and `FROM_EMAIL` variables. Submit that
+token to `/reset-password` (handled by `reset-password.tsx`) along with a new
+password to finish the process.
 
 ## Running the application
 
