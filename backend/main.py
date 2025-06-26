@@ -400,3 +400,34 @@ def admin_list_users(
         )
         for u in users
     ]
+
+
+@app.get("/admin/metrics")
+def admin_metrics(
+    current_user: User = Depends(require_admin),
+    db: Session = Depends(get_session),
+):
+    """Return basic counts for the admin dashboard."""
+    return {
+        "users": db.query(User).count(),
+        "posts": db.query(BlogPost).count(),
+        "donors": db.query(User).filter(User.is_donor.is_(True)).count(),
+    }
+
+
+def require_donor(current_user: User = Depends(get_current_user)) -> User:
+    if not (current_user.is_donor or current_user.is_admin):
+        raise HTTPException(status_code=403, detail="Donor access required")
+    return current_user
+
+
+@app.get("/prompts")
+def get_prompts(current_user: User = Depends(require_donor)):
+    """Stub endpoint for donor-only prompts."""
+    return {"prompts": []}
+
+
+@app.get("/reports")
+def get_reports(current_user: User = Depends(require_donor)):
+    """Stub endpoint for donor-only reports."""
+    return {"reports": []}
