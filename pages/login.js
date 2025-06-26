@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useRouter } from 'next/router';
+import apiFetch from '../util/api';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -8,7 +9,7 @@ export default function LoginPage() {
 
   const handleSubmit = async e => {
     e.preventDefault();
-    const res = await fetch('/login', {
+    const res = await apiFetch('login', {
       method: 'POST',
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
       body: new URLSearchParams(form)

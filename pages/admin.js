@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import ReactQuill from 'react-quill';
 import 'react-quill/dist/quill.snow.css';
+import apiFetch from '../util/api';
 
 export default function AdminPage() {
   const [posts, setPosts] = useState([]);
@@ -13,7 +14,7 @@ export default function AdminPage() {
   };
 
   const load = () => {
-    fetch('/admin/posts', { headers })
+    apiFetch('admin/posts', { headers })
       .then(res => res.json())
       .then(setPosts)
       .catch(() => setPosts([]));
@@ -32,7 +33,7 @@ export default function AdminPage() {
   const handleContentChange = val => setForm({ ...form, content: val });
 
   const handleSave = async () => {
-    const res = await fetch(`/admin/posts/${editingId}`, {
+    const res = await apiFetch(`admin/posts/${editingId}`, {
       method: 'PUT',
       headers,
       body: JSON.stringify(form)
@@ -47,7 +48,7 @@ export default function AdminPage() {
 
   const handleDelete = async id => {
     if (!window.confirm('Delete this post?')) return;
-    const res = await fetch(`/admin/posts/${id}`, {
+    const res = await apiFetch(`admin/posts/${id}`, {
       method: 'DELETE',
       headers
     });

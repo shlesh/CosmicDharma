@@ -2,6 +2,7 @@ import { useState } from 'react';
 import ReactQuill from 'react-quill';
 import 'react-quill/dist/quill.snow.css';
 import { useRouter } from 'next/router';
+import apiFetch from '../util/api';
 
 export default function PostEditorPage() {
   const router = useRouter();
@@ -12,7 +13,7 @@ export default function PostEditorPage() {
   const handleSubmit = async e => {
     e.preventDefault();
     const token = localStorage.getItem('token');
-    const res = await fetch('/posts', {
+    const res = await apiFetch('posts', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
