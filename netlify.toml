@@ -6,3 +6,8 @@
 [context.production.environment]
   # Set the backend API URL in Netlify settings or override here
   NEXT_PUBLIC_API_BASE_URL = ""
+
+[[headers]]
+  for = "/service-worker.js"
+  [headers.values]
+    cache-control = "public, max-age=0, must-revalidate"
