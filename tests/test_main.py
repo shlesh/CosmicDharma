@@ -266,9 +266,44 @@ def test_admin_metrics_and_donor_endpoints():
 
     token_donor = auth.create_access_token({"sub": "donor"})
     resp = client.get("/prompts", headers={"Authorization": f"Bearer {token_donor}"})
-    assert resp.status_code == 200 and resp.json() == {"prompts": []}
+    assert resp.status_code == 200 and resp.json() == []
     resp = client.get("/reports", headers={"Authorization": f"Bearer {token_donor}"})
-    assert resp.status_code == 200 and resp.json() == {"reports": []}
+    assert resp.status_code == 200 and resp.json() == []
+
+
+def test_donor_prompt_report_crud():
+    client, Session = setup_test_app()
+    with Session() as db:
+        donor = models.User(
+            username="donor",
+            email="donor@example.com",
+            hashed_password=auth.get_password_hash("pw"),
+            is_donor=True,
+        )
+        db.add(donor)
+        db.commit()
+
+    token = auth.create_access_token({"sub": "donor"})
+
+    resp = client.post(
+        "/prompts",
+        headers={"Authorization": f"Bearer {token}", "Content-Type": "application/json"},
+        json={"text": "What is my future?"},
+    )
+    assert resp.status_code == 200
+
+    resp = client.get("/prompts", headers={"Authorization": f"Bearer {token}"})
+    assert any(p["text"] == "What is my future?" for p in resp.json())
+
+    resp = client.post(
+        "/reports",
+        headers={"Authorization": f"Bearer {token}", "Content-Type": "application/json"},
+        json={"content": "Great things ahead."},
+    )
+    assert resp.status_code == 200
+
+    resp = client.get("/reports", headers={"Authorization": f"Bearer {token}"})
+    assert any(r["content"] == "Great things ahead." for r in resp.json())
 
 
 def test_yogas_route(monkeypatch):
