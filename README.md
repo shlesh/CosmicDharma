@@ -98,3 +98,12 @@ The frontend is deployed to Netlify while the FastAPI backend stays on Hostinger
 2. Connect this repository to Netlify so pushes to `main` trigger a build. Netlify uses `npm run build` and publishes the `dist` directory as defined in `netlify.toml`.
 3. Point your `cosmicdharma.app` domain to Netlify and add it as a custom domain in the Netlify dashboard.
 4. GitHub Actions deploy the backend over SSH and trigger a Netlify deploy using the `NETLIFY_AUTH_TOKEN` and `NETLIFY_SITE_ID` secrets.
+
+## Next.js prototype
+
+A lightweight Next.js project is included under `next-prototype` to demonstrate how the existing React components work in a static site.
+
+- **Dynamic API calls** – the page in `pages/index.js` fetches chart data from the FastAPI backend using `NEXT_PUBLIC_API_BASE_URL`. Jobs are polled client side just like the Vite app.
+- **Build times** – Next.js performs static generation. The build step is heavier than Vite but enables pre-rendered HTML for fast initial loads.
+- **Hosting requirements** – the output can be deployed to any static hosting platform. API calls still require the FastAPI server or serverless functions.
+- **SEO benefits** – rendered markup is available at build time so search engines can index the main content even before JavaScript loads.
