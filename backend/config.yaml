@@ -3,3 +3,4 @@ ayanamsa: lahiri  # Changed from fagan_bradley to lahiri (standard for Vedic)
 node_type: mean   # This is correct for Vedic
 house_system: whole_sign  # Changed from placidus to whole_sign (traditional Vedic)
 cache_enabled: true
+redis_url: redis://localhost:6379/0

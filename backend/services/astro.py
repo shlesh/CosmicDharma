@@ -2,13 +2,15 @@
 from __future__ import annotations
 
 import logging
-import uuid
 from typing import Literal, Optional, Dict
 from datetime import date as dt_date, time as dt_time
 
 from fastapi import BackgroundTasks, HTTPException
 from pydantic import BaseModel, Field, ConfigDict
 import swisseph as swe
+import redis
+from rq import Queue
+from rq.job import Job
 
 from backend.config import load_config
 from backend.geocoder import geocode_location
@@ -33,6 +35,11 @@ logger = logging.getLogger(__name__)
 
 # Simple in-memory cache for computed profiles
 _PROFILE_CACHE: Dict[tuple, dict] = {}
+
+# Redis connection for background jobs
+REDIS_URL = CONFIG.get("redis_url", "redis://localhost:6379/0")
+_REDIS = redis.from_url(REDIS_URL)
+_JOB_QUEUE = Queue("profiles", connection=_REDIS)
 
 
 def clear_profile_cache() -> None:
@@ -239,28 +246,24 @@ def compute_vedic_profile(request: ProfileRequest) -> dict:
 
 def enqueue_profile_job(request: ProfileRequest, background_tasks: BackgroundTasks) -> str:
     """Enqueue profile computation and return a job ID."""
-    job_id = str(uuid.uuid4())
-    _JOB_STORE[job_id] = {"status": "pending", "result": None, "error": None}
-
-    def run():
-        try:
-            result = compute_vedic_profile(request)
-            _JOB_STORE[job_id]["status"] = "complete"
-            _JOB_STORE[job_id]["result"] = result
-        except HTTPException as ex:
-            _JOB_STORE[job_id]["status"] = "error"
-            _JOB_STORE[job_id]["error"] = ex.detail
-        except Exception as ex:  # pragma: no cover - unexpected
-            _JOB_STORE[job_id]["status"] = "error"
-            _JOB_STORE[job_id]["error"] = str(ex)
-
-    background_tasks.add_task(run)
-    return job_id
-
-
-_JOB_STORE: Dict[str, dict] = {}
+    job = _JOB_QUEUE.enqueue(compute_vedic_profile, request)
+    return job.id
 
 
 def get_job(job_id: str) -> Optional[dict]:
-    """Retrieve job status and result."""
-    return _JOB_STORE.get(job_id)
+    """Retrieve job status and result from Redis."""
+    try:
+        job = Job.fetch(job_id, connection=_REDIS)
+    except Exception:
+        return None
+
+    status_map = {
+        "queued": "pending",
+        "started": "running",
+        "finished": "complete",
+        "failed": "error",
+    }
+    status = status_map.get(job.get_status(), job.get_status())
+    result = job.result if status == "complete" else None
+    error = str(job.exc_info) if status == "error" and job.exc_info else None
+    return {"status": status, "result": result, "error": error}
