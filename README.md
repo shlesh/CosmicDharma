@@ -24,12 +24,18 @@ cd ..
 
 ### Backend configuration
 
-The backend reads several environment variables for its settings:
+Copy `backend/.env.example` to `backend/.env` and fill in the values. The backend
+reads these environment variables:
 
-* `DATABASE_URL` – connection string for the database. By default it uses
-  `sqlite:///./app.db`, creating `app.db` inside `backend/`.
+* `DATABASE_URL` – connection string for the database. Defaults to
+  `sqlite:///./app.db`.
 * `SECRET_KEY` – secret used to sign authentication tokens.
 * `ACCESS_TOKEN_EXPIRE_MINUTES` – token lifetime in minutes (defaults to `30`).
+* `GOOGLE_MAPS_API_KEY` – optional key for Google Maps geocoding.
+* `AYANAMSA` – ayanamsa used in calculations (`lahiri` by default).
+* `NODE_TYPE` – lunar node calculation (`mean` or `true`).
+* `HOUSE_SYSTEM` – astrological house system (`whole_sign` by default).
+* `CACHE_ENABLED` – enable or disable caching.
 
 To seed the database with demo accounts and posts run:
 
@@ -104,6 +110,8 @@ The frontend is deployed to Netlify while the FastAPI backend stays on Hostinger
 3. Connect this repository to Netlify so pushes to `main` trigger a build. Netlify installs dependencies, runs `npm run build` and uploads the `.next` directory.
 4. Point your `cosmicdharma.app` domain to Netlify and add it as a custom domain in the Netlify dashboard.
 5. GitHub Actions deploy the backend over SSH and trigger a Netlify deploy using the `NETLIFY_AUTH_TOKEN` and `NETLIFY_SITE_ID` secrets.
+6. On the server, copy `backend/.env.example` to `backend/.env` and provide the
+   production values before starting the FastAPI service.
 
 ## Contributing
 
