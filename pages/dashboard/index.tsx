@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { fetchJson } from '../../util/api';
+import PostList, { BlogPost } from '../../components/PostList';
+import AdminDashboard from '../../components/AdminDashboard';
 
 interface DashboardUser {
   is_admin?: boolean;
@@ -9,6 +11,7 @@ interface DashboardUser {
 
 export default function DashboardPage() {
   const [user, setUser] = useState<DashboardUser | null>(null);
+  const [posts, setPosts] = useState<BlogPost[]>([]);
   const [tab, setTab] = useState<string>('Profile');
   const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
 
@@ -20,6 +23,15 @@ export default function DashboardPage() {
       .then(setUser)
       .catch(() => setUser(null));
   }, [token]);
+
+  useEffect(() => {
+    if (!token || !user?.is_donor) return;
+    fetchJson<BlogPost[]>('posts', {
+      headers: { Authorization: `Bearer ${token}` }
+    })
+      .then(setPosts)
+      .catch(() => setPosts([]));
+  }, [token, user]);
 
   if (!token) return <p>Please login.</p>;
   if (!user) return <p>Loading...</p>;
@@ -33,9 +45,9 @@ export default function DashboardPage() {
       case 'Profile':
         return <p>Your profile details will appear here.</p>;
       case 'Posts':
-        return <p>Post management coming soon.</p>;
+        return <PostList posts={posts} />;
       case 'Admin':
-        return <p>Admin tools coming soon.</p>;
+        return <AdminDashboard />;
       default:
         return null;
     }
