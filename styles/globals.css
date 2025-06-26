@@ -43,3 +43,42 @@ body {
 .glass-card {
   @apply p-4;
 }
+
+/* Starry background layers */
+.star-layer {
+  position: fixed;
+  inset: 0;
+  background-repeat: repeat;
+  background-size: 400px 400px;
+  pointer-events: none;
+}
+
+.layer1 {
+  background-image: url('/stars1.svg');
+  animation: moveStars1 200s linear infinite;
+}
+
+.layer2 {
+  background-image: url('/stars2.svg');
+  animation: moveStars2 400s linear infinite;
+}
+
+.layer3 {
+  background-image: url('/stars3.svg');
+  animation: moveStars3 600s linear infinite;
+}
+
+@keyframes moveStars1 {
+  from { background-position: 0 0; }
+  to { background-position: -1000px 0; }
+}
+
+@keyframes moveStars2 {
+  from { background-position: 0 0; }
+  to { background-position: -2000px 0; }
+}
+
+@keyframes moveStars3 {
+  from { background-position: 0 0; }
+  to { background-position: -3000px 0; }
+}
