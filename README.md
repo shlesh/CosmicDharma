@@ -115,6 +115,15 @@ to launch the frontend and backend. You may run the worker separately if you pre
 npm run worker
 ```
 
+Redis must be running locally before starting the worker. Launch the service
+via Docker Compose or run `redis-server` manually:
+
+```bash
+docker compose up -d redis
+```
+
+Without Redis the worker exits with connection errors.
+
 The frontend runs on port 3000 and uses environment variables to reach the backend on port 8000.
 Create a `.env.local` file if it doesn't exist and set `NEXT_PUBLIC_API_BASE_URL` to the URL of the backend.
 For local development use:
