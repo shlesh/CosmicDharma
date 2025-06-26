@@ -1,6 +1,7 @@
 [build]
   command = "npm run build"
   publish = ".next"
+  environment = { NODE_VERSION = "18" }
 
 [context.production.environment]
   # Set the backend API URL in Netlify settings or override here
