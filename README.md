@@ -63,6 +63,9 @@ The frontend runs on port 3000 and uses environment variables to reach the backe
 Set `NEXT_PUBLIC_API_BASE_URL` (for example in `.env.local`) to the URL of an
 external backend if you want the frontend to reach it during development.
 
+add this to .env.local(create the file if it doesnt exist)
+`NEXT_PUBLIC_API_BASE_URL=http://localhost:8000`
+
 ## Tests
 
 Install the extra Python packages used during testing and run the frontend and backend tests separately or together using NPM scripts:
