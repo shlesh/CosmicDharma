@@ -38,9 +38,15 @@ export default function PostEditorPage() {
   };
 
   return (
-    <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-      <h2>New Post</h2>
-      <input name="title" value={form.title} onChange={handleChange} placeholder="Title" />
+    <form onSubmit={handleSubmit} className="flex flex-col gap-2">
+      <h2 className="text-xl font-semibold">New Post</h2>
+      <input
+        name="title"
+        value={form.title}
+        onChange={handleChange}
+        placeholder="Title"
+        className="border rounded p-2"
+      />
       <ReactMde
         value={form.content}
         onChange={handleContentChange}
@@ -48,7 +54,9 @@ export default function PostEditorPage() {
         onTabChange={setSelectedTab}
         generateMarkdownPreview={md => Promise.resolve(<ReactMarkdown>{md}</ReactMarkdown>)}
       />
-      <button type="submit">Save</button>
+      <button type="submit" className="rounded bg-blue-600 p-2 text-white">
+        Save
+      </button>
     </form>
   );
 }

@@ -118,7 +118,7 @@ export default function AdminDashboard() {
         ))}
       </ul>
       {editingId && (
-        <div style={{ marginTop: 20 }}>
+        <div className="mt-5">
           <input name="title" value={form.title} onChange={handleChange} />
           <ReactMde
             value={form.content}

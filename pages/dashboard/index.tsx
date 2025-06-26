@@ -44,12 +44,12 @@ export default function DashboardPage() {
   return (
     <div>
       <h2>Dashboard</h2>
-      <nav style={{ marginBottom: 20 }}>
+      <nav className="mb-5">
         {tabs.map(t => (
           <button
             key={t}
             onClick={() => setTab(t)}
-            style={{ marginRight: 8, fontWeight: tab === t ? 'bold' : 'normal' }}
+            className={`mr-2 ${tab === t ? 'font-bold' : ''}`}
           >
             {t}
           </button>

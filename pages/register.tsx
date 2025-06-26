@@ -31,12 +31,34 @@ export default function RegisterPage() {
   };
 
   return (
-    <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-      <h2>Register</h2>
-      <input name="username" value={form.username} onChange={handleChange} placeholder="Username" />
-      <input name="email" type="email" value={form.email} onChange={handleChange} placeholder="Email" />
-      <input name="password" type="password" value={form.password} onChange={handleChange} placeholder="Password" />
-      <button type="submit">Register</button>
+    <form onSubmit={handleSubmit} className="flex flex-col gap-2">
+      <h2 className="text-xl font-semibold">Register</h2>
+      <input
+        name="username"
+        value={form.username}
+        onChange={handleChange}
+        placeholder="Username"
+        className="border rounded p-2"
+      />
+      <input
+        name="email"
+        type="email"
+        value={form.email}
+        onChange={handleChange}
+        placeholder="Email"
+        className="border rounded p-2"
+      />
+      <input
+        name="password"
+        type="password"
+        value={form.password}
+        onChange={handleChange}
+        placeholder="Password"
+        className="border rounded p-2"
+      />
+      <button type="submit" className="rounded bg-blue-600 p-2 text-white">
+        Register
+      </button>
     </form>
   );
 }
