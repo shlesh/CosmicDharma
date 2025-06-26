@@ -349,7 +349,7 @@ def admin_update_post(
     current_user: User = Depends(require_admin),
     db: Session = Depends(get_session),
 ):
-    db_post = db.query(BlogPost).get(post_id)
+    db_post = db.get(BlogPost, post_id)
     if not db_post:
         raise HTTPException(status_code=404, detail="Post not found")
     db_post.title = post.title
@@ -372,7 +372,7 @@ def admin_delete_post(
     current_user: User = Depends(require_admin),
     db: Session = Depends(get_session),
 ):
-    db_post = db.query(BlogPost).get(post_id)
+    db_post = db.get(BlogPost, post_id)
     if not db_post:
         raise HTTPException(status_code=404, detail="Post not found")
     db.delete(db_post)
