@@ -50,6 +50,7 @@ function App() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [profile, setProfile] = useState(null);
+  const [jobId, setJobId] = useState(null);
 
   const { name, birthDate, birthTime, location } = form;
   const API_BASE = import.meta.env.VITE_API_BASE_URL || '';
@@ -61,7 +62,7 @@ function App() {
     setError('');
 
     try {
-      const res = await fetch(`${API_BASE}/profile`, {
+      const res = await fetch(`${API_BASE}/profile/job`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ date: birthDate, time: birthTime, location }),
@@ -106,24 +107,43 @@ function App() {
         }
         setProfile(null);
       } else {
-        if (payload && typeof payload === 'object') {
-          console.log('Setting profile data', payload);
-          setProfile({ ...payload, request: form });
+        if (payload && typeof payload === 'object' && payload.job_id) {
+          setJobId(payload.job_id);
         } else {
           console.error('Invalid server response', payload);
           setError('Invalid server response');
-          setProfile(null);
         }
       }
     } catch (err) {
       console.error('Request failed', err);
       setError(err.message);
       setProfile(null);
-    } finally {
-      setLoading(false);
-      console.log('Done submitting');
     }
   };
+
+  useEffect(() => {
+    if (!jobId) return;
+    const interval = setInterval(async () => {
+      try {
+        const res = await fetch(`${API_BASE}/jobs/${jobId}`);
+        const data = await res.json();
+        if (data.status === 'complete') {
+          setProfile({ ...data.result, request: form });
+          setJobId(null);
+          setLoading(false);
+        } else if (data.status === 'error') {
+          setError(data.error || 'Job failed');
+          setJobId(null);
+          setLoading(false);
+        }
+      } catch (err) {
+        setError(err.message);
+        setJobId(null);
+        setLoading(false);
+      }
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [jobId, API_BASE, form]);
 
   return (
     <div className="page-wrapper">

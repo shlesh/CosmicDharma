@@ -1,25 +1,26 @@
 from fastapi.testclient import TestClient
 from backend import main
+from backend.services import astro
 from types import SimpleNamespace
 
 client = TestClient(main.app)
 
 
 def test_profile(monkeypatch):
-    main.clear_profile_cache()
+    astro.clear_profile_cache()
     # stub external services
-    monkeypatch.setattr(main, "geocode_location", lambda loc: (10.0, 20.0, "UTC"))
+    monkeypatch.setattr(astro, "geocode_location", lambda loc: (10.0, 20.0, "UTC"))
 
     # stub astrology calculations
-    monkeypatch.setattr(main, "get_birth_info", lambda **k: {"jd_ut": 0, "cusps": [0]*12})
-    monkeypatch.setattr(main, "calculate_planets", lambda *a, **k: [{"name": "Moon", "longitude": 10, "sign": 1, "degree": 10}])
-    monkeypatch.setattr(main, "calculate_vimshottari_dasha", lambda *a, **k: [])
-    monkeypatch.setattr(main, "get_nakshatra", lambda planets: {"nakshatra": "Ashwini", "pada": 1})
-    monkeypatch.setattr(main, "analyze_houses", lambda *a, **k: {1: ["Moon"]})
-    monkeypatch.setattr(main, "calculate_core_elements", lambda *a, **k: {"Fire": 100})
-    monkeypatch.setattr(main, "calculate_divisional_charts", lambda *a, **k: {})
-    monkeypatch.setattr(main, "calculate_ashtakavarga", lambda *a, **k: {"bav": {}, "total_points": {}})
-    monkeypatch.setattr(main, "full_analysis", lambda *a, **k: {})
+    monkeypatch.setattr(astro, "get_birth_info", lambda **k: {"jd_ut": 0, "cusps": [0]*12})
+    monkeypatch.setattr(astro, "calculate_planets", lambda *a, **k: [{"name": "Moon", "longitude": 10, "sign": 1, "degree": 10}])
+    monkeypatch.setattr(astro, "calculate_vimshottari_dasha", lambda *a, **k: [])
+    monkeypatch.setattr(astro, "get_nakshatra", lambda planets: {"nakshatra": "Ashwini", "pada": 1})
+    monkeypatch.setattr(astro, "analyze_houses", lambda *a, **k: {1: ["Moon"]})
+    monkeypatch.setattr(astro, "calculate_core_elements", lambda *a, **k: {"Fire": 100})
+    monkeypatch.setattr(astro, "calculate_divisional_charts", lambda *a, **k: {})
+    monkeypatch.setattr(astro, "calculate_ashtakavarga", lambda *a, **k: {"bav": {}, "total_points": {}})
+    monkeypatch.setattr(astro, "full_analysis", lambda *a, **k: {})
 
     resp = client.post("/profile", json={"date": "2020-01-01", "time": "12:00:00", "location": "Delhi"})
     assert resp.status_code == 200
@@ -29,17 +30,17 @@ def test_profile(monkeypatch):
 
 
 def test_divisional_charts(monkeypatch):
-    main.clear_profile_cache()
-    monkeypatch.setattr(main, "geocode_location", lambda loc: (10.0, 20.0, "UTC"))
-    monkeypatch.setattr(main, "get_birth_info", lambda **k: {"jd_ut": 0, "cusps": [0]*12})
-    monkeypatch.setattr(main, "calculate_planets", lambda *a, **k: [])
-    monkeypatch.setattr(main, "calculate_vimshottari_dasha", lambda *a, **k: [])
-    monkeypatch.setattr(main, "get_nakshatra", lambda planets: {})
-    monkeypatch.setattr(main, "analyze_houses", lambda *a, **k: {})
-    monkeypatch.setattr(main, "calculate_core_elements", lambda *a, **k: {})
-    monkeypatch.setattr(main, "calculate_divisional_charts", lambda *a, **k: {"D1": {}})
-    monkeypatch.setattr(main, "calculate_ashtakavarga", lambda *a, **k: {"bav": {}, "total_points": {}})
-    monkeypatch.setattr(main, "full_analysis", lambda *a, **k: {})
+    astro.clear_profile_cache()
+    monkeypatch.setattr(astro, "geocode_location", lambda loc: (10.0, 20.0, "UTC"))
+    monkeypatch.setattr(astro, "get_birth_info", lambda **k: {"jd_ut": 0, "cusps": [0]*12})
+    monkeypatch.setattr(astro, "calculate_planets", lambda *a, **k: [])
+    monkeypatch.setattr(astro, "calculate_vimshottari_dasha", lambda *a, **k: [])
+    monkeypatch.setattr(astro, "get_nakshatra", lambda planets: {})
+    monkeypatch.setattr(astro, "analyze_houses", lambda *a, **k: {})
+    monkeypatch.setattr(astro, "calculate_core_elements", lambda *a, **k: {})
+    monkeypatch.setattr(astro, "calculate_divisional_charts", lambda *a, **k: {"D1": {}})
+    monkeypatch.setattr(astro, "calculate_ashtakavarga", lambda *a, **k: {"bav": {}, "total_points": {}})
+    monkeypatch.setattr(astro, "full_analysis", lambda *a, **k: {})
 
     resp = client.post("/divisional-charts", json={"date": "2020-01-01", "time": "12:00:00", "location": "Delhi"})
     assert resp.status_code == 200
@@ -48,17 +49,17 @@ def test_divisional_charts(monkeypatch):
 
 
 def test_dasha(monkeypatch):
-    main.clear_profile_cache()
-    monkeypatch.setattr(main, "geocode_location", lambda loc: (10.0, 20.0, "UTC"))
-    monkeypatch.setattr(main, "get_birth_info", lambda **k: {"jd_ut": 0, "cusps": [0]*12})
-    monkeypatch.setattr(main, "calculate_planets", lambda *a, **k: [])
-    monkeypatch.setattr(main, "calculate_vimshottari_dasha", lambda *a, **k: [{"lord": "Sun"}])
-    monkeypatch.setattr(main, "get_nakshatra", lambda planets: {})
-    monkeypatch.setattr(main, "analyze_houses", lambda *a, **k: {})
-    monkeypatch.setattr(main, "calculate_core_elements", lambda *a, **k: {})
-    monkeypatch.setattr(main, "calculate_divisional_charts", lambda *a, **k: {})
-    monkeypatch.setattr(main, "calculate_ashtakavarga", lambda *a, **k: {"bav": {}, "total_points": {}})
-    monkeypatch.setattr(main, "full_analysis", lambda *a, **k: {})
+    astro.clear_profile_cache()
+    monkeypatch.setattr(astro, "geocode_location", lambda loc: (10.0, 20.0, "UTC"))
+    monkeypatch.setattr(astro, "get_birth_info", lambda **k: {"jd_ut": 0, "cusps": [0]*12})
+    monkeypatch.setattr(astro, "calculate_planets", lambda *a, **k: [])
+    monkeypatch.setattr(astro, "calculate_vimshottari_dasha", lambda *a, **k: [{"lord": "Sun"}])
+    monkeypatch.setattr(astro, "get_nakshatra", lambda planets: {})
+    monkeypatch.setattr(astro, "analyze_houses", lambda *a, **k: {})
+    monkeypatch.setattr(astro, "calculate_core_elements", lambda *a, **k: {})
+    monkeypatch.setattr(astro, "calculate_divisional_charts", lambda *a, **k: {})
+    monkeypatch.setattr(astro, "calculate_ashtakavarga", lambda *a, **k: {"bav": {}, "total_points": {}})
+    monkeypatch.setattr(astro, "full_analysis", lambda *a, **k: {})
 
     resp = client.post("/dasha", json={"date": "2020-01-01", "time": "12:00:00", "location": "Delhi"})
     assert resp.status_code == 200
@@ -67,11 +68,11 @@ def test_dasha(monkeypatch):
 
 
 def test_geocode_error(monkeypatch):
-    main.clear_profile_cache()
+    astro.clear_profile_cache()
     def fail(loc):
         raise ValueError("bad location")
 
-    monkeypatch.setattr(main, "geocode_location", fail)
+    monkeypatch.setattr(astro, "geocode_location", fail)
 
     resp = client.post(
         "/profile",
@@ -82,13 +83,13 @@ def test_geocode_error(monkeypatch):
 
 
 def test_birth_info_invalid(monkeypatch):
-    main.clear_profile_cache()
-    monkeypatch.setattr(main, "geocode_location", lambda loc: (10.0, 20.0, "UTC"))
+    astro.clear_profile_cache()
+    monkeypatch.setattr(astro, "geocode_location", lambda loc: (10.0, 20.0, "UTC"))
 
     def bad_birth(**kwargs):
         raise ValueError("date out of range")
 
-    monkeypatch.setattr(main, "get_birth_info", bad_birth)
+    monkeypatch.setattr(astro, "get_birth_info", bad_birth)
 
     resp = client.post(
         "/profile",
@@ -99,16 +100,16 @@ def test_birth_info_invalid(monkeypatch):
 
 
 def test_swisseph_failure(monkeypatch):
-    main.clear_profile_cache()
-    monkeypatch.setattr(main, "geocode_location", lambda loc: (10.0, 20.0, "UTC"))
-    monkeypatch.setattr(main, "get_birth_info", lambda **k: {"jd_ut": 0, "cusps": [0]*12, "sidereal_offset": 0})
+    astro.clear_profile_cache()
+    monkeypatch.setattr(astro, "geocode_location", lambda loc: (10.0, 20.0, "UTC"))
+    monkeypatch.setattr(astro, "get_birth_info", lambda **k: {"jd_ut": 0, "cusps": [0]*12, "sidereal_offset": 0})
 
     import swisseph as swe
 
     def boom(*a, **k):
         raise swe.Error("calc failed")
 
-    monkeypatch.setattr(main, "calculate_planets", boom)
+    monkeypatch.setattr(astro, "calculate_planets", boom)
 
     resp = client.post(
         "/profile",
