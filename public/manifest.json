@@ -1,25 +1,13 @@
 {
-  "short_name": "React App",
-  "name": "Create React App Sample",
-  "icons": [
-    {
-      "src": "favicon.ico",
-      "sizes": "64x64 32x32 24x24 16x16",
-      "type": "image/x-icon"
-    },
-    {
-      "src": "logo192.png",
-      "type": "image/png",
-      "sizes": "192x192"
-    },
-    {
-      "src": "logo512.png",
-      "type": "image/png",
-      "sizes": "512x512"
-    }
-  ],
-  "start_url": ".",
+  "short_name": "Cosmic Dharma",
+  "name": "Cosmic Dharma",
+  "description": "An astrological companion for cosmic insights",
+  "start_url": "/?source=pwa",
+  "scope": "/",
   "display": "standalone",
-  "theme_color": "#000000",
-  "background_color": "#ffffff"
+  "orientation": "portrait",
+  "theme_color": "#310c4b",
+  "background_color": "#12091d",
+  "lang": "en",
+  "categories": ["education", "lifestyle"]
 }
