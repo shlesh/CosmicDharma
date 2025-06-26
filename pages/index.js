@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { fetchJson } from '../util/api';
 import ProfileForm from '../components/ProfileForm';
 import BasicInfo from '../components/BasicInfo';
 import ProfileSummary from '../components/ProfileSummary';
@@ -7,8 +8,6 @@ import PlanetTable from '../components/PlanetTable';
 import HouseAnalysis from '../components/HouseAnalysis';
 import DashaTable from '../components/DashaTable';
 import DashaChart from '../components/DashaChart';
-
-const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || '';
 
 export default function HomePage() {
   const [form, setForm] = useState({ name: '', birthDate: '', birthTime: '', location: '' });
@@ -24,18 +23,16 @@ export default function HomePage() {
     setLoading(true);
     setError('');
     try {
-      const res = await fetch(`${API_BASE}/profile/job`, {
+      const data = await fetchJson('/profile/job', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ date: form.birthDate, time: form.birthTime, location: form.location })
+        body: JSON.stringify({
+          date: form.birthDate,
+          time: form.birthTime,
+          location: form.location,
+        }),
       });
-      const data = await res.json();
-      if (res.ok && data.job_id) {
-        setJobId(data.job_id);
-      } else {
-        setError(data.detail || 'Server error');
-        setLoading(false);
-      }
+      setJobId(data.job_id);
     } catch (err) {
       setError(err.message);
       setLoading(false);
@@ -46,8 +43,7 @@ export default function HomePage() {
     if (!jobId) return;
     const id = setInterval(async () => {
       try {
-        const res = await fetch(`${API_BASE}/jobs/${jobId}`);
-        const data = await res.json();
+        const data = await fetchJson(`/jobs/${jobId}`);
         if (data.status === 'complete') {
           setProfile({ ...data.result, request: form });
           setJobId(null);

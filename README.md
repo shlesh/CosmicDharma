@@ -6,7 +6,7 @@ This project contains a Next.js frontend and a FastAPI backend used to generate 
 
 ### Install Node dependencies
 
-The project targets **Node.js 18** or later. Install packages with:
+Ensure you have **Node.js 18** or later installed. Install packages with:
 
 ```bash
 npm install --legacy-peer-deps
@@ -21,6 +21,7 @@ source venv/bin/activate
 pip install -r requirements.txt
 cd ..
 ```
+Activate this environment whenever you run tests or start the backend.
 
 ### Backend configuration
 
@@ -66,6 +67,7 @@ Install the extra Python packages used during testing and run the frontend and b
 
 ```bash
 pip install -r backend/requirements-dev.txt
+source backend/venv/bin/activate
 ```
 
 ```bash

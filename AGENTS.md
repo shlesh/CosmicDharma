@@ -3,7 +3,7 @@
 This project contains a React frontend and a FastAPI backend. When the AI updates this repository, follow these instructions.
 
 ## Setup
-1. Install Node dependencies with `npm install`.
+1. Install Node dependencies with `npm install --legacy-peer-deps` (requires Node 18+).
 2. Create a Python virtual environment under `backend/venv`, activate it, and install requirements:
    ```bash
    cd backend
@@ -17,7 +17,7 @@ This project contains a React frontend and a FastAPI backend. When the AI update
 Use `npm run dev` to launch both the frontend and backend in development mode.
 
 ## Tests
-Run all tests before committing:
+Activate the virtual environment and run all tests before committing:
 ```bash
 npm test
 PYTHONPATH=. pytest -q
