@@ -1,6 +1,6 @@
 # Vedic Astrology App
 
-This project contains a React frontend and a FastAPI backend used to generate Vedic astrology profiles.
+This project contains a Next.js frontend and a FastAPI backend used to generate Vedic astrology profiles.
 
 ## Setup
 
@@ -44,13 +44,13 @@ Start both servers in development mode:
 npm run dev
 ```
 
-The frontend runs on port 3000 and proxies API requests to the backend on port 8000.
+The frontend runs on port 3000 and uses environment variables to reach the backend on port 8000.
 
 ## Tests
 
 ### Frontend
 
-Run the React unit tests with Vitest:
+Run the frontend unit tests with Vitest:
 
 ```bash
 npm test
@@ -94,8 +94,8 @@ The interface is composed of several reusable React components:
 
 The frontend is deployed to Netlify while the FastAPI backend stays on Hostinger.
 
-1. Set the `VITE_API_BASE_URL` variable in Netlify to the full URL of your backend (e.g. `https://api.cosmicdharma.app`).
-2. Connect this repository to Netlify so pushes to `main` trigger a build. Netlify uses `npm run build` and publishes the `dist` directory as defined in `netlify.toml`.
+1. Set the `NEXT_PUBLIC_API_BASE_URL` variable in Netlify to the full URL of your backend (e.g. `https://api.cosmicdharma.app`).
+2. Connect this repository to Netlify so pushes to `main` trigger a build. Netlify uses `npm run build` and publishes the `.next` directory as defined in `netlify.toml`.
 3. Point your `cosmicdharma.app` domain to Netlify and add it as a custom domain in the Netlify dashboard.
 4. GitHub Actions deploy the backend over SSH and trigger a Netlify deploy using the `NETLIFY_AUTH_TOKEN` and `NETLIFY_SITE_ID` secrets.
 

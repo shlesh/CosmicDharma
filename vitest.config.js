@@ -1,10 +1,9 @@
-import { mergeConfig } from 'vite';
-import viteConfig from './vite.config';
 import { defineConfig } from 'vitest/config';
 
-export default mergeConfig(viteConfig, defineConfig({
+export default defineConfig({
   test: {
     environment: 'jsdom',
     setupFiles: './src/setupTests.js',
-  },
-}));
+    include: ['src/**/*.test.{js,jsx}', 'next-app/**/*.test.{js,jsx}']
+  }
+});
