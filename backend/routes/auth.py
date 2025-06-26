@@ -14,9 +14,13 @@ from ..auth import (
     authenticate_user,
     get_current_user,
 )
-from ..utils.email_utils import send_email
 
 router = APIRouter()
+
+
+def send_email(to: str, subject: str, body: str) -> None:
+    from .. import main
+    main.send_email(to, subject, body)
 
 
 class UserCreate(BaseModel):

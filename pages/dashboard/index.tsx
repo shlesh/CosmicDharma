@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { fetchJson } from '../../util/api';
 import PostList, { BlogPost } from '../../components/PostList';
 import AdminDashboard from '../../components/AdminDashboard';
+import { useToast } from '../../components/ToastProvider';
 
 interface DashboardUser {
   is_admin?: boolean;
@@ -14,6 +15,7 @@ export default function DashboardPage() {
   const [posts, setPosts] = useState<BlogPost[]>([]);
   const [tab, setTab] = useState<string>('Profile');
   const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+  const toast = useToast();
 
   useEffect(() => {
     if (!token) return;
@@ -21,7 +23,10 @@ export default function DashboardPage() {
       headers: { Authorization: `Bearer ${token}` }
     })
       .then(setUser)
-      .catch(() => setUser(null));
+      .catch(() => {
+        toast('Failed to load user');
+        setUser(null);
+      });
   }, [token]);
 
   useEffect(() => {
@@ -30,7 +35,7 @@ export default function DashboardPage() {
       headers: { Authorization: `Bearer ${token}` }
     })
       .then(setPosts)
-      .catch(() => setPosts([]));
+      .catch(() => toast('Failed to load posts'));
   }, [token, user]);
 
   if (!token) return <p>Please login.</p>;

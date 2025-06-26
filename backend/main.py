@@ -11,6 +11,7 @@ from .db import Base, engine, get_session
 from .models import User, Prompt, Report
 from .auth import get_current_user
 from .routes import auth_router, profile_router, blog_router, admin_router
+from .utils.email_utils import send_email
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)

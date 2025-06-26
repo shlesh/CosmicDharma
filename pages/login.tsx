@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useRouter } from 'next/router';
 import apiFetch from '../util/api';
+import { useToast } from '../components/ToastProvider';
 
 interface LoginForm {
   username: string;
@@ -9,6 +10,7 @@ interface LoginForm {
 
 export default function LoginPage() {
   const router = useRouter();
+  const toast = useToast();
   const [form, setForm] = useState<LoginForm>({ username: '', password: '' });
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) =>
     setForm({ ...form, [e.target.name]: e.target.value });
@@ -25,7 +27,7 @@ export default function LoginPage() {
       localStorage.setItem('token', data.access_token);
       router.push('/dashboard');
     } else {
-      alert('Login failed');
+      toast('Login failed');
     }
   };
 
