@@ -20,5 +20,5 @@ else
   source backend/venv/bin/activate
 fi
 
-# Start Next.js and FastAPI
-npm run dev
+# Start Next.js, FastAPI and the background worker
+npx concurrently "npm run dev" "npm run worker"

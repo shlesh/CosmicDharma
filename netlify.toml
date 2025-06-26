@@ -4,8 +4,14 @@
   environment = { NODE_VERSION = "18", NPM_FLAGS = "--legacy-peer-deps" }
 
 [context.production.environment]
-  # Set the backend API URL in Netlify settings or override here
+  # Set the backend API URL and backend env variables here or in the Netlify UI
   NEXT_PUBLIC_API_BASE_URL = ""
+  CACHE_URL = ""
+  SMTP_SERVER = ""
+  SMTP_PORT = ""
+  SMTP_USER = ""
+  SMTP_PASS = ""
+  FROM_EMAIL = ""
 
 [[headers]]
   for = "/service-worker.js"
