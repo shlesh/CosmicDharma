@@ -27,6 +27,16 @@ def seed():
         )
         db.add(user)
 
+    donor = db.query(User).filter_by(username="donor").first()
+    if not donor:
+        donor = User(
+            username="donor",
+            email="donor@example.com",
+            hashed_password=get_password_hash("donor"),
+            is_donor=True,
+        )
+        db.add(donor)
+
     db.commit()
 
     posts = [
@@ -37,7 +47,7 @@ def seed():
     db.commit()
     db.close()
     print("Database seeded.\n")
-    print("Login with admin/admin or user/password")
+    print("Login with admin/admin, user/password or donor/donor")
 
 
 if __name__ == "__main__":
