@@ -33,6 +33,30 @@ source backend/venv/bin/activate
 pip install -r backend/requirements.txt
 pip install -r backend/requirements-dev.txt
 
+# Test connectivity to Redis before starting services
+REDIS_URL="redis://localhost:6379"
+if [ -f backend/.env ]; then
+  val=$(grep -E '^REDIS_URL=' backend/.env | cut -d '=' -f2- | tr -d '\r')
+  if [ -z "$val" ]; then
+    val=$(grep -E '^CACHE_URL=' backend/.env | cut -d '=' -f2- | tr -d '\r')
+  fi
+  if [ -n "$val" ]; then
+    REDIS_URL="$val"
+  fi
+fi
+if ! REDIS_TEST_URL="$REDIS_URL" python - <<'EOF'
+import os, redis, sys
+url = os.environ.get("REDIS_TEST_URL")
+try:
+    redis.from_url(url, socket_connect_timeout=1).ping()
+except Exception:
+    sys.exit(1)
+EOF
+then
+  echo "Redis is not running—start it with 'docker compose up -d redis'." >&2
+  exit 1
+fi
+
 # Deactivate the virtual environment on exit
 trap deactivate EXIT
 
