@@ -224,3 +224,49 @@ def test_admin_can_list_users():
     data = resp.json()
     assert any(u["username"] == "user" for u in data)
 
+
+def test_admin_metrics_and_donor_endpoints():
+    client, Session = setup_test_app()
+    with Session() as db:
+        admin = models.User(
+            username="admin",
+            email="admin@example.com",
+            hashed_password=auth.get_password_hash("pw"),
+            is_admin=True,
+        )
+        donor = models.User(
+            username="donor",
+            email="donor@example.com",
+            hashed_password=auth.get_password_hash("pw"),
+            is_donor=True,
+        )
+        user = models.User(
+            username="user",
+            email="user@example.com",
+            hashed_password=auth.get_password_hash("pw"),
+        )
+        db.add_all([admin, donor, user])
+        db.commit()
+        db.add_all([
+            models.BlogPost(title="t", content="c", owner=admin),
+            models.BlogPost(title="t2", content="c2", owner=donor),
+        ])
+        db.commit()
+
+    token_admin = auth.create_access_token({"sub": "admin"})
+    resp = client.get(
+        "/admin/metrics",
+        headers={"Authorization": f"Bearer {token_admin}"},
+    )
+    assert resp.status_code == 200
+    assert resp.json() == {"users": 3, "posts": 2, "donors": 1}
+
+    token_user = auth.create_access_token({"sub": "user"})
+    assert client.get("/prompts", headers={"Authorization": f"Bearer {token_user}"}).status_code == 403
+
+    token_donor = auth.create_access_token({"sub": "donor"})
+    resp = client.get("/prompts", headers={"Authorization": f"Bearer {token_donor}"})
+    assert resp.status_code == 200 and resp.json() == {"prompts": []}
+    resp = client.get("/reports", headers={"Authorization": f"Bearer {token_donor}"})
+    assert resp.status_code == 200 and resp.json() == {"reports": []}
+
