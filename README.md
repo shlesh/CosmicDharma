@@ -151,6 +151,20 @@ The frontend is deployed to Netlify while the FastAPI backend stays on Hostinger
 6. On the server, copy `backend/.env.example` to `backend/.env` and provide the
    production values before starting the FastAPI service.
 
+## Progressive Web App
+
+The app is configured as a PWA using **next-pwa**. The manifest lives in
+`public/manifest.json` and a service worker is generated during the production
+build. Run:
+
+```bash
+npm run build
+```
+
+to output `service-worker.js` alongside the Next.js files. Static assets are
+cached with a Cache First strategy and API requests are cached with Network
+First. Deploys on Netlify automatically serve the generated service worker.
+
 ## Contributing
 
 1. Install dependencies and set up the Python virtual environment as described above.
