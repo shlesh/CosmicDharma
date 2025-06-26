@@ -18,7 +18,7 @@ export default function Navbar() {
   };
 
   return (
-    <nav className="bg-gray-200 p-4 mb-4">
+    <nav className="glass-card p-4 mb-4">
       <ul className="flex gap-4">
         <li>
           <Link href="/">Home</Link>
