@@ -20,13 +20,16 @@ pip install -r requirements.txt
 cd ..
 ```
 
-### Configure the database
+### Backend configuration
 
-By default the backend uses SQLite. The database file `app.db` will be created in `backend/`. To use another database provide the `DATABASE_URL` environment variable (e.g. `postgresql://user:pass@localhost/dbname`). Authentication tokens are encrypted with `SECRET_KEY` and their lifetime can be adjusted with `ACCESS_TOKEN_EXPIRE_MINUTES`.
+The backend reads several environment variables for its settings:
 
-### Seed sample data
+* `DATABASE_URL` – connection string for the database. By default it uses
+  `sqlite:///./app.db`, creating `app.db` inside `backend/`.
+* `SECRET_KEY` – secret used to sign authentication tokens.
+* `ACCESS_TOKEN_EXPIRE_MINUTES` – token lifetime in minutes (defaults to `30`).
 
-Populate the local SQLite database with demo users and posts:
+To seed the database with demo accounts and posts run:
 
 ```bash
 python backend/seed_demo.py
