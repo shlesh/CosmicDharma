@@ -82,3 +82,8 @@ body {
   from { background-position: 0 0; }
   to { background-position: -3000px 0; }
 }
+
+/* Wrapper for page content */
+.page-wrapper {
+  @apply relative z-10 mx-auto max-w-4xl px-4 sm:px-6 lg:px-8;
+}
