@@ -135,8 +135,8 @@ trap cleanup EXIT
 # Start Next.js and the FastAPI backend. Launch the background worker only if
 # Redis is available.
 if [ "$RUN_WORKER" -eq 1 ]; then
-  npx concurrently --kill-others-on-fail "npm run dev" "npm run worker"
+  npx --yes concurrently --kill-others-on-fail "npm run dev" "npm run worker"
 else
-  npx concurrently --kill-others-on-fail "npm run dev"
+  npx --yes concurrently --kill-others-on-fail "npm run dev"
   echo "Background worker disabled due to missing Redis." >&2
 fi
