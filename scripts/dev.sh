@@ -1,152 +1,58 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Move to the repository root
-REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-cd "$REPO_ROOT"
+# ==========================================
+# COSMIC DHARMA - QUICK DEV SCRIPT
+# ==========================================
 
-# Ensure backend/.env exists, copying from the example if available
-if [ ! -f backend/.env ] && [ -f backend/.env.example ]; then
-  cp backend/.env.example backend/.env
-  echo "Created backend/.env from backend/.env.example. Please adjust the values as needed."
-fi
+# Colors
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+CYAN='\033[0;36m'
+RESET='\033[0m'
 
-echo "\nBootstrapping development environment..."
+# Navigate to repo root
+cd "$(dirname "${BASH_SOURCE[0]}")/.."
 
-# Verify required commands are available
-for cmd in node npm python3; do
-  if ! command -v "$cmd" >/dev/null 2>&1; then
-    echo "Error: $cmd is not installed or not in PATH." >&2
-    exit 1
-  fi
-done
+echo -e "${CYAN}🚀 Starting Cosmic Dharma (Quick Mode)...${RESET}\n"
 
-# Require Node.js >=18
-NODE_MAJOR=$(node -v | sed -E 's/^v([0-9]+).*/\1/')
-if [ "$NODE_MAJOR" -lt 18 ]; then
-  echo "Error: Node.js 18 or newer is required. Found $(node -v)." >&2
-  exit 1
-fi
-
-# Install Node.js dependencies
+# Quick checks
 if [ ! -d node_modules ]; then
-  echo "Installing Node packages..."
-  npm install --legacy-peer-deps --silent
+    echo -e "${YELLOW}Installing Node dependencies...${RESET}"
+    npm install --legacy-peer-deps --silent
 fi
 
-# Set up Python virtual environment
 if [ ! -d backend/venv ]; then
-  echo "Creating Python virtual environment..."
-  python3 -m venv backend/venv
+    echo -e "${YELLOW}Creating Python environment...${RESET}"
+    python3 -m venv backend/venv
 fi
+
+# Activate Python env
 source backend/venv/bin/activate
-echo "Installing Python packages..."
-pip install --quiet -r backend/requirements.txt
-pip install --quiet -r backend/requirements-dev.txt
 
-# Assume the worker should run unless Redis is unavailable
-RUN_WORKER=1
-
-# Test connectivity to Redis before starting services. If Redis isn't running,
-# attempt to start it automatically. Docker Compose is preferred and the script
-# falls back to a daemonized `redis-server` when available. One of these tools
-# must be installed for the automatic startup to succeed. Any `redis-server`
-# process started by this script will be cleaned up on exit.
-REDIS_URL="redis://localhost:6379"
-if [ -f backend/.env ]; then
-  val=$(grep -E '^REDIS_URL=' backend/.env | cut -d '=' -f2- | tr -d '\r' || true)
-  if [ -z "$val" ]; then
-    val=$(grep -E '^CACHE_URL=' backend/.env | cut -d '=' -f2- | tr -d '\r')
-  fi
-  if [ -n "$val" ]; then
-    REDIS_URL="$val"
-  fi
+# Check if pip packages are installed
+if ! python -c "import fastapi" 2>/dev/null; then
+    echo -e "${YELLOW}Installing Python packages...${RESET}"
+    pip install -q -r backend/requirements.txt -r backend/requirements-dev.txt
 fi
 
-check_redis() {
-  REDIS_TEST_URL="$1" python - <<'EOF'
-import os, redis, sys
-url = os.environ.get("REDIS_TEST_URL")
-try:
-    redis.from_url(url, socket_connect_timeout=1).ping()
-except Exception:
-    sys.exit(1)
-EOF
-}
+# Ensure .env files exist
+[ ! -f backend/.env ] && [ -f backend/.env.example ] && cp backend/.env.example backend/.env
+[ ! -f .env.local ] && [ -f .env.local.example ] && cp .env.local.example .env.local
 
-DOCKER_COMPOSE_CMD=""
-if command -v docker >/dev/null 2>&1; then
-  if docker compose version >/dev/null 2>&1; then
-    DOCKER_COMPOSE_CMD="docker compose"
-  elif command -v docker-compose >/dev/null 2>&1; then
-    DOCKER_COMPOSE_CMD="docker-compose"
-  fi
-fi
-
-echo "Checking Redis availability..."
-
-if ! check_redis "$REDIS_URL"; then
-  echo "Redis is not running; attempting to start via Docker Compose..." >&2
-  if [ -n "$DOCKER_COMPOSE_CMD" ]; then
-    $DOCKER_COMPOSE_CMD up -d redis
-    for _ in {1..5}; do
-      sleep 1
-      if check_redis "$REDIS_URL"; then
-        REDIS_STARTED=compose
-        break
-      fi
-    done
-    if [ "${REDIS_STARTED:-}" != compose ]; then
-      echo "Redis did not start via Docker Compose." >&2
-      RUN_WORKER=0
-    fi
-  else
-    if command -v redis-server >/dev/null 2>&1; then
-      echo "Docker Compose unavailable; starting redis-server locally..." >&2
-      REDIS_PIDFILE="$(mktemp)"
-      redis-server --daemonize yes --pidfile "$REDIS_PIDFILE" >/dev/null
-      for _ in {1..5}; do
-        sleep 1
-        if check_redis "$REDIS_URL"; then
-          REDIS_STARTED=server
-          break
-        fi
-      done
-      if [ "${REDIS_STARTED:-}" != server ]; then
-        echo "redis-server failed to start." >&2
-        if [ -f "$REDIS_PIDFILE" ]; then
-          kill "$(cat "$REDIS_PIDFILE")" 2>/dev/null || true
-          rm -f "$REDIS_PIDFILE"
-        fi
-        RUN_WORKER=0
-      fi
-    else
-      echo "Warning: Redis is not running and neither Docker Compose nor redis-server was found." >&2
-      echo "Start Redis manually (e.g., 'docker compose up -d redis' or 'docker-compose up -d redis') to enable the worker." >&2
-      RUN_WORKER=0
-    fi
-  fi
+# Check Redis
+if python -c "import redis; redis.from_url('redis://localhost:6379').ping()" 2>/dev/null; then
+    WORKER="\" \"npm run worker"
 else
-  echo "Redis is running."
+    echo -e "${YELLOW}Redis not available - worker disabled${RESET}"
+    WORKER=""
 fi
 
-# Deactivate the virtual environment on exit and stop any redis-server we
-# started.
-cleanup() {
-  if [ "${REDIS_STARTED:-}" = server ] && [ -f "$REDIS_PIDFILE" ]; then
-    kill "$(cat "$REDIS_PIDFILE")" 2>/dev/null || true
-    rm -f "$REDIS_PIDFILE"
-  fi
-  deactivate
-}
-trap cleanup EXIT
+# Start services
+echo -e "\n${GREEN}Frontend: http://localhost:3000${RESET}"
+echo -e "${GREEN}Backend:  http://localhost:8000${RESET}\n"
 
-# Start Next.js and the FastAPI backend. Launch the background worker only if
-# Redis is available.
-echo "Starting application..."
-if [ "$RUN_WORKER" -eq 1 ]; then
-  npx --yes concurrently --kill-others-on-fail "npm run dev" "npm run worker"
-else
-  npx --yes concurrently --kill-others-on-fail "npm run dev"
-  echo "Background worker disabled due to missing Redis." >&2
-fi
+eval "npx concurrently \
+    --names 'Next,FastAPI${WORKER:+,Worker}' \
+    --prefix-colors 'cyan,magenta${WORKER:+,yellow}' \
+    \"npm run dev${WORKER}\""

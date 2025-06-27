@@ -1,0 +1,51 @@
+# Git
+.git
+.gitignore
+
+# Node
+node_modules
+npm-debug.log
+yarn-error.log
+.next
+out
+
+# Python
+__pycache__
+*.pyc
+*.pyo
+*.pyd
+.Python
+venv
+env
+backend/venv
+.pytest_cache
+
+# IDE
+.vscode
+.idea
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Project
+.env
+.env.local
+*.log
+coverage
+.startup.pid
+.redis.pid
+
+# Documentation
+README.md
+AGENTS.md
+*.md
+
+# Tests
+tests
+**/*.test.js
+**/*.test.tsx
+**/*.spec.js
+vitest.config.js
