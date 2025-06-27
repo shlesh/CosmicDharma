@@ -34,16 +34,22 @@ export default function LoginPage() {
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-2">
       <h2 className="text-xl font-semibold">Login</h2>
+      <label htmlFor="username">Username</label>
       <input
+        id="username"
         name="username"
+        autoComplete="username"
         value={form.username}
         onChange={handleChange}
         placeholder="Username"
         className="border rounded p-2"
       />
+      <label htmlFor="password">Password</label>
       <input
+        id="password"
         name="password"
         type="password"
+        autoComplete="current-password"
         value={form.password}
         onChange={handleChange}
         placeholder="Password"

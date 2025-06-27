@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { useRouter } from 'next/router';
 import apiFetch from '../util/api';
 import { useToast } from '../components/ToastProvider';
@@ -35,24 +35,33 @@ export default function RegisterPage() {
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-2">
       <h2 className="text-xl font-semibold">Register</h2>
+      <label htmlFor="username">Username</label>
       <input
+        id="username"
         name="username"
+        autoComplete="username"
         value={form.username}
         onChange={handleChange}
         placeholder="Username"
         className="border rounded p-2"
       />
+      <label htmlFor="email">Email</label>
       <input
+        id="email"
         name="email"
         type="email"
+        autoComplete="email"
         value={form.email}
         onChange={handleChange}
         placeholder="Email"
         className="border rounded p-2"
       />
+      <label htmlFor="password">Password</label>
       <input
+        id="password"
         name="password"
         type="password"
+        autoComplete="new-password"
         value={form.password}
         onChange={handleChange}
         placeholder="Password"
