@@ -10,7 +10,6 @@ def test_sign_mapping():
     res = calculate_core_elements(planets)
     assert res["Air"] == 50.0
     assert res["Water"] == 50.0
-    assert res["Space"] == 0.0
 
 
 def test_modalities_and_weighting():

@@ -93,8 +93,7 @@ ELEMENTS_INTERP = {
     'Fire': 'Agni Tattva: Dynamic energy, transformation, digestion, leadership, Pitta dosha',
     'Earth': 'Prithvi Tattva: Stability, material manifestation, patience, Kapha dosha',
     'Air': 'Vayu Tattva: Movement, communication, changeability, Vata dosha',
-    'Water': 'Jala Tattva: Emotions, nurturing, flexibility, Kapha dosha',
-    'Space': 'Akasha Tattva: Consciousness, sound, spiritual expansion, Vata dosha'
+    'Water': 'Jala Tattva: Emotions, nurturing, flexibility, Kapha dosha'
 }
 
 # Dasha interpretations based on classical texts
@@ -182,7 +181,7 @@ def interpret_core_elements(core):
     result = {}
     
     # Analyze dosha tendencies
-    vata = elements.get('Air', 0) + elements.get('Space', 0)
+    vata = elements.get('Air', 0)
     pitta = elements.get('Fire', 0)
     kapha = elements.get('Earth', 0) + elements.get('Water', 0)
     
