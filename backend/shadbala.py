@@ -6,6 +6,7 @@ This is crucial for determining which planets will give strong results.
 
 import math
 from datetime import datetime
+import swisseph as swe
 
 def calculate_shadbala(planets, birth_info, houses):
     """
@@ -27,7 +28,7 @@ def calculate_shadbala(planets, birth_info, houses):
         strength = {
             'sthana_bala': calculate_sthana_bala(planet, planets),
             'dig_bala': calculate_dig_bala(planet, houses),
-            'kala_bala': calculate_kala_bala(planet, birth_info),
+            'kala_bala': calculate_kala_bala(planet, birth_info, planets),
             'chesta_bala': calculate_chesta_bala(planet),
             'naisargika_bala': get_naisargika_bala(planet['name']),
             'drik_bala': 0  # Would need aspect calculations
@@ -148,12 +149,13 @@ def calculate_dig_bala(planet, houses):
     
     return max(0, 60 - (distance * 10))
 
-def calculate_kala_bala(planet, birth_info):
-    """
-    Temporal Strength based on:
-    - Day/Night birth
-    - Weekday
-    - Hora (planetary hour)
+def calculate_kala_bala(planet, birth_info, planets=None):
+    """Return temporal strength for a planet.
+
+    Combines day/night preference, Paksha Bala from the Moon's distance to the
+    Sun and weekday strength derived via Swiss Ephemeris. ``planets`` may be
+    provided to supply the Sun's longitude; otherwise it will be computed using
+    ``swisseph``.
     """
     points = 0
     
@@ -174,9 +176,27 @@ def calculate_kala_bala(planet, birth_info):
     
     # Paksha Bala (Moon phase strength) - for Moon only
     if planet['name'] == 'Moon':
-        # Would need Sun-Moon distance calculation
-        # Simplified version
-        points += 30  # Placeholder
+        sun_lon = None
+        if planets:
+            for p in planets:
+                if p.get('name') == 'Sun':
+                    if 'longitude' in p:
+                        sun_lon = p['longitude']
+                    elif 'sign' in p and 'degree' in p:
+                        sun_lon = (p['sign'] - 1) * 30 + p['degree']
+                    break
+        if sun_lon is None:
+            try:
+                sun_lon = swe.calc_ut(birth_info['jd_ut'], swe.SUN)[0][0]
+            except Exception:
+                sun_lon = 0.0
+        moon_lon = planet.get('longitude')
+        if moon_lon is None:
+            moon_lon = (planet['sign'] - 1) * 30 + planet.get('degree', 0)
+        phase = (moon_lon - sun_lon) % 360
+        if phase > 180:
+            phase = 360 - phase
+        points += 30 * (phase / 180)
     
     # Weekday strength (Vara Bala)
     weekday_rulers = {
@@ -186,13 +206,11 @@ def calculate_kala_bala(planet, birth_info):
         3: 'Jupiter',  # Thursday
         4: 'Venus',    # Friday
         5: 'Saturn',   # Saturday
-        6: 'Sun'       # Sunday
+        6: 'Sun',      # Sunday
     }
-    
-    # Would need to calculate weekday from Julian Day
-    # Placeholder calculation
+
     jd = birth_info.get('jd_ut', 0)
-    weekday = int(jd + 1.5) % 7
+    weekday = int(swe.day_of_week(jd))
     
     if weekday_rulers.get(weekday) == planet['name']:
         points += 15
