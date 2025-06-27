@@ -66,9 +66,9 @@ reads these environment variables:
 * `SMTP_PASS` – SMTP password for the above user.
 * `FROM_EMAIL` – default sender address for outgoing mail.
 
-For the Next.js frontend, create `.env.local` and set `NEXT_PUBLIC_API_BASE_URL`
-to the URL of your backend. During local development this is usually
-`http://localhost:8000`.
+For the Next.js frontend, copy `.env.local.example` to `.env.local` and set
+`NEXT_PUBLIC_API_BASE_URL` to the URL of your backend. During local development
+this is usually `http://localhost:8000`.
 
 To seed the database with demo accounts and posts run from the repository root:
 
@@ -134,7 +134,7 @@ docker-compose up -d redis
 Without Redis the worker exits with connection errors.
 
 The frontend runs on port 3000 and uses environment variables to reach the backend on port 8000.
-Create a `.env.local` file if it doesn't exist and set `NEXT_PUBLIC_API_BASE_URL` to the URL of the backend.
+Copy `.env.local.example` to `.env.local` if it doesn't exist and set `NEXT_PUBLIC_API_BASE_URL` to the URL of the backend.
 For local development use:
 
 ```bash
