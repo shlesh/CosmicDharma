@@ -117,15 +117,18 @@ npm run worker
 ```
 
 Redis must be running locally before starting the worker. `scripts/dev.sh`
-tries to launch Redis automatically using Docker Compose or `redis-server`.
-Ensure one of these tools is installed for the automatic startup to succeed.
-If the script cannot start Redis, it continues without the worker. Start Redis
-manually (for example with `docker compose up -d redis`) and run `npm run
-worker` in a separate terminal to enable background tasks. You may also launch
-Redis yourself and rerun the script.
+tries to launch Redis automatically using Docker Compose (`docker compose` or
+`docker-compose`) or `redis-server`. Ensure one of these tools is installed for
+the automatic startup to succeed. If the script cannot start Redis, it continues
+without the worker. Start Redis manually (for example with `docker compose up -d
+redis` or `docker-compose up -d redis`) and run `npm run worker` in a separate
+terminal to enable background tasks. You may also launch Redis yourself and
+rerun the script.
 
 ```bash
 docker compose up -d redis
+# or
+docker-compose up -d redis
 ```
 
 Without Redis the worker exits with connection errors.
@@ -167,6 +170,8 @@ Compose. Build and start all services with:
 
 ```bash
 docker compose up --build
+# or
+docker-compose up --build
 ```
 
 This starts three containers:
