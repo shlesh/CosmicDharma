@@ -5,8 +5,7 @@ import DashboardPage from '../pages/dashboard/index';
 
 import { fetchJson } from '../util/api';
 vi.mock('../util/api', () => ({
-  fetchJson: vi.fn(),
-  default: vi.fn(() => Promise.resolve({ ok: true, json: () => Promise.resolve([]) }))
+  fetchJson: vi.fn()
 }));
 
 function setupToken(token) {
@@ -51,7 +50,9 @@ test('renders admin dashboard for admins', async () => {
   setupToken('t');
   fetchJson
     .mockResolvedValueOnce({ username: 'u', is_admin: true })
-    .mockResolvedValueOnce([]); // posts fetch will not be used
+    .mockResolvedValueOnce([]) // posts fetch will not be used
+    .mockResolvedValueOnce([]) // admin posts
+    .mockResolvedValueOnce([]); // admin users
   render(<DashboardPage />);
   await screen.findAllByText('Dashboard');
   fireEvent.click(screen.getAllByText('Admin')[0]);
