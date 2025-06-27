@@ -1,4 +1,6 @@
 import React, { useEffect, useState } from 'react';
+import useSWR from 'swr';
+import apiFetch, { fetchJson } from '../util/api';
 import { useToast } from './ToastProvider';
 
 interface Post {
@@ -27,13 +29,33 @@ import {
   Tooltip,
   Legend,
 } from 'chart.js';
-import apiFetch from '../util/api';
 
 Chart.register(BarElement, CategoryScale, LinearScale, Tooltip, Legend);
 
 export default function AdminDashboard() {
-  const [posts, setPosts] = useState<Post[]>([]);
-  const [users, setUsers] = useState<User[]>([]);
+  const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+  const headers = {
+    'Content-Type': 'application/json',
+    Authorization: `Bearer ${token}`,
+  };
+
+  const {
+    data: posts = [],
+    mutate: mutatePosts,
+    error: postsError
+  } = useSWR<Post[]>(
+    token ? ['admin/posts', token] : null,
+    ([url, t]) => fetchJson(url, { headers })
+  );
+
+  const {
+    data: users = [],
+    mutate: mutateUsers,
+    error: usersError
+  } = useSWR<User[]>(
+    token ? ['admin/users', token] : null,
+    ([url, t]) => fetchJson(url, { headers })
+  );
   const [editingId, setEditingId] = useState<number | null>(null);
   const [isCreating, setIsCreating] = useState(false);
   const [form, setForm] = useState<{ title: string; content: string }>({
@@ -41,28 +63,20 @@ export default function AdminDashboard() {
     content: '',
   });
   const [selectedTab, setSelectedTab] = useState('write');
-  const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
   const toast = useToast();
-  const headers = {
-    'Content-Type': 'application/json',
-    Authorization: `Bearer ${token}`,
-  };
 
   const load = () => {
-    if (!token) return;
-    apiFetch('admin/posts', { headers })
-      .then(res => res.json())
-      .then(setPosts)
-      .catch(() => toast('Failed to load posts'));
-    apiFetch('admin/users', { headers })
-      .then(res => res.json())
-      .then(setUsers)
-      .catch(() => toast('Failed to load users'));
+    mutatePosts();
+    mutateUsers();
   };
 
   useEffect(() => {
-    load();
-  }, [token]);
+    if (postsError) toast('Failed to load posts');
+  }, [postsError]);
+
+  useEffect(() => {
+    if (usersError) toast('Failed to load users');
+  }, [usersError]);
 
   const startEdit = post => {
     setEditingId(post.id);
@@ -126,13 +140,15 @@ export default function AdminDashboard() {
   return (
     <div>
       <h2>Admin Dashboard</h2>
-      {(posts.length > 0 || users.length > 0) && <Bar data={data} options={options} />}
+      {((posts || []).length > 0 || (users || []).length > 0) && (
+        <Bar data={data} options={options} />
+      )}
       <h3>Posts</h3>
       {!editingId && !isCreating && (
         <button onClick={startCreate}>New Post</button>
       )}
       <ul>
-        {posts.map(p => (
+        {(Array.isArray(posts) ? posts : []).map(p => (
           <li key={p.id}>
             {p.title}{' '}
             <button onClick={() => startEdit(p)}>Edit</button>{' '}

@@ -1,7 +1,8 @@
 import { useRouter } from 'next/router';
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import ReactMarkdown from 'react-markdown';
-import apiFetch from '../../util/api';
+import useSWR from 'swr';
+import { fetchJson } from '../../util/api';
 import { useToast } from '../../components/ToastProvider';
 import PageHead from '../../components/PageHead';
 
@@ -15,18 +16,14 @@ export default function PostViewPage() {
   const router = useRouter();
   const toast = useToast();
   const { id } = router.query;
-  const [post, setPost] = useState<BlogPost | null>(null);
+  const { data: post, error } = useSWR<BlogPost>(
+    id ? `posts/${id}` : null,
+    fetchJson
+  );
 
   useEffect(() => {
-    if (!id) return;
-    apiFetch(`posts/${id}`)
-      .then(res => res.json())
-      .then(data => setPost(data))
-      .catch(() => {
-        toast('Failed to load post');
-        setPost(null);
-      });
-  }, [id]);
+    if (error) toast('Failed to load post');
+  }, [error]);
 
   if (!post) return <p>Loading...</p>;
 

@@ -1,6 +1,7 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect } from 'react';
 import Link from 'next/link';
-import apiFetch from '../util/api';
+import useSWR from 'swr';
+import { fetchJson } from '../util/api';
 import { useToast } from './ToastProvider';
 
 export interface BlogPost {
@@ -13,16 +14,17 @@ export interface PostListProps {
 }
 
 export default function PostList({ posts: initialPosts }: PostListProps = {}) {
-  const [posts, setPosts] = useState<BlogPost[]>(initialPosts ?? []);
   const toast = useToast();
+  const { data, error } = useSWR<BlogPost[]>(
+    initialPosts ? null : 'posts',
+    fetchJson
+  );
 
   useEffect(() => {
-    if (initialPosts) return;
-    apiFetch('posts')
-      .then(res => res.json())
-      .then(data => setPosts(data))
-      .catch(() => toast('Failed to load posts'));
-  }, [initialPosts]);
+    if (error) toast('Failed to load posts');
+  }, [error]);
+
+  const posts = initialPosts ?? data ?? [];
 
   return (
     <div>
