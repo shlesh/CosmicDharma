@@ -69,10 +69,19 @@ except Exception:
 EOF
 }
 
+DOCKER_COMPOSE_CMD=""
+if command -v docker >/dev/null 2>&1; then
+  if docker compose version >/dev/null 2>&1; then
+    DOCKER_COMPOSE_CMD="docker compose"
+  elif command -v docker-compose >/dev/null 2>&1; then
+    DOCKER_COMPOSE_CMD="docker-compose"
+  fi
+fi
+
 if ! check_redis "$REDIS_URL"; then
   echo "Redis is not running; attempting to start via Docker Compose..." >&2
-  if command -v docker >/dev/null 2>&1 && docker compose version >/dev/null 2>&1; then
-    docker compose up -d redis
+  if [ -n "$DOCKER_COMPOSE_CMD" ]; then
+    $DOCKER_COMPOSE_CMD up -d redis
     for _ in {1..5}; do
       sleep 1
       if check_redis "$REDIS_URL"; then
@@ -106,7 +115,7 @@ if ! check_redis "$REDIS_URL"; then
       fi
     else
       echo "Warning: Redis is not running and neither Docker Compose nor redis-server was found." >&2
-      echo "Start Redis manually (e.g., 'docker compose up -d redis') to enable the worker." >&2
+      echo "Start Redis manually (e.g., 'docker compose up -d redis' or 'docker-compose up -d redis') to enable the worker." >&2
       RUN_WORKER=0
     fi
   fi
