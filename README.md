@@ -57,7 +57,8 @@ reads these environment variables:
 * `HOUSE_SYSTEM` – astrological house system (`whole_sign` by default).
 * `CACHE_ENABLED` – enable or disable caching.
 * `CACHE_URL` – Redis URL used for the profile cache.
-* `REDIS_URL` – connection string for Redis used by the background job queue.
+* `REDIS_URL` – connection string for Redis used by the background job queue
+  (defaults to `redis://localhost:6379/1`).
 * `CACHE_TTL` – cache lifetime in seconds.
 * `SMTP_SERVER` – hostname of your SMTP server for sending email.
 * `SMTP_PORT` – port of the SMTP server (`587` by default).
