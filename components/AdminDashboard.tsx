@@ -78,7 +78,7 @@ export default function AdminDashboard() {
     if (usersError) toast('Failed to load users');
   }, [usersError]);
 
-  const startEdit = post => {
+  const startEdit = (post: Post) => {
     setEditingId(post.id);
     setForm({ title: post.title, content: post.content });
   };
@@ -109,7 +109,7 @@ export default function AdminDashboard() {
     }
   };
 
-  const handleDelete = async id => {
+  const handleDelete = async (id: number) => {
     if (!window.confirm('Delete this post?')) return;
     const res = await apiFetch(`admin/posts/${id}`, {
       method: 'DELETE',
