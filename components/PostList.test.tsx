@@ -16,5 +16,6 @@ test('shows error toast when fetch fails', async () => {
       <PostList />
     </ToastProvider>
   );
-  await screen.findByText(/failed to load posts/i);
+  const alert = await screen.findByRole('alert');
+  expect(alert.textContent).toMatch(/failed to load posts/i);
 });
