@@ -91,7 +91,7 @@ password to finish the process.
 
 ## Running the application
 
-Run the helper script during the first setup. It verifies that **Node.js 18+** and **Python 3** are available, installs dependencies if required and then starts the frontend, backend and worker:
+Run the helper script during the first setup. It verifies that **Node.js 18+** and **Python 3** are available, installs dependencies if required and then starts the frontend, backend and worker. The script also checks for a local Redis instance and attempts to start one automatically:
 
 ```bash
 ./scripts/dev.sh
@@ -115,8 +115,10 @@ to launch the frontend and backend. You may run the worker separately if you pre
 npm run worker
 ```
 
-Redis must be running locally before starting the worker. Launch the service
-via Docker Compose or run `redis-server` manually:
+Redis must be running locally before starting the worker. `scripts/dev.sh`
+tries to launch Redis automatically using Docker Compose or `redis-server`.
+Ensure one of these tools is installed for the automatic startup to succeed.
+If the script fails or you prefer to manage Redis yourself, start it manually:
 
 ```bash
 docker compose up -d redis
