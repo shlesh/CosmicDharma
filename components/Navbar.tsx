@@ -1,10 +1,12 @@
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
+import { useTheme } from './ThemeProvider';
 
 export default function Navbar() {
   const router = useRouter();
   const [authed, setAuthed] = useState(false);
+  const { theme, toggleTheme } = useTheme();
 
   useEffect(() => {
     const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
@@ -62,6 +64,11 @@ export default function Navbar() {
               Login
             </Link>
           )}
+        </li>
+        <li>
+          <button onClick={toggleTheme} aria-label="toggle theme">
+            {theme === 'dark' ? 'Light Mode' : 'Dark Mode'}
+          </button>
         </li>
       </ul>
     </nav>

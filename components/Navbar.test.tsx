@@ -1,7 +1,8 @@
 import React from 'react';
 import { render, screen, cleanup } from '@testing-library/react';
-import { expect, test, vi, afterEach } from 'vitest';
+import { expect, test, vi, afterEach, beforeAll } from 'vitest';
 import Navbar from './Navbar';
+import ThemeProvider from './ThemeProvider';
 
 let router = { pathname: '/', push: vi.fn() };
 vi.mock('next/router', () => ({
@@ -21,10 +22,28 @@ afterEach(() => {
   window.localStorage.clear();
 });
 
+beforeAll(() => {
+  (window as any).matchMedia = vi.fn().mockReturnValue({
+    matches: false,
+    addListener: vi.fn(),
+    removeListener: vi.fn(),
+    addEventListener: vi.fn(),
+    removeEventListener: vi.fn(),
+  });
+});
+
+function renderNav() {
+  render(
+    <ThemeProvider>
+      <Navbar />
+    </ThemeProvider>
+  );
+}
+
 test('shows login link when logged out', () => {
   setToken(null);
   router.pathname = '/';
-  render(<Navbar />);
+  renderNav();
   expect(screen.getByRole('link', { name: /home/i })).toBeDefined();
   expect(screen.getByRole('link', { name: /posts/i })).toBeDefined();
   expect(screen.getByRole('link', { name: /dashboard/i })).toBeDefined();
@@ -35,7 +54,7 @@ test('shows login link when logged out', () => {
 test('shows logout button when logged in', async () => {
   setToken('t');
   router.pathname = '/';
-  render(<Navbar />);
+  renderNav();
   await screen.findByRole('button', { name: /logout/i });
   expect(screen.getByRole('button', { name: /logout/i })).toBeDefined();
 });
@@ -43,9 +62,16 @@ test('shows logout button when logged in', async () => {
 test('highlights the active page', () => {
   setToken(null);
   router.pathname = '/posts';
-  render(<Navbar />);
+  renderNav();
   const posts = screen.getByRole('link', { name: /posts/i });
   expect(posts.getAttribute('aria-current')).toBe('page');
   const home = screen.getByRole('link', { name: /home/i });
   expect(home.getAttribute('aria-current')).toBeNull();
+});
+
+test('shows theme toggle button', () => {
+  setToken(null);
+  router.pathname = '/';
+  renderNav();
+  expect(screen.getByRole('button', { name: /toggle theme/i })).toBeDefined();
 });
