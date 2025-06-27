@@ -3,6 +3,7 @@ import math
 from backend.yogas import calculate_all_yogas
 from backend.shadbala import calculate_shadbala
 from backend.divisional_charts import calculate_all_vargas
+from backend.utils.signs import get_sign_lord
 
 
 def test_calculate_all_yogas_empty():
@@ -58,3 +59,8 @@ def test_calculate_all_vargas_values():
     assert res["D9"] == 5
     assert res["D10"] == 6
     assert res["D60"] == 7
+
+
+def test_get_sign_lord_helper():
+    assert get_sign_lord(1) == "Mars"
+    assert get_sign_lord(12) == "Jupiter"

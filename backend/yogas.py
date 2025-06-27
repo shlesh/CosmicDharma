@@ -5,24 +5,7 @@ These are crucial for prediction in Vedic astrology.
 """
 
 from .astro_constants import RASHI_METADATA
-
-def get_sign_lord(sign_num):
-    """Get the ruling planet of a sign."""
-    sign_rulers = {
-        1: 'Mars',      # Aries
-        2: 'Venus',     # Taurus
-        3: 'Mercury',   # Gemini
-        4: 'Moon',      # Cancer
-        5: 'Sun',       # Leo
-        6: 'Mercury',   # Virgo
-        7: 'Venus',     # Libra
-        8: 'Mars',      # Scorpio
-        9: 'Jupiter',   # Sagittarius
-        10: 'Saturn',   # Capricorn
-        11: 'Saturn',   # Aquarius
-        12: 'Jupiter'   # Pisces
-    }
-    return sign_rulers.get(sign_num)
+from .utils.signs import get_sign_lord
 
 def calculate_pancha_mahapurusha_yogas(planets, houses):
     """
