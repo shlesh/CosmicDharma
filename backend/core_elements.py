@@ -22,7 +22,7 @@ def calculate_core_elements(
         if ``include_modalities`` is ``True``.
     """
 
-    elements = {"Fire": 0, "Earth": 0, "Air": 0, "Water": 0}
+    elements = {"Fire": 0, "Earth": 0, "Air": 0, "Water": 0, "Space": 0}
 
     # Standard element assignments for the 12 signs
     sign_to_element = {
@@ -37,7 +37,7 @@ def calculate_core_elements(
         9: "Fire",
         10: "Earth",
         11: "Air",
-        12: "Water",
+        12: "Space",
     }
 
     sign_to_modality = {

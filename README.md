@@ -229,7 +229,7 @@ The interface is composed of several reusable React components:
 - **ProfileForm** – collects your birth details. Tooltips guide each input.
 - **ProfileSummary** – highlights key chart insights, such as your nakshatra.
 - **BasicInfo** – confirms the birth data used in calculations.
-- **CoreElements** – shows the balance of Fire, Earth, Air and Water elements.
+- **CoreElements** – shows the balance of Fire, Earth, Air, Water and Space elements.
 - **PlanetTable** – lists the zodiac sign and degree of every planet.
 - **HouseAnalysis** – explains how each astrological house influences life areas.
 - **DashaTable** – lists major planetary periods with start and end dates.

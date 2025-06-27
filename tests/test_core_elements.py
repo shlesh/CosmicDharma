@@ -12,6 +12,14 @@ def test_sign_mapping():
     assert res["Water"] == 50.0
 
 
+def test_space_mapping():
+    planets = [
+        {"name": "Neptune", "sign": 12},  # Pisces mapped to Space
+    ]
+    res = calculate_core_elements(planets)
+    assert res["Space"] == 100.0
+
+
 def test_modalities_and_weighting():
     planets = [
         {"name": "Sun", "sign": 1},  # Aries - Cardinal
