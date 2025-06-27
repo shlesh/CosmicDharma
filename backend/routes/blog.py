@@ -66,7 +66,7 @@ def list_posts(db: Session = Depends(get_session)):
 
 @router.get("/posts/{post_id}", response_model=BlogPostOut)
 def get_post(post_id: int, db: Session = Depends(get_session)):
-    p = db.query(BlogPost).get(post_id)
+    p = db.get(BlogPost, post_id)
     if not p:
         raise HTTPException(status_code=404, detail="Post not found")
     return BlogPostOut(
@@ -86,7 +86,7 @@ def update_post(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_session),
 ):
-    db_post = db.query(BlogPost).get(post_id)
+    db_post = db.get(BlogPost, post_id)
     if not db_post:
         raise HTTPException(status_code=404, detail="Post not found")
     if db_post.user_id != current_user.id and not current_user.is_admin:
@@ -111,7 +111,7 @@ def delete_post(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_session),
 ):
-    db_post = db.query(BlogPost).get(post_id)
+    db_post = db.get(BlogPost, post_id)
     if not db_post:
         raise HTTPException(status_code=404, detail="Post not found")
     if db_post.user_id != current_user.id and not current_user.is_admin:
