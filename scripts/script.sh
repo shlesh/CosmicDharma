@@ -519,9 +519,9 @@ start_services() {
     echo $$ > "$PID_FILE"
     
     # Prepare startup command
-    local services="npm run dev"
+    local services="\"npm run dev\""
     if [ $WORKER_ENABLED -eq 1 ]; then
-        services="$services\" \"npm run worker"
+        services="$services \"npm run worker\""
     fi
     
     echo -e "\n${BOLD}${GREEN}${ROCKET} Launching Cosmic Dharma...${RESET}\n"
