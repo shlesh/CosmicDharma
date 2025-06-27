@@ -4,7 +4,7 @@ from __future__ import annotations
 import logging
 import json
 from typing import Literal, Optional, Dict
-from datetime import date as dt_date, time as dt_time
+from datetime import date as dt_date, time as dt_time, datetime
 
 from fastapi import BackgroundTasks, HTTPException
 from pydantic import BaseModel, Field, ConfigDict, field_validator
@@ -30,6 +30,7 @@ from backend.yogas import calculate_all_yogas
 from backend.shadbala import calculate_shadbala, calculate_bhava_bala
 from backend.ashtakavarga import calculate_ashtakavarga
 from backend.analysis import full_analysis
+from backend import panchanga
 
 CONFIG = load_config()
 logger = logging.getLogger(__name__)
@@ -95,6 +96,7 @@ class ProfileResponse(BaseModel):
     shadbala: Optional[dict] = None
     bhavaBala: Optional[dict] = None
     ashtakavarga: Optional[dict] = None
+    panchanga: Optional[dict] = None
     analysis: Optional[dict] = None
 
 
@@ -265,6 +267,49 @@ def compute_vedic_profile(request: ProfileRequest) -> dict:
     if CONFIG.get("cache_enabled", "true") == "true":
         _CACHE.setex(cache_key, CACHE_TTL, json.dumps(result))
     return result
+
+
+def compute_panchanga(request: ProfileRequest) -> dict:
+    """Compute daily panchanga for the given request."""
+    loc_str = request.location.strip()
+    logger.info("Geocoding '%s'", loc_str)
+    try:
+        lat, lon, tz = geocode_location(loc_str)
+    except ValueError as ex:
+        logger.error(str(ex))
+        raise HTTPException(status_code=400, detail=str(ex))
+    except Exception as ex:  # pragma: no cover - unexpected
+        logger.exception("Geocoding failed")
+        raise HTTPException(status_code=500, detail="Geocoding failed") from ex
+
+    try:
+        binfo = get_birth_info(
+            date=request.birth_date,
+            time=request.birth_time,
+            latitude=lat,
+            longitude=lon,
+            timezone=tz,
+            ayanamsha=request.ayanamsa,
+            house_system=request.house_system,
+        )
+    except ValueError as ex:
+        raise HTTPException(status_code=400, detail=str(ex))
+    except swe.Error as ex:
+        raise HTTPException(status_code=500, detail=f"SwissEph error: {ex}")
+
+    planets = calculate_planets(binfo, node_type=request.node_type)
+    sun = next(p for p in planets if p["name"] == "Sun")
+    moon = next(p for p in planets if p["name"] == "Moon")
+
+    dt = datetime.combine(request.birth_date, request.birth_time)
+    data = panchanga.calculate_panchanga(
+        dt,
+        sun["longitude"],
+        moon["longitude"],
+        tz,
+    )
+
+    return data
 
 
 def enqueue_profile_job(request: ProfileRequest, background_tasks: BackgroundTasks) -> str:

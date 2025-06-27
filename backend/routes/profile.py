@@ -5,6 +5,7 @@ from ..services.astro import (
     ProfileRequest,
     ProfileResponse,
     compute_vedic_profile,
+    compute_panchanga,
     enqueue_profile_job,
     get_job,
 )
@@ -84,3 +85,12 @@ async def get_strengths(request: ProfileRequest):
         "shadbala": data["shadbala"],
         "bhavaBala": data["bhavaBala"]
     }
+
+
+@router.post("/panchanga", response_model=ProfileResponse)
+async def get_panchanga(request: ProfileRequest):
+    """Return traditional panchanga details for the given date."""
+    logger.info("Received panchanga request: %s", request)
+    data = compute_panchanga(request)
+    logger.info("Panchanga computation completed")
+    return {"panchanga": data}
