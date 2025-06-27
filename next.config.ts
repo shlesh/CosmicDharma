@@ -13,6 +13,19 @@ export default withPWA({
   runtimeCaching: [
     ...runtimeCaching,
     {
+      urlPattern: ({ request }) => request.mode === "navigate",
+      handler: "NetworkFirst",
+      options: {
+        cacheName: "html-cache",
+        networkTimeoutSeconds: 10,
+        plugins: [
+          {
+            handlerDidError: async () => caches.match("/offline.html"),
+          },
+        ],
+      },
+    },
+    {
       urlPattern: ({ url }) => url.pathname.startsWith("/api"),
       handler: "NetworkFirst",
       options: {
