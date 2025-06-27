@@ -33,7 +33,10 @@ source backend/venv/bin/activate
 pip install -r backend/requirements.txt
 pip install -r backend/requirements-dev.txt
 
-# Test connectivity to Redis before starting services
+# Test connectivity to Redis before starting services. If Redis isn't running,
+# attempt to start it with Docker Compose and wait a few seconds for it to
+# accept connections. When Docker Compose is unavailable, fall back to
+# `redis-server` (daemonized) and clean it up on exit.
 REDIS_URL="redis://localhost:6379"
 if [ -f backend/.env ]; then
   val=$(grep -E '^REDIS_URL=' backend/.env | cut -d '=' -f2- | tr -d '\r')
@@ -44,7 +47,9 @@ if [ -f backend/.env ]; then
     REDIS_URL="$val"
   fi
 fi
-if ! REDIS_TEST_URL="$REDIS_URL" python - <<'EOF'
+
+check_redis() {
+  REDIS_TEST_URL="$1" python - <<'EOF'
 import os, redis, sys
 url = os.environ.get("REDIS_TEST_URL")
 try:
@@ -52,13 +57,60 @@ try:
 except Exception:
     sys.exit(1)
 EOF
-then
-  echo "Redis is not running—start it with 'docker compose up -d redis'." >&2
-  exit 1
+}
+
+if ! check_redis "$REDIS_URL"; then
+  echo "Redis is not running; attempting to start via Docker Compose..." >&2
+  if command -v docker >/dev/null 2>&1 && docker compose version >/dev/null 2>&1; then
+    docker compose up -d redis
+    for _ in {1..5}; do
+      sleep 1
+      if check_redis "$REDIS_URL"; then
+        REDIS_STARTED=compose
+        break
+      fi
+    done
+    if [ "${REDIS_STARTED:-}" != compose ]; then
+      echo "Redis did not start via Docker Compose." >&2
+      exit 1
+    fi
+  else
+    if command -v redis-server >/dev/null 2>&1; then
+      echo "Docker Compose unavailable; starting redis-server locally..." >&2
+      REDIS_PIDFILE="$(mktemp)"
+      redis-server --daemonize yes --pidfile "$REDIS_PIDFILE" >/dev/null
+      for _ in {1..5}; do
+        sleep 1
+        if check_redis "$REDIS_URL"; then
+          REDIS_STARTED=server
+          break
+        fi
+      done
+      if [ "${REDIS_STARTED:-}" != server ]; then
+        echo "redis-server failed to start." >&2
+        if [ -f "$REDIS_PIDFILE" ]; then
+          kill "$(cat "$REDIS_PIDFILE")" 2>/dev/null || true
+          rm -f "$REDIS_PIDFILE"
+        fi
+        exit 1
+      fi
+    else
+      echo "Error: Redis is not running and Docker Compose is unavailable." >&2
+      exit 1
+    fi
+  fi
 fi
 
-# Deactivate the virtual environment on exit
-trap deactivate EXIT
+# Deactivate the virtual environment on exit and stop any redis-server we
+# started.
+cleanup() {
+  if [ "${REDIS_STARTED:-}" = server ] && [ -f "$REDIS_PIDFILE" ]; then
+    kill "$(cat "$REDIS_PIDFILE")" 2>/dev/null || true
+    rm -f "$REDIS_PIDFILE"
+  fi
+  deactivate
+}
+trap cleanup EXIT
 
 # Start Next.js, FastAPI and the background worker
 npx concurrently --kill-others-on-fail "npm run dev" "npm run worker"
