@@ -1,4 +1,5 @@
 from datetime import time
+import math
 from backend.yogas import calculate_all_yogas
 from backend.shadbala import calculate_shadbala
 from backend.divisional_charts import calculate_all_vargas
@@ -35,6 +36,19 @@ def test_calculate_shadbala_edge_cases():
     assert "Rahu" not in res
     assert res["Saturn"]["sthana_bala"] == 0
     assert res["Sun"]["dig_bala"] == 30
+    assert res["Sun"]["kala_bala"] == 30
+    assert res["Saturn"]["kala_bala"] == 15
+
+
+def test_moon_paksha_bala():
+    planets = [
+        {"name": "Sun", "sign": 1, "degree": 0, "retrograde": False},
+        {"name": "Moon", "sign": 4, "degree": 0, "retrograde": False},
+    ]
+    binfo = {"birth_time": time(12, 0), "jd_ut": 2451545.0}
+    houses = {"houses": {1: ["Sun"], 4: ["Moon"]}}
+    res = calculate_shadbala(planets, binfo, houses)
+    assert math.isclose(res["Moon"]["kala_bala"], 15.0)
 
 
 def test_calculate_all_vargas_values():
