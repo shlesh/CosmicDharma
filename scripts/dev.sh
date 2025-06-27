@@ -40,9 +40,10 @@ pip install -r backend/requirements.txt
 pip install -r backend/requirements-dev.txt
 
 # Test connectivity to Redis before starting services. If Redis isn't running,
-# attempt to start it with Docker Compose and wait a few seconds for it to
-# accept connections. When Docker Compose is unavailable, fall back to
-# `redis-server` (daemonized) and clean it up on exit.
+# attempt to start it automatically. Docker Compose is preferred and the script
+# falls back to a daemonized `redis-server` when available. One of these tools
+# must be installed for the automatic startup to succeed. Any `redis-server`
+# process started by this script will be cleaned up on exit.
 REDIS_URL="redis://localhost:6379"
 if [ -f backend/.env ]; then
   val=$(grep -E '^REDIS_URL=' backend/.env | cut -d '=' -f2- | tr -d '\r')
@@ -101,7 +102,7 @@ if ! check_redis "$REDIS_URL"; then
         exit 1
       fi
     else
-      echo "Error: Redis is not running and Docker Compose is unavailable." >&2
+      echo "Error: Redis is not running and neither Docker Compose nor redis-server was found." >&2
       exit 1
     fi
   fi
