@@ -8,6 +8,8 @@ import math
 from datetime import datetime
 import swisseph as swe
 
+from .utils.signs import get_sign_lord
+
 def calculate_shadbala(planets, birth_info, houses):
     """
     Calculate six types of planetary strength:
@@ -293,12 +295,3 @@ def calculate_bhava_bala(houses, planets, birth_info):
         }
     
     return house_strengths
-
-def get_sign_lord(sign_num):
-    """Get ruling planet of a sign."""
-    lords = {
-        1: 'Mars', 2: 'Venus', 3: 'Mercury', 4: 'Moon',
-        5: 'Sun', 6: 'Mercury', 7: 'Venus', 8: 'Mars',
-        9: 'Jupiter', 10: 'Saturn', 11: 'Saturn', 12: 'Jupiter'
-    }
-    return lords.get(sign_num)
