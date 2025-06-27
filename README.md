@@ -92,10 +92,10 @@ password to finish the process.
 
 ## Running the application
 
-Run the helper script during the first setup. It verifies that **Node.js 18+** and **Python 3** are available, installs dependencies if required and then starts the frontend, backend and worker. The script also checks for a local Redis instance and attempts to start one automatically:
+Run the helper script during the first setup. It verifies that **Node.js 18+** and **Python 3** are available, installs dependencies, runs all tests, and then launches the frontend, backend and worker. The script checks for a local Redis instance and attempts to start one automatically. Colored status messages are printed and the script exits on any failure:
 
 ```bash
-./scripts/dev.sh
+./scripts/script.sh
 ```
 
 Internally it runs
@@ -116,7 +116,7 @@ to launch the frontend and backend. You may run the worker separately if you pre
 npm run worker
 ```
 
-Redis must be running locally before starting the worker. `scripts/dev.sh`
+Redis must be running locally before starting the worker. `scripts/script.sh`
 tries to launch Redis automatically using Docker Compose (`docker compose` or
 `docker-compose`) or `redis-server`. Ensure one of these tools is installed for
 the automatic startup to succeed. If the script cannot start Redis, it continues
@@ -159,7 +159,7 @@ When the job completes, the response includes the generated profile data.
 
 ### Common issues
 
-If you see `Cannot find module 'next-pwa'` when running `scripts/dev.sh` or
+If you see `Cannot find module 'next-pwa'` when running `scripts/script.sh` or
 `npm run dev`, run `npm install --legacy-peer-deps` again to ensure all
 packages are installed.
 
@@ -308,7 +308,7 @@ Repository structure
 
         Python requirements and virtual environment under backend/.
 
-        scripts/dev.sh bootstraps dependencies and then runs both servers and the background worker.
+        scripts/script.sh installs dependencies, runs tests and then starts both servers and the background worker.
 
         CI workflows in .github/workflows/.
 
