@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { fetchJson } from '../util/api';
 import ProfileForm from '../components/ProfileForm';
 import BasicInfo from '../components/BasicInfo';
@@ -8,6 +8,7 @@ import PlanetTable from '../components/PlanetTable';
 import HouseAnalysis from '../components/HouseAnalysis';
 import DashaTable from '../components/DashaTable';
 import DashaChart from '../components/DashaChart';
+import ProfileSkeleton from '../components/ProfileSkeleton';
 
 interface ProfileFormData {
   name: string;
@@ -84,6 +85,7 @@ export default function ProfilePage() {
       <h1>Vedic Astrology</h1>
       <ProfileForm form={form} onChange={handleChange} onSubmit={handleSubmit} loading={loading} />
       {error && <p className="text-red-500">{error}</p>}
+      {loading && !profile && <ProfileSkeleton />}
       {profile && (
         <section>
           <BasicInfo birth={{ ...profile.birthInfo, ...form }} />
