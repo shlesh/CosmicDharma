@@ -1,5 +1,10 @@
 import { useState } from 'react';
-import ReactMde from 'react-mde';
+import dynamic from 'next/dynamic';
+
+const ReactMde = dynamic(() => import('react-mde'), {
+  ssr: false,
+  loading: () => <p>Loading editor...</p>
+});
 import 'react-mde/lib/styles/css/react-mde-all.css';
 import ReactMarkdown from 'react-markdown';
 import { useRouter } from 'next/router';

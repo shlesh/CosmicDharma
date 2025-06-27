@@ -11,7 +11,12 @@ interface User {
   id: number;
   username: string;
 }
-import ReactMde from 'react-mde';
+import dynamic from 'next/dynamic';
+
+const ReactMde = dynamic(() => import('react-mde'), {
+  ssr: false,
+  loading: () => <p>Loading editor...</p>
+});
 import ReactMarkdown from 'react-markdown';
 import { Bar } from 'react-chartjs-2';
 import {
