@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 import ReactMarkdown from 'react-markdown';
 import apiFetch from '../../util/api';
 import { useToast } from '../../components/ToastProvider';
+import PageHead from '../../components/PageHead';
 
 interface BlogPost {
   id: number;
@@ -30,9 +31,17 @@ export default function PostViewPage() {
   if (!post) return <p>Loading...</p>;
 
   return (
-    <article>
-      <h2>{post.title}</h2>
-      <ReactMarkdown>{post.content}</ReactMarkdown>
-    </article>
+    <>
+      <PageHead
+        title={post.title}
+        description={`${post.content.slice(0, 150)}...`}
+        ogTitle={post.title}
+        ogDescription={post.content.slice(0, 150)}
+      />
+      <article>
+        <h2>{post.title}</h2>
+        <ReactMarkdown>{post.content}</ReactMarkdown>
+      </article>
+    </>
   );
 }
