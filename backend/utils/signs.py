@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from backend.astro_constants import RASHI_METADATA
+
 
 def get_sign_lord(sign_num: int) -> str | None:
     """Return the ruling planet of a given zodiac sign."""
@@ -20,4 +22,11 @@ def get_sign_lord(sign_num: int) -> str | None:
         12: "Jupiter",
     }
     return lords.get(sign_num)
+
+
+def get_sign_name(sign_num: int) -> str | None:
+    """Return the English name of the zodiac sign number."""
+    if 1 <= sign_num <= 12:
+        return RASHI_METADATA[sign_num - 1]["name"]
+    return None
 

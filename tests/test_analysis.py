@@ -38,7 +38,7 @@ def test_interpret_divisional_charts():
     charts = {'D1': {'Sun': 1, 'Moon': 1}}
     res = interpret_divisional_charts(charts)
     assert 'D1' in res
-    assert res['D1']['distribution'][1] == 2
+    assert res['D1']['distribution']['Aries'] == 2
 
 
 def test_full_analysis():

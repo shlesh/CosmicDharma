@@ -31,6 +31,7 @@ from backend.shadbala import calculate_shadbala, calculate_bhava_bala
 from backend.ashtakavarga import calculate_ashtakavarga
 from backend.analysis import full_analysis
 from backend import panchanga
+from backend.utils.signs import get_sign_name
 
 CONFIG = load_config()
 logger = logging.getLogger(__name__)
@@ -246,9 +247,13 @@ def compute_vedic_profile(request: ProfileRequest) -> dict:
     analysis_results['bhavaBala'] = bhava_bala
     analysis_results['vargottamaPlanets'] = vargottama
 
+    named_planets = [
+        {**p, "sign": get_sign_name(p["sign"])} for p in planets
+    ]
+
     result = {
         "birthInfo": {**binfo, "latitude": lat, "longitude": lon, "timezone": tz},
-        "planetaryPositions": planets,
+        "planetaryPositions": named_planets,
         "vimshottariDasha": dashas,
         "nakshatra": nak,
         "houses": houses,
