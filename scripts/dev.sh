@@ -11,6 +11,8 @@ if [ ! -f backend/.env ] && [ -f backend/.env.example ]; then
   echo "Created backend/.env from backend/.env.example. Please adjust the values as needed."
 fi
 
+echo "\nBootstrapping development environment..."
+
 # Verify required commands are available
 for cmd in node npm python3; do
   if ! command -v "$cmd" >/dev/null 2>&1; then
@@ -28,16 +30,19 @@ fi
 
 # Install Node.js dependencies
 if [ ! -d node_modules ]; then
-  npm install --legacy-peer-deps
+  echo "Installing Node packages..."
+  npm install --legacy-peer-deps --silent
 fi
 
 # Set up Python virtual environment
 if [ ! -d backend/venv ]; then
+  echo "Creating Python virtual environment..."
   python3 -m venv backend/venv
 fi
 source backend/venv/bin/activate
-pip install -r backend/requirements.txt
-pip install -r backend/requirements-dev.txt
+echo "Installing Python packages..."
+pip install --quiet -r backend/requirements.txt
+pip install --quiet -r backend/requirements-dev.txt
 
 # Assume the worker should run unless Redis is unavailable
 RUN_WORKER=1
@@ -77,6 +82,8 @@ if command -v docker >/dev/null 2>&1; then
     DOCKER_COMPOSE_CMD="docker-compose"
   fi
 fi
+
+echo "Checking Redis availability..."
 
 if ! check_redis "$REDIS_URL"; then
   echo "Redis is not running; attempting to start via Docker Compose..." >&2
@@ -119,6 +126,8 @@ if ! check_redis "$REDIS_URL"; then
       RUN_WORKER=0
     fi
   fi
+else
+  echo "Redis is running."
 fi
 
 # Deactivate the virtual environment on exit and stop any redis-server we
@@ -134,6 +143,7 @@ trap cleanup EXIT
 
 # Start Next.js and the FastAPI backend. Launch the background worker only if
 # Redis is available.
+echo "Starting application..."
 if [ "$RUN_WORKER" -eq 1 ]; then
   npx --yes concurrently --kill-others-on-fail "npm run dev" "npm run worker"
 else
