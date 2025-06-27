@@ -46,7 +46,7 @@ pip install -r backend/requirements-dev.txt
 # process started by this script will be cleaned up on exit.
 REDIS_URL="redis://localhost:6379"
 if [ -f backend/.env ]; then
-  val=$(grep -E '^REDIS_URL=' backend/.env | cut -d '=' -f2- | tr -d '\r')
+  val=$(grep -E '^REDIS_URL=' backend/.env | cut -d '=' -f2- | tr -d '\r' || true)
   if [ -z "$val" ]; then
     val=$(grep -E '^CACHE_URL=' backend/.env | cut -d '=' -f2- | tr -d '\r')
   fi
