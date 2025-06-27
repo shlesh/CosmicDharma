@@ -4,6 +4,7 @@ Comprehensive Vedic analysis module with proper interpretations.
 """
 from datetime import date
 from .astro_constants import NAKSHATRA_METADATA
+from .utils.signs import get_sign_name
 
 # Cache for analyses
 _CACHE = {}
@@ -257,13 +258,17 @@ def interpret_divisional_charts(dcharts, planets=None):
             # Check 5th lord placement
             analysis['children_indication'] = "Examine 5th house lord for children matters"
         
-        # Add planet distribution
-        analysis['placements'] = mapping
+        # Add planet distribution with sign names
+        analysis['placements'] = {
+            planet: get_sign_name(sign) for planet, sign in mapping.items()
+        }
 
         # Simple distribution count per sign
         dist = {}
         for sign in mapping.values():
-            dist[sign] = dist.get(sign, 0) + 1
+            name = get_sign_name(sign)
+            if name:
+                dist[name] = dist.get(name, 0) + 1
         analysis['distribution'] = dist
 
         summary[chart] = analysis
