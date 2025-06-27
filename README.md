@@ -119,7 +119,10 @@ npm run worker
 Redis must be running locally before starting the worker. `scripts/dev.sh`
 tries to launch Redis automatically using Docker Compose or `redis-server`.
 Ensure one of these tools is installed for the automatic startup to succeed.
-If the script fails or you prefer to manage Redis yourself, start it manually:
+If the script cannot start Redis, it continues without the worker. Start Redis
+manually (for example with `docker compose up -d redis`) and run `npm run
+worker` in a separate terminal to enable background tasks. You may also launch
+Redis yourself and rerun the script.
 
 ```bash
 docker compose up -d redis

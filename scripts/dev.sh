@@ -39,6 +39,9 @@ source backend/venv/bin/activate
 pip install -r backend/requirements.txt
 pip install -r backend/requirements-dev.txt
 
+# Assume the worker should run unless Redis is unavailable
+RUN_WORKER=1
+
 # Test connectivity to Redis before starting services. If Redis isn't running,
 # attempt to start it automatically. Docker Compose is preferred and the script
 # falls back to a daemonized `redis-server` when available. One of these tools
@@ -79,7 +82,7 @@ if ! check_redis "$REDIS_URL"; then
     done
     if [ "${REDIS_STARTED:-}" != compose ]; then
       echo "Redis did not start via Docker Compose." >&2
-      exit 1
+      RUN_WORKER=0
     fi
   else
     if command -v redis-server >/dev/null 2>&1; then
@@ -99,11 +102,12 @@ if ! check_redis "$REDIS_URL"; then
           kill "$(cat "$REDIS_PIDFILE")" 2>/dev/null || true
           rm -f "$REDIS_PIDFILE"
         fi
-        exit 1
+        RUN_WORKER=0
       fi
     else
-      echo "Error: Redis is not running and neither Docker Compose nor redis-server was found." >&2
-      exit 1
+      echo "Warning: Redis is not running and neither Docker Compose nor redis-server was found." >&2
+      echo "Start Redis manually (e.g., 'docker compose up -d redis') to enable the worker." >&2
+      RUN_WORKER=0
     fi
   fi
 fi
@@ -119,5 +123,11 @@ cleanup() {
 }
 trap cleanup EXIT
 
-# Start Next.js, FastAPI and the background worker
-npx concurrently --kill-others-on-fail "npm run dev" "npm run worker"
+# Start Next.js and the FastAPI backend. Launch the background worker only if
+# Redis is available.
+if [ "$RUN_WORKER" -eq 1 ]; then
+  npx concurrently --kill-others-on-fail "npm run dev" "npm run worker"
+else
+  npx concurrently --kill-others-on-fail "npm run dev"
+  echo "Background worker disabled due to missing Redis." >&2
+fi
