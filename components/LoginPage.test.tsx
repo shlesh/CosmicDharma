@@ -48,5 +48,6 @@ test('shows error toast on failed login', async () => {
   fireEvent.change(screen.getAllByPlaceholderText(/username/i)[0], { target: { value: 'u' } });
   fireEvent.change(screen.getAllByPlaceholderText(/password/i)[0], { target: { value: 'p' } });
   fireEvent.click(screen.getAllByRole('button', { name: /login/i })[0]);
-  await screen.findByText(/login failed/i);
+  const alert = await screen.findByRole('alert');
+  expect(alert.textContent).toMatch(/login failed/i);
 });
