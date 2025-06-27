@@ -1,5 +1,6 @@
 // src/components/ProfileForm.jsx
 import React from 'react';
+import GlassCard from './GlassCard';
 
 export interface ProfileFormState {
   name: string;
@@ -19,7 +20,7 @@ export interface ProfileFormProps {
 
 export default function ProfileForm({ form, onChange, onSubmit, loading }: ProfileFormProps) {
   return (
-    <div className="glass-card mb-6">
+    <GlassCard className="mb-6">
       <form onSubmit={onSubmit} className="space-y-4">
         <p className="help-text">Fill out your birth details to generate a personalized chart.</p>
         <label>
@@ -74,6 +75,6 @@ export default function ProfileForm({ form, onChange, onSubmit, loading }: Profi
           {loading ? 'Calculating…' : 'Submit'}
         </button>
       </form>
-    </div>
+    </GlassCard>
   );
 }
