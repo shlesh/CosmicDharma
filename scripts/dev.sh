@@ -5,6 +5,12 @@ set -euo pipefail
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$REPO_ROOT"
 
+# Ensure backend/.env exists, copying from the example if available
+if [ ! -f backend/.env ] && [ -f backend/.env.example ]; then
+  cp backend/.env.example backend/.env
+  echo "Created backend/.env from backend/.env.example. Please adjust the values as needed."
+fi
+
 # Verify required commands are available
 for cmd in node npm python3; do
   if ! command -v "$cmd" >/dev/null 2>&1; then
