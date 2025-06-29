@@ -2,6 +2,8 @@ import pytz
 from datetime import datetime, date, time
 import fakeredis
 from fastapi.testclient import TestClient
+import pytest
+from fastapi import HTTPException
 
 from backend import main
 from backend.routes import profile
@@ -48,3 +50,22 @@ def test_panchanga_route(monkeypatch):
     resp = client.post("/panchanga", json={"date": "2020-01-01", "time": "12:00:00", "location": "Delhi"})
     assert resp.status_code == 200
     assert resp.json()["panchanga"] == {"vaara": "Friday"}
+
+
+def test_compute_panchanga_geocode_error(monkeypatch):
+    """geocode_location raising ValueError should result in HTTP 400."""
+    monkeypatch.setattr(astro, "geocode_location", lambda loc: (_ for _ in ()).throw(ValueError("bad location")))
+    req = astro.ProfileRequest(date=date(2020, 1, 1), time=time(12, 0), location="Nowhere")
+    with pytest.raises(HTTPException) as exc:
+        astro.compute_panchanga(req)
+    assert exc.value.status_code == 400
+
+
+def test_compute_panchanga_birth_info_error(monkeypatch):
+    """get_birth_info raising ValueError should result in HTTP 400."""
+    monkeypatch.setattr(astro, "geocode_location", lambda loc: (10.0, 20.0, "UTC"))
+    monkeypatch.setattr(astro, "get_birth_info", lambda **k: (_ for _ in ()).throw(ValueError("bad info")))
+    req = astro.ProfileRequest(date=date(2020, 1, 1), time=time(12, 0), location="Delhi")
+    with pytest.raises(HTTPException) as exc:
+        astro.compute_panchanga(req)
+    assert exc.value.status_code == 400
