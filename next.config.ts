@@ -5,6 +5,10 @@ import runtimeCaching from "next-pwa/cache";
 const nextConfig: NextConfig = {
   reactStrictMode: true,
   output: "standalone",
+  allowedDevOrigins: [
+    "http://127.0.0.1:3000",
+    "http://localhost:3000",
+  ],
 };
 
 export default withPWA({
