@@ -11,6 +11,8 @@ test('handles input and submit', () => {
   render(<ProfileForm form={filled} onChange={handleChange} onSubmit={handleSubmit} loading={false} />);
   fireEvent.change(screen.getByLabelText(/name/i), { target: { value: 'New' } });
   expect(handleChange).toHaveBeenCalled();
-  fireEvent.click(screen.getByRole('button', { name: /submit/i }));
+  fireEvent.click(screen.getByRole('button', { name: /next/i }));
+  fireEvent.click(screen.getByRole('button', { name: /next/i }));
+  fireEvent.click(screen.getByRole('button', { name: /generate chart/i }));
   expect(handleSubmit).toHaveBeenCalled();
 });
