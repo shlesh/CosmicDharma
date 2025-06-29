@@ -7,7 +7,6 @@ export default function Document() {
         <link rel="manifest" href="/manifest.json" />
         <link rel="icon" href="/favicon.svg" />
         <meta charSet="utf-8" />
-        <meta name="viewport" content="width=device-width, initial-scale=1" />
         <meta
           name="description"
           content="Cosmic Dharma offers cosmic insights through Vedic astrology."
