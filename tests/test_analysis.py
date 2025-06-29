@@ -54,3 +54,18 @@ def test_full_analysis():
     assert 'coreElements' in out
     assert 'vimshottariDasha' in out
     assert 'divisionalCharts' in out
+
+
+def test_full_analysis_cache():
+    planets = []
+    dashas = []
+    nak = {}
+    houses = {}
+    core = {}
+    dcharts = {}
+    from backend import analysis
+    analysis._CACHE.clear()
+    first = full_analysis(planets, dashas, nak, houses, core, dcharts, jd=123)
+    second = full_analysis(planets, dashas, nak, houses, core, dcharts, jd=123)
+    assert first is second
+    analysis._CACHE.clear()
