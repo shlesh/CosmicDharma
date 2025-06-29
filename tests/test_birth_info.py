@@ -54,3 +54,29 @@ def test_invalid_timezone():
             20,
             'Invalid/Zone',
         )
+
+
+def test_unknown_ayanamsha():
+    """Invalid ayanamsha string should raise ValueError."""
+    with pytest.raises(ValueError):
+        get_birth_info(
+            datetime.date(2020, 1, 1),
+            datetime.time(0, 0),
+            10,
+            20,
+            'UTC',
+            ayanamsha='invalid',
+        )
+
+
+def test_unknown_house_system():
+    """Invalid house system should raise ValueError."""
+    with pytest.raises(ValueError):
+        get_birth_info(
+            datetime.date(2020, 1, 1),
+            datetime.time(0, 0),
+            10,
+            20,
+            'UTC',
+            house_system='invalid',
+        )
