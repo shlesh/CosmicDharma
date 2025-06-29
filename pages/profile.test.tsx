@@ -9,16 +9,18 @@ vi.mock('../util/api', () => ({
 }));
 
 const fillForm = () => {
-  fireEvent.change(screen.getByPlaceholderText(/Shailesh Tiwari/i), {
+  fireEvent.change(screen.getByPlaceholderText(/John Doe/i), {
     target: { value: 'John' },
   });
-  fireEvent.change(screen.getByLabelText(/Date of Birth/i), {
+  fireEvent.click(screen.getByRole('button', { name: /next/i }));
+  fireEvent.change(screen.getAllByLabelText(/Date of Birth/i)[0], {
     target: { value: '2000-01-01' },
   });
-  fireEvent.change(screen.getByLabelText(/Time of Birth/i), {
+  fireEvent.change(screen.getAllByLabelText(/Time of Birth/i)[0], {
     target: { value: '12:00' },
   });
-  fireEvent.change(screen.getByPlaceholderText(/Renukoot, India/i), {
+  fireEvent.click(screen.getByRole('button', { name: /next/i }));
+  fireEvent.change(screen.getByPlaceholderText(/New York, USA/i), {
     target: { value: 'Delhi' },
   });
 };

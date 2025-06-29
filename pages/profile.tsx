@@ -32,6 +32,7 @@ export default function ProfilePage() {
   const [error, setError] = useState('');
   const [profile, setProfile] = useState<ProfileData | null>(null);
   const [jobId, setJobId] = useState<string | null>(null);
+  const [jobStart, setJobStart] = useState<number | null>(null);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) =>
     setForm({ ...form, [e.target.name]: e.target.value });
@@ -40,6 +41,7 @@ export default function ProfilePage() {
     e.preventDefault();
     setLoading(true);
     setError('');
+    setProfile(null);
     try {
       const data = await fetchJson('/profile/job', {
         method: 'POST',
@@ -51,6 +53,7 @@ export default function ProfilePage() {
         }),
       });
       setJobId(data.job_id);
+      setJobStart(Date.now());
     } catch (err) {
       setError(err.message);
       setLoading(false);
@@ -65,20 +68,28 @@ export default function ProfilePage() {
         if (data.status === 'complete') {
           setProfile({ ...data.result, request: form });
           setJobId(null);
+          setJobStart(null);
           setLoading(false);
         } else if (data.status === 'error') {
           setError(data.error || 'Job failed');
           setJobId(null);
+          setJobStart(null);
+          setLoading(false);
+        } else if (jobStart && Date.now() - jobStart > 30000) {
+          setError('Profile calculation is taking too long. Please try again later.');
+          setJobId(null);
+          setJobStart(null);
           setLoading(false);
         }
       } catch (err) {
         setError(err.message);
         setJobId(null);
+        setJobStart(null);
         setLoading(false);
       }
     }, 1000);
     return () => clearInterval(id);
-  }, [jobId, form]);
+  }, [jobId, jobStart, form]);
 
   return (
     <main className="page-wrapper">
