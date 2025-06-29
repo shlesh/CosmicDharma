@@ -37,7 +37,11 @@ export default function PostList({ posts: initialPosts }: PostListProps = {}) {
     if (error) toast('Failed to load posts');
   }, [error]);
 
-  const posts = initialPosts ?? data ?? [];
+  const posts = Array.isArray(initialPosts)
+    ? initialPosts
+    : Array.isArray(data)
+    ? data
+    : [];
 
   // Process posts for display
   const processedPosts = posts.map((post, index) => ({
