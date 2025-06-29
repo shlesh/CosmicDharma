@@ -29,6 +29,6 @@ test('shows skeleton while loading profile', async () => {
   (fetchJson as unknown as vi.Mock).mockResolvedValueOnce({ job_id: '1' });
   render(<ProfilePage />);
   fillForm();
-  fireEvent.submit(screen.getByRole('button', { name: /submit/i }));
+  fireEvent.click(screen.getByRole('button', { name: /generate chart/i }));
   expect(await screen.findByTestId('profile-skeleton')).toBeDefined();
 });

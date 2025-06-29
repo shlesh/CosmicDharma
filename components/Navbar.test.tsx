@@ -1,5 +1,5 @@
 import React from 'react';
-import { render, screen, cleanup } from '@testing-library/react';
+import { render, screen, cleanup, fireEvent } from '@testing-library/react';
 import { expect, test, vi, afterEach, beforeAll } from 'vitest';
 import Navbar from './Navbar';
 import ThemeProvider from './ThemeProvider';
@@ -74,4 +74,14 @@ test('shows theme toggle button', () => {
   router.pathname = '/';
   renderNav();
   expect(screen.getByRole('button', { name: /toggle theme/i })).toBeDefined();
+});
+
+test('toggle theme button', () => {
+  setToken(null);
+  router.pathname = '/';
+  renderNav();
+  const button = screen.getByRole('button', { name: /toggle theme/i });
+  expect(document.documentElement.classList.contains('dark')).toBe(false);
+  fireEvent.click(button);
+  expect(document.documentElement.classList.contains('dark')).toBe(true);
 });

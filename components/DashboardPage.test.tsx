@@ -42,7 +42,7 @@ test('renders post list for donors', async () => {
   render(<DashboardPage />);
   await screen.findAllByText('Dashboard');
   fireEvent.click(screen.getAllByText('Posts')[0]);
-  await screen.findByText(/blog posts/i);
+  await screen.findByText(/cosmic insights/i);
 });
 
 test('renders admin dashboard for admins', async () => {

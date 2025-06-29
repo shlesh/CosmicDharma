@@ -5,9 +5,9 @@ import LandingPage from './LandingPage';
 
 test('renders hero and navigation links', () => {
   render(<LandingPage />);
-  expect(screen.getByRole('heading', { name: /cosmic/i })).toBeDefined();
-  const login = screen.getByRole('link', { name: /login/i });
-  expect(login.getAttribute('href')).toBe('/login');
-  const read = screen.getByRole('link', { name: /scroll to read/i });
-  expect(read.getAttribute('href')).toBe('#about');
+  expect(screen.getByRole('heading', { name: /cosmic dharma/i })).toBeDefined();
+  const chart = screen.getByRole('link', { name: /get your chart/i });
+  expect(chart.getAttribute('href')).toBe('/profile');
+  const blog = screen.getByRole('link', { name: /explore blog/i });
+  expect(blog.getAttribute('href')).toBe('/posts');
 });
