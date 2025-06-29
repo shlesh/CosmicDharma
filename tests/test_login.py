@@ -1,33 +1,8 @@
-from fastapi.testclient import TestClient
-from backend import main, models, auth
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
-import sqlalchemy
+from backend import models, auth
 
 
-def setup_test_app():
-    engine = create_engine(
-        "sqlite:///:memory:",
-        connect_args={"check_same_thread": False},
-        poolclass=sqlalchemy.pool.StaticPool,
-    )
-    TestingSession = sessionmaker(bind=engine)
-    models.Base.metadata.create_all(bind=engine)
-
-    def override():
-        db = TestingSession()
-        try:
-            yield db
-        finally:
-            db.close()
-
-    main.app.dependency_overrides[main.get_session] = override
-    main.app.dependency_overrides[auth.get_session] = override
-    return TestClient(main.app), TestingSession
-
-
-def test_login_valid():
-    client, Session = setup_test_app()
+def test_login_valid(test_app):
+    client, Session = test_app
     with Session() as db:
         user = models.User(
             username="test",
@@ -42,8 +17,8 @@ def test_login_valid():
     assert "access_token" in resp.json()
 
 
-def test_login_invalid():
-    client, Session = setup_test_app()
+def test_login_invalid(test_app):
+    client, Session = test_app
     with Session() as db:
         user = models.User(
             username="user",

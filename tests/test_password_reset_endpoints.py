@@ -1,34 +1,8 @@
-from fastapi.testclient import TestClient
 from backend import main, models, auth
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
-import sqlalchemy
 from datetime import datetime, timedelta
 
-
-def setup_test_app():
-    engine = create_engine(
-        "sqlite:///:memory:",
-        connect_args={"check_same_thread": False},
-        poolclass=sqlalchemy.pool.StaticPool,
-    )
-    TestingSession = sessionmaker(bind=engine)
-    models.Base.metadata.create_all(bind=engine)
-
-    def override():
-        db = TestingSession()
-        try:
-            yield db
-        finally:
-            db.close()
-
-    main.app.dependency_overrides[main.get_session] = override
-    main.app.dependency_overrides[auth.get_session] = override
-    return TestClient(main.app), TestingSession
-
-
-def test_request_reset_stores_token_and_sends_email(monkeypatch):
-    client, Session = setup_test_app()
+def test_request_reset_stores_token_and_sends_email(test_app, monkeypatch):
+    client, Session = test_app
 
     sent = {}
 
@@ -59,8 +33,8 @@ def test_request_reset_stores_token_and_sends_email(monkeypatch):
     assert token_value in sent["body"]
 
 
-def test_reset_password_updates_password_and_marks_token_used():
-    client, Session = setup_test_app()
+def test_reset_password_updates_password_and_marks_token_used(test_app):
+    client, Session = test_app
 
     with Session() as db:
         user = models.User(
