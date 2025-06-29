@@ -6,6 +6,7 @@ from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 from datetime import datetime
+import os
 
 from .db import Base, engine, get_session
 from .models import User, Prompt, Report
@@ -22,64 +23,71 @@ app = FastAPI(
     version="2.0",
 )
 
+# Update CORS configuration for proper frontend integration
+frontend_url = os.getenv("FRONTEND_URL", "http://localhost:3000")
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=[
+        frontend_url,
+        "http://localhost:3000",
+        "http://localhost:3001",
+        "http://localhost:3002",
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
+    expose_headers=["*"],
 )
 
 Base.metadata.create_all(bind=engine)
 
-
 @app.exception_handler(RequestValidationError)
 async def validation_exception_handler(request, exc):
     logger.error("Validation error: %s", exc)
-    return JSONResponse(status_code=422, content={"detail": exc.errors()})
+    return JSONResponse(
+        status_code=422, 
+        content={"detail": str(exc).split('\n')[0] if exc.errors() else "Validation error"}
+    )
 
+@app.exception_handler(Exception)
+async def general_exception_handler(request, exc):
+    logger.error("Unhandled error: %s", exc)
+    return JSONResponse(
+        status_code=500,
+        content={"detail": "Internal server error"}
+    )
 
-app.include_router(auth_router)
-app.include_router(profile_router)
-app.include_router(blog_router)
-app.include_router(admin_router)
-
+app.include_router(auth_router, prefix="/api")
+app.include_router(profile_router, prefix="/api")
+app.include_router(blog_router, prefix="/api")
+app.include_router(admin_router, prefix="/api")
 
 class PromptCreate(BaseModel):
     text: str
-
 
 class PromptOut(BaseModel):
     id: int
     text: str
     created_at: datetime
 
-
 class ReportCreate(BaseModel):
     content: str
-
 
 class ReportOut(BaseModel):
     id: int
     content: str
     created_at: datetime
 
-
-from datetime import datetime  # placed after BaseModel definitions
-
-
 def require_donor(current_user: User = Depends(get_current_user)) -> User:
     if not (current_user.is_donor or current_user.is_admin):
         raise HTTPException(status_code=403, detail="Donor access required")
     return current_user
 
-
-@app.get("/health")
+@app.get("/api/health")
 async def health_check():
-    return {"status": "healthy", "version": "2.0"}
+    return {"status": "healthy", "version": "2.0", "timestamp": datetime.utcnow().isoformat()}
 
-
-@app.post("/prompts", response_model=PromptOut)
+@app.post("/api/prompts", response_model=PromptOut)
 def create_prompt(
     prompt: PromptCreate,
     current_user: User = Depends(require_donor),
@@ -91,8 +99,7 @@ def create_prompt(
     db.refresh(db_prompt)
     return PromptOut(id=db_prompt.id, text=db_prompt.text, created_at=db_prompt.created_at)
 
-
-@app.get("/prompts", response_model=list[PromptOut])
+@app.get("/api/prompts", response_model=list[PromptOut])
 def get_prompts(
     current_user: User = Depends(require_donor),
     db: Session = Depends(get_session),
@@ -105,8 +112,7 @@ def get_prompts(
     )
     return [PromptOut(id=p.id, text=p.text, created_at=p.created_at) for p in prompts]
 
-
-@app.post("/reports", response_model=ReportOut)
+@app.post("/api/reports", response_model=ReportOut)
 def create_report(
     report: ReportCreate,
     current_user: User = Depends(require_donor),
@@ -118,8 +124,7 @@ def create_report(
     db.refresh(db_report)
     return ReportOut(id=db_report.id, content=db_report.content, created_at=db_report.created_at)
 
-
-@app.get("/reports", response_model=list[ReportOut])
+@app.get("/api/reports", response_model=list[ReportOut])
 def get_reports(
     current_user: User = Depends(require_donor),
     db: Session = Depends(get_session),
@@ -131,3 +136,8 @@ def get_reports(
         .all()
     )
     return [ReportOut(id=r.id, content=r.content, created_at=r.created_at) for r in reports]
+
+# Root endpoint
+@app.get("/")
+async def root():
+    return {"message": "Cosmic Dharma API", "docs": "/docs"}

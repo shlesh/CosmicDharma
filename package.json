@@ -35,11 +35,13 @@
     "build": "next build",
     "test": "vitest run",
     "test:frontend": "vitest run",
-    "test:backend": "PYTHONPATH=. pytest -q",
+    "test:backend": "cd backend && source venv/bin/activate && PYTHONPATH=. pytest -q",
     "test:all": "npm run test:frontend && npm run test:backend",
-    "dev": "concurrently \"next dev\" \"npm:backend\"",
-    "backend": "bash -lc \"source backend/venv/bin/activate && uvicorn backend.main:app --reload --host ${BACKEND_HOST:-0.0.0.0} --port ${BACKEND_PORT:-8000}\"",
-    "worker": "bash -lc \"source backend/venv/bin/activate && rq worker profiles\""
+    "dev": "concurrently --kill-others-on-fail \"next dev\" \"npm:backend\"",
+    "backend": "cd backend && source venv/bin/activate && uvicorn main:app --reload --host 0.0.0.0 --port 8000",
+    "worker": "cd backend && source venv/bin/activate && python -m rq.cli worker profiles --url redis://localhost:6379/0",
+    "setup": "./scripts/script.sh",
+    "quick": "./scripts/dev.sh"
   },
   "eslintConfig": {
     "extends": [

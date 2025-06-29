@@ -23,19 +23,29 @@ export interface PostListProps {
 
 const categories = ['All', 'Vedic Astrology', 'Spirituality', 'Predictions', 'Tutorials'];
 
+// SWR fetcher that handles the /api prefix
+const fetcher = (url: string) => fetchJson(url);
+
 export default function PostList({ posts: initialPosts }: PostListProps = {}) {
   const toast = useToast();
   const [selectedCategory, setSelectedCategory] = useState('All');
   const [searchQuery, setSearchQuery] = useState('');
   
-  const { data, error } = useSWR<BlogPost[]>(
-    initialPosts ? null : 'posts',
-    fetchJson
+  const { data, error, isLoading } = useSWR<BlogPost[]>(
+    initialPosts ? null : '/posts',
+    fetcher,
+    {
+      revalidateOnFocus: false,
+      revalidateOnReconnect: false,
+    }
   );
 
   useEffect(() => {
-    if (error) toast('Failed to load posts');
-  }, [error]);
+    if (error) {
+      console.error('Failed to load posts:', error);
+      toast('Failed to load posts');
+    }
+  }, [error, toast]);
 
   const posts = Array.isArray(initialPosts)
     ? initialPosts
@@ -46,7 +56,7 @@ export default function PostList({ posts: initialPosts }: PostListProps = {}) {
   // Process posts for display
   const processedPosts = posts.map((post, index) => ({
     ...post,
-    excerpt: post.content?.substring(0, 150) + '...',
+    excerpt: post.content?.substring(0, 150) + '...' || 'No content available',
     category: categories[Math.floor(Math.random() * (categories.length - 1)) + 1],
     readTime: `${Math.ceil((post.content?.length || 500) / 200)} min`,
     date: post.created_at ? new Date(post.created_at).toLocaleDateString('en-US', { 
@@ -64,6 +74,17 @@ export default function PostList({ posts: initialPosts }: PostListProps = {}) {
                          post.content?.toLowerCase().includes(searchQuery.toLowerCase());
     return matchesCategory && matchesSearch;
   });
+
+  if (isLoading && !initialPosts) {
+    return (
+      <div className="container py-8">
+        <div className="text-center">
+          <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600"></div>
+          <p className="mt-4 text-gray-600 dark:text-gray-400">Loading posts...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="container py-8">

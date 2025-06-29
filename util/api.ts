@@ -1,28 +1,61 @@
+const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000';
+
 export default function apiFetch(path: string, options: RequestInit = {}): Promise<Response> {
-  const base = process.env.NEXT_PUBLIC_API_BASE_URL;
-  const prefix = base ? base.replace(/\/$/, '') : '';
-  const urlPath = path.startsWith('/') ? path : `/${path}`;
-  return fetch(prefix + urlPath, options);
+  // Ensure path starts with /api if not already
+  const apiPath = path.startsWith('/api') ? path : `/api${path.startsWith('/') ? path : '/' + path}`;
+  const url = `${API_BASE}${apiPath}`;
+  
+  return fetch(url, {
+    ...options,
+    headers: {
+      'Content-Type': 'application/json',
+      ...options.headers,
+    },
+    credentials: 'include', // Important for CORS
+  });
 }
 
-/**
- * Fetch JSON data from the API and throw an error if the response is not OK.
- *
- * @param {string} path - API endpoint path
- * @param {RequestInit} [options] - fetch options
- * @returns {Promise<any>} - parsed JSON body
- */
 export async function fetchJson<T = unknown>(path: string, options: RequestInit = {}): Promise<T> {
   const res = await apiFetch(path, options);
-  let data: T;
-  try {
-    data = await res.json();
-  } catch {
-    throw new Error('Invalid JSON response');
+  
+  let data: any;
+  const contentType = res.headers.get('content-type');
+  
+  if (contentType && contentType.includes('application/json')) {
+    try {
+      data = await res.json();
+    } catch (e) {
+      throw new Error('Invalid JSON response from server');
+    }
+  } else {
+    const text = await res.text();
+    throw new Error(`Expected JSON response but got: ${text.substring(0, 100)}...`);
   }
+  
   if (!res.ok) {
-    const err = (data as any as { detail?: string }).detail ?? res.statusText;
-    throw new Error(err);
+    const errorMessage = data?.detail || data?.message || `HTTP ${res.status}: ${res.statusText}`;
+    throw new Error(errorMessage);
   }
+  
   return data;
+}
+
+// Helper function for authenticated requests
+export async function fetchWithAuth<T = unknown>(
+  path: string, 
+  options: RequestInit = {}
+): Promise<T> {
+  const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+  
+  if (!token) {
+    throw new Error('No authentication token found');
+  }
+  
+  return fetchJson<T>(path, {
+    ...options,
+    headers: {
+      ...options.headers,
+      'Authorization': `Bearer ${token}`,
+    },
+  });
 }
