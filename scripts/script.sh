@@ -366,7 +366,7 @@ EOF
 install_node_dependencies() {
     print_step 3 8 "Installing Node.js dependencies"
     
-    if [ -d node_modules ] && [ -f node_modules/.package-lock.json ]; then
+    if [ -d node_modules ]; then
         print_info "Node modules already installed - skipping"
     else
         echo -e "  ${DIM}Running npm install...${RESET}"
@@ -406,11 +406,18 @@ setup_python_environment() {
     
     # Upgrade pip first
     echo -e "  ${DIM}Upgrading pip...${RESET}"
-    python3 -m pip install --upgrade pip >/dev/null 2>&1
+    python3 -m pip install --upgrade pip >/dev/null 2>&1 &
+    local pip_upgrade_pid=$!
+    spinner $pip_upgrade_pid
+    wait $pip_upgrade_pid
     
     # Install Python dependencies
     echo -e "  ${DIM}Installing Python packages...${RESET}"
-    if pip install -q -r backend/requirements.txt -r backend/requirements-dev.txt; then
+    pip install -q -r backend/requirements.txt -r backend/requirements-dev.txt &
+    local pip_pid=$!
+    spinner $pip_pid
+    wait $pip_pid
+    if [ $? -eq 0 ]; then
         print_success "Python dependencies installed"
     else
         print_error "Failed to install Python dependencies"
