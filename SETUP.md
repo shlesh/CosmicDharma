@@ -351,8 +351,8 @@ Profile API: ✓ Working
 ### Quick Commands
 
 ```bash
-# Quick start (skips checks)
-npm run quick
+# Initial setup
+npm run setup
 
 # Stop all services
 npm run stop

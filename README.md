@@ -70,10 +70,10 @@ For the Next.js frontend, copy `.env.local.example` to `.env.local` and set
 `NEXT_PUBLIC_API_BASE_URL` to the URL of your backend. During local development
 this is usually `http://localhost:8000`.
 
-To seed the database with demo accounts and posts run from the repository root:
+Seed the database with demo accounts and posts using the helper script:
 
 ```bash
-PYTHONPATH=. python backend/seed_demo.py
+./scripts/script.sh --seed
 ```
 
 This creates two accounts:
@@ -96,6 +96,12 @@ Run the helper script during the first setup. It verifies that **Node.js 18+** a
 
 ```bash
 ./scripts/script.sh
+```
+
+Pass `--diagnostics` to print environment information and exit:
+
+```bash
+./scripts/script.sh --diagnostics
 ```
 
 Internally it runs
