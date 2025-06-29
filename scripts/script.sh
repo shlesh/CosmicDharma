@@ -36,8 +36,49 @@ REDIS_PID_FILE="$REPO_ROOT/.redis.pid"
 WORKER_ENABLED=1
 CLEANUP_REGISTERED=0
 
+# Optional flags
+SEED_DB=0
+RUN_DIAGNOSTICS=0
+
 # Process tracking
 declare -a MANAGED_PIDS=()
+
+# ==========================================
+# ARGUMENT PARSING
+# ==========================================
+
+usage() {
+    cat <<EOF
+Usage: $0 [options]
+
+Options:
+  -s, --seed          Seed demo data after setup
+  -d, --diagnostics   Print environment diagnostics and exit
+  -h, --help          Show this help message
+EOF
+}
+
+while [[ $# -gt 0 ]]; do
+    case $1 in
+        -s|--seed)
+            SEED_DB=1
+            shift
+            ;;
+        -d|--diagnostics)
+            RUN_DIAGNOSTICS=1
+            shift
+            ;;
+        -h|--help)
+            usage
+            exit 0
+            ;;
+        *)
+            echo "Unknown option: $1"
+            usage
+            exit 1
+            ;;
+    esac
+done
 
 # ==========================================
 # HELPER FUNCTIONS
@@ -467,6 +508,44 @@ run_tests() {
     fi
 }
 
+seed_database() {
+    print_step 6.5 8 "Seeding demo data"
+    pushd backend >/dev/null
+    source venv/bin/activate
+    if PYTHONPATH=. python seed_demo.py >/dev/null 2>&1; then
+        print_success "Database seeded"
+    else
+        print_error "Failed to seed database"
+    fi
+    popd >/dev/null
+}
+
+run_diagnostics() {
+    echo -e "\n${BOLD}${CYAN}=== Environment Diagnostics ===${RESET}"
+    echo "Script directory: $SCRIPT_DIR"
+    echo "Repository root:  $REPO_ROOT"
+    echo "Node:    $(node --version 2>/dev/null || echo 'not found')"
+    echo "npm:     $(npm --version 2>/dev/null || echo 'not found')"
+    echo "Python:  $(python3 --version 2>/dev/null || echo 'not found')"
+    echo "pip:     $(python3 -m pip --version 2>/dev/null || echo 'not found')"
+    echo "Git:     $(git --version 2>/dev/null || echo 'not found')"
+    echo
+    echo "Environment files:";
+    [ -f backend/.env ] && echo "  ✓ backend/.env" || echo "  ✗ backend/.env";
+    [ -f backend/.env.example ] && echo "  ✓ backend/.env.example" || echo "  ✗ backend/.env.example";
+    [ -f .env.local ] && echo "  ✓ .env.local" || echo "  ✗ .env.local";
+    [ -f .env.local.example ] && echo "  ✓ .env.local.example" || echo "  ✗ .env.local.example";
+    echo
+    if command -v lsof >/dev/null 2>&1; then
+        echo "Port 3000: $(lsof -Pi :3000 -sTCP:LISTEN -t >/dev/null && echo in use || echo free)"
+        echo "Port 8000: $(lsof -Pi :8000 -sTCP:LISTEN -t >/dev/null && echo in use || echo free)"
+    fi
+    echo "Redis:  $(command -v redis-server >/dev/null 2>&1 && echo available || echo missing)"
+    echo "Docker: $(command -v docker >/dev/null 2>&1 && echo available || echo missing)"
+    echo "WSL:    $(grep -i microsoft /proc/version >/dev/null && echo yes || echo no)"
+    echo -e "${BOLD}${GREEN}Diagnostics complete${RESET}\n"
+}
+
 # ==========================================
 # PORT MANAGEMENT
 # ==========================================
@@ -566,9 +645,16 @@ main() {
     
     # Run all setup steps
     check_system_requirements
+    if [ $RUN_DIAGNOSTICS -eq 1 ]; then
+        run_diagnostics
+        exit 0
+    fi
     setup_directories
     install_node_dependencies
     setup_python_environment
+    if [ $SEED_DB -eq 1 ]; then
+        seed_database
+    fi
     setup_redis
     run_tests
     check_ports
