@@ -1,5 +1,6 @@
 // src/components/BasicInfo.jsx
 import React from 'react';
+import Card from './ui/Card';
 
 export interface BirthInfo {
   date?: string;
@@ -20,7 +21,7 @@ export interface BasicInfoProps {
 export default function BasicInfo({ birth }: BasicInfoProps) {
   if (!birth) return null;
   return (
-    <section className="mb-6">
+    <Card variant="glass" className="mb-6">
       <h2 title="Your basic birth information used for all further analysis">Birth Details</h2>
       <p className="help-text">These details form the foundation of your horoscope.</p>
       {birth.date && (
@@ -48,6 +49,6 @@ export default function BasicInfo({ birth }: BasicInfoProps) {
       <p>
         <strong>Timezone:</strong> {birth.timezone}
       </p>
-    </section>
+    </Card>
   );
 }

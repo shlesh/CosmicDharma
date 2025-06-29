@@ -1,5 +1,6 @@
 // src/components/HouseAnalysis.jsx
 import React from 'react';
+import Card from './ui/Card'
 
 export interface HouseAnalysisProps {
   houses?: Record<string, unknown> | null;
@@ -15,7 +16,7 @@ export default function HouseAnalysis({ houses }: HouseAnalysisProps) {
   );
 
   return (
-    <section className="mb-6">
+    <Card variant="glass" className="mb-6">
       <h3 title="How each house shapes your experiences">House Analysis</h3>
       <p className="help-text">Review these notes for insight on different life themes.</p>
       <ul>
@@ -35,6 +36,6 @@ export default function HouseAnalysis({ houses }: HouseAnalysisProps) {
           );
         })}
       </ul>
-    </section>
+    </Card>
   );
 }

@@ -1,3 +1,4 @@
+// pages/index.tsx
 import LandingPage from '../components/LandingPage';
 import PageHead from '../components/PageHead';
 
@@ -5,18 +6,13 @@ export default function HomePage() {
   return (
     <>
       <PageHead
-        title="Cosmic Dharma"
-        description="Explore Vedic astrology insights and our latest posts."
-        ogTitle="Cosmic Dharma"
-        ogDescription="Discover Vedic astrology and read the Cosmic Dharma blog."
+        title="Cosmic Dharma - Vedic Astrology & Spiritual Wisdom"
+        description="Discover your cosmic blueprint through authentic Vedic astrology. Get personalized birth charts, daily insights, and spiritual guidance."
+        ogTitle="Cosmic Dharma - Your Journey to Self-Discovery"
+        ogDescription="Unlock the mysteries of your cosmic blueprint through authentic Vedic astrology"
+        ogImage="/og-image.png"
       />
-      <main className="page-wrapper">
-        <LandingPage />
-        <section id="about" className="mt-10">
-          <h2>About Cosmic Dharma</h2>
-          <p>Read our latest posts and learn about Vedic astrology.</p>
-        </section>
-      </main>
+      <LandingPage />
     </>
   );
 }

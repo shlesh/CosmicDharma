@@ -1,4 +1,5 @@
 import React from 'react';
+import Card from './ui/Card';
 
 export interface CoreElementsProps {
   analysis?: Record<string, unknown> | null;
@@ -24,7 +25,7 @@ export default function CoreElements({ analysis, elements }: CoreElementsProps) 
   };
 
   return (
-    <section className="mb-6">
+    <Card variant="glass" className="mb-6">
       <h3 title="Distribution of Fire, Earth, Air and Water in your chart">Core Elements</h3>
       <p className="help-text">These percentages indicate your dominant energies.</p>
       <ul>
@@ -34,6 +35,6 @@ export default function CoreElements({ analysis, elements }: CoreElementsProps) 
           </li>
         ))}
       </ul>
-    </section>
+    </Card>
   );
 }

@@ -1,4 +1,5 @@
 import React, { useMemo } from 'react';
+import Card from './ui/Card';
 
 export interface DashaChartPeriod {
   lord: string;
@@ -98,10 +99,10 @@ export default function DashaChart({ dasha, analysis }: DashaChartProps) {
   };
 
   return (
-    <section className="mb-6">
+    <Card variant="glass" className="mb-6">
       <h3 title="Graphical view of each major period">Dasha Timeline</h3>
       <p className="help-text">Hover over each segment to read what it signifies.</p>
       <Line data={data} options={options} />
-    </section>
+    </Card>
   );
 }

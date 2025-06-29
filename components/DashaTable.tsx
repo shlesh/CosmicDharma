@@ -1,5 +1,6 @@
 // src/components/DashaTable.jsx
 import React from 'react';
+import Card from './ui/Card';
 
 export interface DashaPeriod {
   lord: string;
@@ -16,7 +17,7 @@ export interface DashaTableProps {
 export default function DashaTable({ dasha }: DashaTableProps) {
   if (!Array.isArray(dasha) || dasha.length === 0) return null;
   return (
-    <section className="mb-6">
+    <Card variant="glass" className="mb-6">
       <h3 title="Detailed listing of your planetary periods">Vimshottari Mahādasha</h3>
       <p className="help-text">This table helps you track when each period begins and ends.</p>
       <table>
@@ -37,6 +38,6 @@ export default function DashaTable({ dasha }: DashaTableProps) {
           ))}
         </tbody>
       </table>
-    </section>
+    </Card>
   );
 }
