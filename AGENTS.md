@@ -1,6 +1,6 @@
 # Guidelines for AI Contributions
 
-This project contains a React frontend and a FastAPI backend. When the AI updates this repository, follow these instructions.
+This project contains a NextJs frontend and a FastAPI backend. When the AI updates this repository, follow these instructions.
 
 ## Setup
 1. Install Node dependencies with `npm install --legacy-peer-deps` (requires Node 18+).
