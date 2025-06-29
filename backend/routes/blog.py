@@ -25,7 +25,7 @@ class BlogPostOut(BaseModel):
     owner: str
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 
 @router.post("/posts", response_model=BlogPostOut)
