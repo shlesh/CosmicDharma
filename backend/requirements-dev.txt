@@ -6,7 +6,6 @@ pyswisseph
 timezonefinder
 pytz
 geopy
-geopy[speedups]
 httpx<0.25
 pytest
 pytest-asyncio>=0.21
