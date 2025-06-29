@@ -393,9 +393,16 @@ setup_python_environment() {
         print_success "Virtual environment created"
     fi
     
-    # Activate virtual environment
+    # Activate virtual environment - support Unix and Windows layouts
     echo -e "  ${DIM}Activating virtual environment...${RESET}"
-    source backend/venv/bin/activate
+    if [ -f backend/venv/bin/activate ]; then
+        source backend/venv/bin/activate
+    elif [ -f backend/venv/Scripts/activate ]; then
+        source backend/venv/Scripts/activate
+    else
+        print_error "Virtual environment not found. Run 'python3 -m venv backend/venv' to create it."
+        exit 1
+    fi
     
     # Upgrade pip first
     echo -e "  ${DIM}Upgrading pip...${RESET}"
