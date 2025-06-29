@@ -1,6 +1,7 @@
 // pages/_app.tsx
 import '../styles/globals.css';
 import type { AppProps } from 'next/app';
+import Head from 'next/head';
 import Header from '../components/layout/Header';
 import Footer from '../components/layout/Footer';
 import ToastProvider from '../components/ToastProvider';
@@ -22,11 +23,15 @@ export default function MyApp({ Component, pageProps }: AppProps) {
   }, []);
 
   return (
-    <ThemeProvider>
-      <ToastProvider>
-        <div className="min-h-screen relative">
-          <StarryBackground />
-          <Header />
+    <>
+      <Head>
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+      </Head>
+      <ThemeProvider>
+        <ToastProvider>
+          <div className="min-h-screen relative">
+            <StarryBackground />
+            <Header />
           
           <AnimatePresence mode="wait" initial={false}>
             <motion.main
@@ -42,8 +47,9 @@ export default function MyApp({ Component, pageProps }: AppProps) {
           </AnimatePresence>
           
           <Footer />
-        </div>
-      </ToastProvider>
-    </ThemeProvider>
+          </div>
+        </ToastProvider>
+      </ThemeProvider>
+    </>
   );
 }
