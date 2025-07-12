@@ -622,6 +622,14 @@ setup_python_environment() {
         print_success "Virtual environment created"
     fi
     
+    # Optional: Check for pip executable and recreate if missing
+    if [ -f backend/venv/bin/activate ] && [ ! -f backend/venv/bin/pip ]; then
+        print_warning "pip executable not found in venv. Recreating..."
+        python3 -m venv backend/venv &
+        animated_spinner $! "Recreating Python virtual environment..."
+        print_success "Virtual environment recreated"
+    fi
+    
     # Activate virtual environment
     echo -e "\n  ${CYAN}Activating Environment:${RESET}"
     if [ -f backend/venv/bin/activate ]; then
@@ -664,9 +672,12 @@ setup_python_environment() {
     
     local pip_pid=$!
     animated_spinner $pip_pid "Installing Python packages..."
-    wait $pip_pid
     
-    if [ $? -eq 0 ]; then
+    # Store exit status of pip install, preventing script exit via `set -e`
+    local pip_exit_status=0
+    wait $pip_pid || pip_exit_status=$?
+    
+    if [ $pip_exit_status -eq 0 ]; then
         print_success "All Python packages installed"
         
         # Verify critical packages
@@ -680,7 +691,7 @@ setup_python_environment() {
             fi
         done
     else
-        print_error "Failed to install Python dependencies"
+        print_error "Failed to install Python dependencies (Exit Code: $pip_exit_status)"
         handle_error "pip install" "Check internet connection and try again"
     fi
 }
