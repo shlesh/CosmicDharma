@@ -1,9 +1,11 @@
 #!/usr/bin/env bash
-set -euo pipefail
 
 # ==========================================
 # COSMIC DHARMA - ENHANCED WSL STARTUP SCRIPT
 # ==========================================
+
+# Remove strict error handling to allow recovery
+# set -euo pipefail  # REMOVED for better error handling
 
 # Terminal colors and formatting
 RED='\033[0;31m'
@@ -23,31 +25,23 @@ BLINK='\033[5m'
 REVERSE='\033[7m'
 RESET='\033[0m'
 
-# Unicode symbols
-CHECK="✓"
-CROSS="✗"
-ARROW="→"
-STAR="★"
-ROCKET="🚀"
-SPARKLES="✨"
-WARNING="⚠️"
-INFO="ℹ️"
-GEAR="⚙️"
-PACKAGE="📦"
-PYTHON="🐍"
-NODE="⬢"
-DATABASE="🗄️"
-NETWORK="🌐"
-CLOCK="🕐"
-FIRE="🔥"
-HEART="❤️"
-DIAMOND="💎"
-LIGHTNING="⚡"
-SHIELD="🛡️"
-BUG="🐛"
-TOOLS="🔧"
-CHECKMARK="☑️"
-HOURGLASS="⏳"
+# Unicode symbols (simplified for WSL)
+CHECK="[OK]"
+CROSS="[FAIL]"
+ARROW=">"
+STAR="*"
+ROCKET=">>>"
+SPARKLES="***"
+WARNING="[!]"
+INFO="[i]"
+GEAR="[*]"
+PACKAGE="[PKG]"
+PYTHON="[PY]"
+NODE="[NODE]"
+DATABASE="[DB]"
+NETWORK="[NET]"
+CLOCK="[TIME]"
+LOADING="..."
 
 # WSL Detection
 IS_WSL=0
@@ -60,6 +54,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 LOG_FILE="$REPO_ROOT/.startup.log"
 ERROR_LOG="$REPO_ROOT/.startup-errors.log"
+DEBUG_LOG="$REPO_ROOT/.startup-debug.log"
 PID_FILE="$REPO_ROOT/.startup.pid"
 REDIS_PID_FILE="$REPO_ROOT/.redis.pid"
 WORKER_ENABLED=1
@@ -69,7 +64,7 @@ START_TIME=$(date +%s)
 # Network configuration for WSL
 if [ $IS_WSL -eq 1 ]; then
     # Get Windows host IP for WSL2
-    export WINDOWS_HOST=$(cat /etc/resolv.conf | grep nameserver | awk '{print $2}')
+    export WINDOWS_HOST=$(cat /etc/resolv.conf 2>/dev/null | grep nameserver | awk '{print $2}' || echo "172.17.0.1")
     export DISPLAY="${WINDOWS_HOST}:0"
 fi
 
@@ -79,6 +74,7 @@ RUN_DIAGNOSTICS=0
 VERBOSE=0
 SKIP_TESTS=0
 AUTO_FIX=0
+DEBUG_MODE=0
 
 # Process tracking
 declare -a MANAGED_PIDS=()
@@ -86,6 +82,71 @@ declare -a MANAGED_PIDS=()
 # Error tracking
 declare -a ERRORS=()
 declare -a WARNINGS=()
+LAST_ERROR=""
+LAST_ERROR_CODE=0
+
+# ==========================================
+# ENHANCED ERROR HANDLING
+# ==========================================
+
+# Global error handler
+handle_command_error() {
+    local exit_code=$?
+    local command="$1"
+    local context="${2:-Unknown context}"
+    
+    if [ $exit_code -ne 0 ]; then
+        LAST_ERROR="Command failed: $command (exit code: $exit_code)"
+        LAST_ERROR_CODE=$exit_code
+        log_error "ERROR in $context: $command failed with exit code $exit_code"
+        
+        if [ $DEBUG_MODE -eq 1 ]; then
+            echo -e "${RED}DEBUG: Command that failed: $command${RESET}" >&2
+            echo -e "${RED}DEBUG: Exit code: $exit_code${RESET}" >&2
+            echo -e "${RED}DEBUG: Context: $context${RESET}" >&2
+        fi
+        
+        return $exit_code
+    fi
+    return 0
+}
+
+# Safe command execution
+safe_execute() {
+    local command="$1"
+    local context="${2:-Command execution}"
+    local allow_fail="${3:-0}"
+    
+    log_debug "Executing: $command"
+    
+    if [ $DEBUG_MODE -eq 1 ]; then
+        echo -e "${DIM}DEBUG: Running: $command${RESET}"
+    fi
+    
+    # Execute command and capture output
+    local output
+    local exit_code
+    
+    if output=$(eval "$command" 2>&1); then
+        exit_code=0
+        log_debug "Command succeeded: $command"
+        echo "$output"
+    else
+        exit_code=$?
+        LAST_ERROR="$output"
+        LAST_ERROR_CODE=$exit_code
+        log_error "Command failed ($exit_code): $command"
+        log_error "Output: $output"
+        
+        if [ $allow_fail -eq 0 ]; then
+            echo -e "${RED}Error executing: $command${RESET}" >&2
+            echo -e "${RED}Output: $output${RESET}" >&2
+            return $exit_code
+        fi
+    fi
+    
+    return 0
+}
 
 # ==========================================
 # ENHANCED LOGGING SYSTEM
@@ -103,42 +164,31 @@ log() {
         ERRORS+=("$message")
     elif [ "$level" = "WARN" ]; then
         WARNINGS+=("$message")
+    elif [ "$level" = "DEBUG" ]; then
+        echo "[$timestamp] $message" >> "$DEBUG_LOG"
     fi
 }
 
 log_info() { log "INFO" "$@"; }
 log_warn() { log "WARN" "$@"; }
 log_error() { log "ERROR" "$@"; }
-log_debug() { [ $VERBOSE -eq 1 ] && log "DEBUG" "$@"; }
+log_debug() { [ $VERBOSE -eq 1 ] || [ $DEBUG_MODE -eq 1 ] && log "DEBUG" "$@" || true; }
 
 # ==========================================
-# ENHANCED UI FUNCTIONS
+# SIMPLIFIED UI FOR WSL
 # ==========================================
 
 print_header() {
     clear
-    local width=$(tput cols)
-    local padding=$(( (width - 62) / 2 ))
-    
     echo -e "${PURPLE}${BOLD}"
-    printf "%${padding}s" ""
-    cat << "EOF"
-╔══════════════════════════════════════════════════════════════╗
-║                                                              ║
-║     ______                    _        ____  _                           ║
-║    / ____/___  _________ ___  (_)____  / __ \/ /_  ____ _________ ___  ____ ║
-║   / /   / __ \/ ___/ __ `__ \/ / ___/ / / / / __ \/ __ `/ ___/ __ `__ \/ __ \║
-║  / /___/ /_/ (__  ) / / / / / / /__  / /_/ / / / / /_/ / /  / / / / / / /_/ /║
-║  \____/\____/____/_/ /_/ /_/_/\___/ /_____/_/ /_/\__,_/_/  /_/ /_/ /_/\__,_/ ║
-║                                                              ║
-║              ${SPARKLES} Vedic Astrology Platform ${SPARKLES}              ║
-╚══════════════════════════════════════════════════════════════╝
-EOF
+    echo "=============================================================="
+    echo "                    COSMIC DHARMA"
+    echo "                Vedic Astrology Platform"
+    echo "=============================================================="
     echo -e "${RESET}"
     
-    # WSL Notice
     if [ $IS_WSL -eq 1 ]; then
-        echo -e "${CYAN}${ITALIC}Running on Windows Subsystem for Linux (WSL)${RESET}"
+        echo -e "${CYAN}Running on Windows Subsystem for Linux (WSL)${RESET}"
         echo
     fi
 }
@@ -150,9 +200,9 @@ print_step() {
     local icon=${4:-$GEAR}
     
     echo
-    echo -e "${BOLD}${BLUE}┌─────────────────────────────────────────────────────────────┐${RESET}"
-    echo -e "${BOLD}${BLUE}│ ${icon} Step ${step}/${total}: ${WHITE}${message}${BLUE} │${RESET}"
-    echo -e "${BOLD}${BLUE}└─────────────────────────────────────────────────────────────┘${RESET}"
+    echo -e "${BOLD}${BLUE}==============================================================>${RESET}"
+    echo -e "${BOLD}${WHITE}$icon Step ${step}/${total}: ${message}${RESET}"
+    echo -e "${BOLD}${BLUE}==============================================================>${RESET}"
 }
 
 print_success() {
@@ -176,44 +226,58 @@ print_info() {
 }
 
 print_debug() {
-    [ $VERBOSE -eq 1 ] && echo -e "  ${DIM}${TOOLS} $1${RESET}"
+    if [ $VERBOSE -eq 1 ] || [ $DEBUG_MODE -eq 1 ]; then
+        echo -e "  ${DIM}[DEBUG] $1${RESET}"
+    fi
     log_debug "$1"
 }
 
-print_progress() {
-    local current=$1
-    local total=$2
-    local width=50
-    local percentage=$((current * 100 / total))
-    local filled=$((width * current / total))
-    
-    printf "\r  ${CYAN}Progress: ["
-    printf "%${filled}s" | tr ' ' '█'
-    printf "%$((width - filled))s" | tr ' ' '░'
-    printf "] %3d%% ${RESET}" $percentage
+# Simplified progress for WSL
+show_progress() {
+    local message="$1"
+    echo -ne "  ${CYAN}${LOADING} ${message}${RESET}"
 }
 
-animated_spinner() {
+complete_progress() {
+    local message="$1"
+    local status="${2:-success}"
+    
+    echo -ne "\r"  # Clear line
+    if [ "$status" = "success" ]; then
+        print_success "$message"
+    elif [ "$status" = "error" ]; then
+        print_error "$message"
+    else
+        print_warning "$message"
+    fi
+}
+
+# Simple loading animation for WSL
+show_loading() {
     local pid=$1
     local message=$2
-    local delay=0.1
-    local spinners=(
-        "⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏"
-        "◐◓◑◒"
-        "◰◳◲◱"
-        "▖▘▝▗"
-        "⣾⣽⣻⢿⡿⣟⣯⣷"
-    )
-    local spinner=${spinners[0]}
-    local i=0
+    local dots=""
     
     while kill -0 $pid 2>/dev/null; do
-        local temp=${spinner:$i:1}
-        printf "\r  ${CYAN}%s${RESET} %s" "$temp" "$message"
-        ((i=(i+1)%${#spinner}))
-        sleep $delay
+        dots="${dots}."
+        if [ ${#dots} -gt 3 ]; then
+            dots=""
+        fi
+        echo -ne "\r  ${CYAN}${message}${dots}   ${RESET}"
+        sleep 0.5
     done
-    printf "\r  ${GREEN}${CHECK}${RESET} %s\n" "$message"
+    
+    wait $pid
+    local exit_code=$?
+    
+    echo -ne "\r"  # Clear line
+    if [ $exit_code -eq 0 ]; then
+        print_success "$message"
+    else
+        print_error "$message (failed with exit code: $exit_code)"
+    fi
+    
+    return $exit_code
 }
 
 print_box() {
@@ -221,47 +285,104 @@ print_box() {
     local content=$2
     local color=${3:-$CYAN}
     
-    echo -e "${color}╭──────────────────────────────────────────────────────────────╮${RESET}"
-    echo -e "${color}│ ${BOLD}${title}${RESET}${color} │${RESET}"
-    echo -e "${color}├──────────────────────────────────────────────────────────────┤${RESET}"
-    echo -e "${color}│ ${RESET}${content}${color} │${RESET}"
-    echo -e "${color}╰──────────────────────────────────────────────────────────────╯${RESET}"
+    echo
+    echo -e "${color}+--------------------------------------------------------------+${RESET}"
+    echo -e "${color}| ${BOLD}${title}${RESET}"
+    echo -e "${color}+--------------------------------------------------------------+${RESET}"
+    echo -e "${color}| ${RESET}${content}"
+    echo -e "${color}+--------------------------------------------------------------+${RESET}"
+    echo
 }
 
 # ==========================================
-# ERROR RECOVERY SYSTEM
+# INTERACTIVE ERROR RECOVERY
 # ==========================================
 
-handle_error() {
-    local error_code=$?
-    local error_context=$1
-    local suggestion=$2
+interactive_error_handler() {
+    local error_context="$1"
+    local suggestions=("$@")
+    shift  # Remove first argument
     
-    print_error "Error in: $error_context (Exit code: $error_code)"
-    [ -n "$suggestion" ] && print_info "Suggestion: $suggestion"
-    
-    if [ $AUTO_FIX -eq 1 ]; then
-        print_info "Attempting automatic fix..."
-        return 1
-    else
-        echo -e "\n${YELLOW}What would you like to do?${RESET}"
-        echo "  1) Retry"
-        echo "  2) Skip this step"
-        echo "  3) View detailed error log"
-        echo "  4) Exit"
-        
-        read -p "Choice (1-4): " choice
-        case $choice in
-            1) return 1 ;;
-            2) return 0 ;;
-            3) 
-                less "$ERROR_LOG"
-                return 1
-                ;;
-            4) exit 1 ;;
-            *) return 1 ;;
-        esac
+    echo
+    echo -e "${RED}${BOLD}=== ERROR ENCOUNTERED ===${RESET}"
+    echo -e "${RED}Context: ${error_context}${RESET}"
+    if [ -n "$LAST_ERROR" ]; then
+        echo -e "${RED}Details: ${LAST_ERROR}${RESET}"
     fi
+    echo
+    
+    # Show suggestions if any
+    if [ ${#suggestions[@]} -gt 1 ]; then
+        echo -e "${YELLOW}Possible solutions:${RESET}"
+        local i=1
+        for suggestion in "${suggestions[@]:1}"; do
+            echo "  $i) $suggestion"
+            ((i++))
+        done
+        echo
+    fi
+    
+    echo -e "${YELLOW}What would you like to do?${RESET}"
+    echo "  r) Retry the operation"
+    echo "  s) Skip this step"
+    echo "  d) Show detailed debug information"
+    echo "  l) View error logs"
+    echo "  f) Try automatic fix"
+    echo "  x) Exit script"
+    echo
+    
+    local choice
+    read -p "Your choice [r/s/d/l/f/x]: " choice
+    
+    case $choice in
+        r|R)
+            echo -e "${CYAN}Retrying...${RESET}"
+            return 1  # Retry
+            ;;
+        s|S)
+            echo -e "${YELLOW}Skipping this step...${RESET}"
+            return 0  # Skip
+            ;;
+        d|D)
+            echo -e "\n${CYAN}=== DEBUG INFORMATION ===${RESET}"
+            echo "Last error: $LAST_ERROR"
+            echo "Last error code: $LAST_ERROR_CODE"
+            echo "Current directory: $(pwd)"
+            echo "Script directory: $SCRIPT_DIR"
+            echo "Repository root: $REPO_ROOT"
+            echo
+            echo "Recent log entries:"
+            tail -n 10 "$LOG_FILE" 2>/dev/null || echo "No log file found"
+            echo
+            echo "Press Enter to continue..."
+            read
+            return 1  # Retry after showing debug
+            ;;
+        l|L)
+            echo -e "\n${CYAN}=== ERROR LOG ===${RESET}"
+            if [ -f "$ERROR_LOG" ]; then
+                tail -n 20 "$ERROR_LOG"
+            else
+                echo "No error log found"
+            fi
+            echo
+            echo "Press Enter to continue..."
+            read
+            return 1  # Retry after showing log
+            ;;
+        f|F)
+            echo -e "${CYAN}Attempting automatic fix...${RESET}"
+            return 2  # Auto-fix
+            ;;
+        x|X)
+            echo -e "${RED}Exiting...${RESET}"
+            exit 1
+            ;;
+        *)
+            echo -e "${RED}Invalid choice. Retrying...${RESET}"
+            return 1  # Retry
+            ;;
+    esac
 }
 
 # ==========================================
@@ -269,7 +390,7 @@ handle_error() {
 # ==========================================
 
 check_system_requirements() {
-    print_step 1 8 "System Requirements Check" $SHIELD
+    print_step 1 8 "System Requirements Check" $GEAR
     
     local errors=0
     local system_info=""
@@ -339,7 +460,7 @@ check_system_requirements() {
         "node|$NODE|Node.js"
         "npm|$PACKAGE|NPM"
         "python3|$PYTHON|Python 3"
-        "git|$DIAMOND|Git"
+        "git|[GIT]|Git"
     )
     
     for cmd_info in "${required_cmds[@]}"; do
@@ -352,25 +473,6 @@ check_system_requirements() {
         else
             print_error "Not found"
             ((errors++))
-        fi
-    done
-    
-    # Optional Commands
-    echo -e "\n  ${CYAN}Optional Software:${RESET}"
-    local optional_cmds=(
-        "docker|🐳|Docker"
-        "redis-server|$DATABASE|Redis"
-        "lsof|$NETWORK|lsof"
-    )
-    
-    for cmd_info in "${optional_cmds[@]}"; do
-        IFS='|' read -r cmd icon name <<< "$cmd_info"
-        echo -n "    $icon $name: "
-        
-        if command -v "$cmd" >/dev/null 2>&1; then
-            print_success "Available"
-        else
-            print_warning "Not found (optional)"
         fi
     done
     
@@ -428,7 +530,10 @@ check_system_requirements() {
 setup_directories() {
     print_step 2 8 "Directory Setup" $PACKAGE
     
-    cd "$REPO_ROOT"
+    cd "$REPO_ROOT" || {
+        print_error "Failed to change to repository root"
+        return 1
+    }
     
     # Create necessary directories
     local dirs=(
@@ -508,24 +613,6 @@ localhostForwarding=true
 EOF
             print_success "Created WSL configuration"
         fi
-        
-        # VS Code settings for WSL
-        if [ -d .vscode ]; then
-            cat > .vscode/settings.json << EOF
-{
-    "terminal.integrated.defaultProfile.linux": "bash",
-    "python.defaultInterpreterPath": "./backend/venv/bin/python",
-    "python.linting.enabled": true,
-    "python.linting.pylintEnabled": true,
-    "editor.formatOnSave": true,
-    "editor.codeActionsOnSave": {
-        "source.fixAll.eslint": true
-    },
-    "remote.WSL.fileWatcher.polling": true
-}
-EOF
-            print_success "Created VS Code WSL settings"
-        fi
     fi
 }
 
@@ -568,89 +655,225 @@ install_node_dependencies() {
     local total_deps=$(grep -c '"' package.json 2>/dev/null || echo "0")
     print_info "Installing ~$total_deps dependencies"
     
-    npm install --legacy-peer-deps --no-audit --no-fund 2>&1 | \
-        while IFS= read -r line; do
-            if [[ "$line" == *"WARN"* ]]; then
-                print_warning "npm: $line"
-            elif [[ "$line" == *"ERR!"* ]]; then
-                print_error "npm: $line"
-            fi
-        done &
+    # Create temp file for npm output
+    local npm_output=$(mktemp)
+    
+    # Run npm install
+    (npm install --legacy-peer-deps --no-audit --no-fund 2>&1 | tee "$npm_output") &
     
     local npm_pid=$!
-    animated_spinner $npm_pid "Installing Node.js packages..."
-    wait $npm_pid
+    show_loading $npm_pid "Installing Node.js packages"
+    local npm_result=$?
     
-    if [ $? -eq 0 ]; then
-        local installed=$(find node_modules -maxdepth 1 -type d | wc -l)
+    if [ $npm_result -eq 0 ]; then
+        local installed=$(find node_modules -maxdepth 1 -type d 2>/dev/null | wc -l)
         print_success "Installed $installed packages successfully"
     else
         print_error "Failed to install Node.js dependencies"
-        handle_error "npm install" "Try 'rm -rf node_modules' and run again"
+        
+        # Show errors
+        echo -e "\n${RED}Installation errors:${RESET}"
+        grep -i "ERR!" "$npm_output" | head -5 || true
+        
+        interactive_error_handler "npm install failed" \
+            "Clear npm cache: npm cache clean --force" \
+            "Delete node_modules and retry" \
+            "Check internet connection"
     fi
+    
+    rm -f "$npm_output"
 }
+
+# ==========================================
+# ENHANCED PYTHON SETUP WITH BETTER ERROR HANDLING
+# ==========================================
 
 setup_python_environment() {
     print_step 4 8 "Python Environment" $PYTHON
     
-    cd "$REPO_ROOT"
+    cd "$REPO_ROOT" || {
+        print_error "Failed to change to repository root"
+        return 1
+    }
     
     # Check Python availability
-    if ! command -v python3 >/dev/null 2>&1; then
-        print_error "Python 3 not found!"
-        return 1
-    fi
+    echo -e "\n  ${CYAN}Checking Python installation...${RESET}"
     
-    # Virtual environment management
-    echo -e "\n  ${CYAN}Virtual Environment:${RESET}"
+    local python_cmd=""
+    for cmd in python3.12 python3.11 python3.10 python3.9 python3 python; do
+        if command -v "$cmd" >/dev/null 2>&1; then
+            local version=$($cmd --version 2>&1 | awk '{print $2}')
+            local major=$(echo "$version" | cut -d. -f1)
+            local minor=$(echo "$version" | cut -d. -f2)
+            
+            if [ "$major" -eq 3 ] && [ "$minor" -ge 9 ]; then
+                python_cmd="$cmd"
+                print_success "Found Python: $cmd (version $version)"
+                break
+            else
+                print_warning "Found $cmd but version $version is too old"
+            fi
+        fi
+    done
     
-    if [ -d backend/venv ]; then
-        print_info "Virtual environment exists"
+    if [ -z "$python_cmd" ]; then
+        print_error "No suitable Python 3.9+ found!"
         
-        # Check if it's valid
-        if [ ! -f backend/venv/bin/activate ] && [ ! -f backend/venv/Scripts/activate ]; then
-            print_warning "Virtual environment seems corrupted"
-            rm -rf backend/venv
-            print_info "Removed corrupted venv"
+        interactive_error_handler "Python not found" \
+            "Install Python 3.9 or higher" \
+            "On WSL Ubuntu: sudo apt update && sudo apt install python3.11 python3.11-venv" \
+            "Skip Python setup (app won't work without backend)"
+        
+        local result=$?
+        if [ $result -eq 2 ]; then
+            # Try to install Python
+            if [ $IS_WSL -eq 1 ]; then
+                echo "Attempting to install Python..."
+                sudo apt update && sudo apt install -y python3.11 python3.11-venv python3-pip
+                python_cmd="python3.11"
+            fi
+        elif [ $result -eq 0 ]; then
+            return 0  # Skip
+        fi
+        
+        # Retry check
+        if [ -z "$python_cmd" ] || ! command -v "$python_cmd" >/dev/null 2>&1; then
+            print_error "Python installation failed"
+            return 1
         fi
     fi
     
-    if [ ! -d backend/venv ]; then
-        print_info "Creating virtual environment..."
-        python3 -m venv backend/venv &
-        animated_spinner $! "Creating Python virtual environment..."
-        print_success "Virtual environment created"
+    # Virtual environment management
+    echo -e "\n  ${CYAN}Setting up virtual environment...${RESET}"
+    
+    local venv_path="backend/venv"
+    local activate_script=""
+    
+    # Check existing venv
+    if [ -d "$venv_path" ]; then
+        print_info "Virtual environment exists, checking validity..."
+        
+        # Determine activation script
+        if [ -f "$venv_path/bin/activate" ]; then
+            activate_script="$venv_path/bin/activate"
+        elif [ -f "$venv_path/Scripts/activate" ]; then
+            activate_script="$venv_path/Scripts/activate"
+        else
+            print_warning "Virtual environment seems corrupted"
+            rm -rf "$venv_path"
+        fi
     fi
     
-    # Optional: Check for pip executable and recreate if missing
-    if [ -f backend/venv/bin/activate ] && [ ! -f backend/venv/bin/pip ]; then
-        print_warning "pip executable not found in venv. Recreating..."
-        python3 -m venv backend/venv &
-        animated_spinner $! "Recreating Python virtual environment..."
-        print_success "Virtual environment recreated"
+    # Create venv if needed
+    local max_retries=3
+    local retry_count=0
+    
+    while [ ! -f "$activate_script" ] && [ $retry_count -lt $max_retries ]; do
+        ((retry_count++))
+        print_info "Creating virtual environment (attempt $retry_count/$max_retries)..."
+        
+        # Remove old venv if exists
+        [ -d "$venv_path" ] && rm -rf "$venv_path"
+        
+        # Create new venv with explicit python
+        if $python_cmd -m venv "$venv_path" 2>&1 | tee -a "$DEBUG_LOG"; then
+            print_success "Virtual environment created"
+            
+            # Find activation script again
+            if [ -f "$venv_path/bin/activate" ]; then
+                activate_script="$venv_path/bin/activate"
+            elif [ -f "$venv_path/Scripts/activate" ]; then
+                activate_script="$venv_path/Scripts/activate"
+            fi
+            
+            if [ -n "$activate_script" ]; then
+                break
+            fi
+        else
+            print_error "Failed to create virtual environment"
+            
+            if [ $retry_count -lt $max_retries ]; then
+                echo -e "${YELLOW}Retrying in 2 seconds...${RESET}"
+                sleep 2
+            fi
+        fi
+    done
+    
+    if [ ! -f "$activate_script" ]; then
+        print_error "Could not create virtual environment after $max_retries attempts"
+        
+        interactive_error_handler "Virtual environment creation failed" \
+            "Check disk space: df -h" \
+            "Check permissions: ls -la backend/" \
+            "Try manual creation: $python_cmd -m venv backend/venv" \
+            "Install venv package: sudo apt install python3-venv"
+        
+        if [ $? -ne 0 ]; then
+            return 1
+        fi
     fi
     
     # Activate virtual environment
-    echo -e "\n  ${CYAN}Activating Environment:${RESET}"
-    if [ -f backend/venv/bin/activate ]; then
-        source backend/venv/bin/activate
-        print_success "Activated virtual environment (Unix)"
-    elif [ -f backend/venv/Scripts/activate ]; then
-        source backend/venv/Scripts/activate
-        print_success "Activated virtual environment (Windows)"
+    echo -e "\n  ${CYAN}Activating virtual environment...${RESET}"
+    
+    print_debug "Activation script: $activate_script"
+    
+    # Source activation script
+    source "$activate_script" 2>&1 | tee -a "$DEBUG_LOG"
+    
+    if [ -n "$VIRTUAL_ENV" ]; then
+        print_success "Virtual environment activated"
+        print_debug "VIRTUAL_ENV: $VIRTUAL_ENV"
     else
-        print_error "Could not find activation script"
-        return 1
+        print_warning "VIRTUAL_ENV not set, activation may have failed"
     fi
     
+    # Ensure pip is available
+    echo -e "\n  ${CYAN}Checking pip...${RESET}"
+    
+    local pip_cmd=""
+    for cmd in pip3 pip python3 -m pip python -m pip; do
+        if $cmd --version >/dev/null 2>&1; then
+            pip_cmd="$cmd"
+            break
+        fi
+    done
+    
+    if [ -z "$pip_cmd" ]; then
+        print_error "pip not found in virtual environment"
+        
+        # Try to install pip
+        print_info "Attempting to install pip..."
+        curl -sS https://bootstrap.pypa.io/get-pip.py | python3 2>&1 | tee -a "$DEBUG_LOG"
+        
+        # Retry pip detection
+        for cmd in pip3 pip python3 -m pip; do
+            if $cmd --version >/dev/null 2>&1; then
+                pip_cmd="$cmd"
+                break
+            fi
+        done
+        
+        if [ -z "$pip_cmd" ]; then
+            print_error "Failed to install pip"
+            return 1
+        fi
+    fi
+    
+    print_success "Found pip: $($pip_cmd --version)"
+    
     # Upgrade pip
-    echo -e "\n  ${CYAN}Package Manager:${RESET}"
-    print_info "Upgrading pip..."
-    python3 -m pip install --upgrade pip >/dev/null 2>&1 &
-    animated_spinner $! "Upgrading pip..."
+    echo -e "\n  ${CYAN}Upgrading pip...${RESET}"
+    
+    show_progress "Upgrading pip"
+    if $pip_cmd install --upgrade pip >/dev/null 2>&1; then
+        complete_progress "pip upgraded successfully" "success"
+    else
+        complete_progress "pip upgrade failed (continuing anyway)" "warning"
+    fi
     
     # Install requirements
-    echo -e "\n  ${CYAN}Python Packages:${RESET}"
+    echo -e "\n  ${CYAN}Installing Python packages...${RESET}"
     
     if [ ! -f backend/requirements.txt ]; then
         print_error "requirements.txt not found!"
@@ -658,42 +881,99 @@ setup_python_environment() {
     fi
     
     local total_packages=$(wc -l < backend/requirements.txt)
-    print_info "Installing $total_packages packages..."
+    print_info "Found $total_packages packages to install"
     
-    # Install with progress
-    pip install -q -r backend/requirements.txt -r backend/requirements-dev.txt 2>&1 | \
-        while IFS= read -r line; do
-            if [[ "$line" == *"Successfully installed"* ]]; then
-                print_success "$line"
-            elif [[ "$line" == *"ERROR"* ]]; then
-                print_error "$line"
-            fi
-        done &
+    # Create a temporary file for pip output
+    local pip_output=$(mktemp)
+    local pip_errors=$(mktemp)
+    
+    # Install packages with better error handling
+    print_info "Installing packages (this may take a few minutes)..."
+    
+    # Run pip install in background
+    (
+        cd backend
+        $pip_cmd install -r requirements.txt -r requirements-dev.txt 2>&1 | tee "$pip_output"
+    ) &
     
     local pip_pid=$!
-    animated_spinner $pip_pid "Installing Python packages..."
     
-    # Store exit status of pip install, preventing script exit via `set -e`
-    local pip_exit_status=0
-    wait $pip_pid || pip_exit_status=$?
+    # Show progress
+    show_loading $pip_pid "Installing Python packages"
+    local pip_result=$?
     
-    if [ $pip_exit_status -eq 0 ]; then
-        print_success "All Python packages installed"
+    # Check results
+    if [ $pip_result -eq 0 ]; then
+        print_success "All Python packages installed successfully"
+    else
+        print_error "Some packages failed to install"
         
-        # Verify critical packages
-        echo -e "\n  ${CYAN}Verifying Critical Packages:${RESET}"
-        local critical_packages=("fastapi" "uvicorn" "swisseph" "redis" "rq")
-        for pkg in "${critical_packages[@]}"; do
-            if python3 -c "import $pkg" 2>/dev/null; then
-                print_success "$pkg ✓"
+        # Show errors
+        echo -e "\n${RED}Installation errors:${RESET}"
+        grep -i "error\|failed" "$pip_output" | head -10 || true
+        
+        # Common fixes for WSL
+        echo -e "\n${YELLOW}Common solutions for WSL:${RESET}"
+        echo "  1. Update system packages: sudo apt update && sudo apt upgrade"
+        echo "  2. Install build tools: sudo apt install build-essential python3-dev"
+        echo "  3. Clear pip cache: pip cache purge"
+        echo "  4. Install one by one: pip install package_name"
+        
+        interactive_error_handler "Package installation failed" \
+            "Install system dependencies: sudo apt install build-essential python3-dev" \
+            "Clear pip cache: pip cache purge" \
+            "Try with --no-cache-dir flag" \
+            "Install packages one by one"
+        
+        local fix_choice=$?
+        if [ $fix_choice -eq 2 ]; then
+            # Auto-fix attempt
+            print_info "Installing system dependencies..."
+            sudo apt update && sudo apt install -y build-essential python3-dev libpq-dev
+            
+            print_info "Retrying package installation..."
+            cd backend
+            $pip_cmd install --no-cache-dir -r requirements.txt -r requirements-dev.txt
+            cd ..
+        elif [ $fix_choice -eq 0 ]; then
+            print_warning "Skipping package installation - backend may not work properly"
+        fi
+    fi
+    
+    # Cleanup temp files
+    rm -f "$pip_output" "$pip_errors"
+    
+    # Verify critical packages
+    echo -e "\n  ${CYAN}Verifying critical packages...${RESET}"
+    
+    local critical_packages=("fastapi" "uvicorn" "swisseph")
+    local missing_packages=()
+    
+    for pkg in "${critical_packages[@]}"; do
+        if python3 -c "import $pkg" 2>/dev/null; then
+            print_success "$pkg installed"
+        else
+            print_error "$pkg not found"
+            missing_packages+=("$pkg")
+        fi
+    done
+    
+    if [ ${#missing_packages[@]} -gt 0 ]; then
+        print_error "Critical packages missing: ${missing_packages[*]}"
+        
+        # Try to install missing packages individually
+        for pkg in "${missing_packages[@]}"; do
+            print_info "Attempting to install $pkg individually..."
+            if $pip_cmd install "$pkg" 2>&1 | tee -a "$DEBUG_LOG"; then
+                print_success "$pkg installed"
             else
-                print_error "$pkg ✗"
+                print_error "Failed to install $pkg"
             fi
         done
-    else
-        print_error "Failed to install Python dependencies (Exit Code: $pip_exit_status)"
-        handle_error "pip install" "Check internet connection and try again"
     fi
+    
+    print_box "Python Setup Complete" "Environment is ready" "$GREEN"
+    return 0
 }
 
 # ==========================================
@@ -805,7 +1085,7 @@ EOF
 # ==========================================
 
 run_tests() {
-    print_step 6 8 "Running Tests" $BUG
+    print_step 6 8 "Running Tests" "[TEST]"
     
     if [ $SKIP_TESTS -eq 1 ]; then
         print_warning "Skipping tests (--skip-tests flag)"
@@ -817,23 +1097,15 @@ run_tests() {
     # Frontend tests
     echo -e "\n  ${CYAN}Frontend Tests:${RESET}"
     if [ -f vitest.config.js ]; then
-        npm run test:frontend 2>&1 | while IFS= read -r line; do
-            if [[ "$line" == *"PASS"* ]]; then
-                echo -e "    ${GREEN}✓${RESET} $line"
-            elif [[ "$line" == *"FAIL"* ]]; then
-                echo -e "    ${RED}✗${RESET} $line"
-                ((test_errors++))
-            fi
-        done &
-        
+        (npm run test:frontend 2>&1 || true) &
         local frontend_pid=$!
-        animated_spinner $frontend_pid "Running frontend tests..."
-        wait $frontend_pid
+        show_loading $frontend_pid "Running frontend tests"
         
         if [ $? -eq 0 ]; then
             print_success "Frontend tests passed"
         else
             print_warning "Some frontend tests failed"
+            ((test_errors++))
         fi
     else
         print_warning "No frontend test configuration found"
@@ -845,23 +1117,15 @@ run_tests() {
         cd backend
         source venv/bin/activate
         
-        PYTHONPATH=. pytest -q 2>&1 | while IFS= read -r line; do
-            if [[ "$line" == *"passed"* ]]; then
-                echo -e "    ${GREEN}✓${RESET} $line"
-            elif [[ "$line" == *"failed"* ]] || [[ "$line" == *"error"* ]]; then
-                echo -e "    ${RED}✗${RESET} $line"
-                ((test_errors++))
-            fi
-        done &
-        
+        (PYTHONPATH=. pytest -q 2>&1 || true) &
         local backend_pid=$!
-        animated_spinner $backend_pid "Running backend tests..."
-        wait $backend_pid
+        show_loading $backend_pid "Running backend tests"
         
         if [ $? -eq 0 ]; then
             print_success "Backend tests passed"
         else
             print_warning "Some backend tests failed"
+            ((test_errors++))
         fi
         
         cd ..
@@ -983,45 +1247,40 @@ start_services() {
     
     # Launch banner
     echo -e "${BOLD}${PURPLE}"
-    echo "╔══════════════════════════════════════════════════════════════╗"
-    echo "║                                                              ║"
-    echo "║         ${ROCKET} COSMIC DHARMA IS LAUNCHING! ${ROCKET}              ║"
-    echo "║                                                              ║"
-    echo "╚══════════════════════════════════════════════════════════════╝"
+    echo "=============================================================="
+    echo "         ${ROCKET} COSMIC DHARMA IS LAUNCHING! ${ROCKET}"
+    echo "=============================================================="
     echo -e "${RESET}\n"
     
     # Service URLs
     cat << EOF
-${CYAN}${BOLD}📡 Service Endpoints:${RESET}
-${CYAN}├─${RESET} ${GREEN}Frontend:${RESET}   http://localhost:${frontend_port}
-${CYAN}├─${RESET} ${GREEN}Backend:${RESET}    http://localhost:${backend_port}
-${CYAN}├─${RESET} ${GREEN}API Docs:${RESET}   http://localhost:${backend_port}/docs
-${CYAN}└─${RESET} ${GREEN}Logs:${RESET}       $LOG_FILE
+${CYAN}${BOLD}Service Endpoints:${RESET}
+  ${GREEN}Frontend:${RESET}   http://localhost:${frontend_port}
+  ${GREEN}Backend:${RESET}    http://localhost:${backend_port}
+  ${GREEN}API Docs:${RESET}   http://localhost:${backend_port}/docs
+  ${GREEN}Logs:${RESET}       $LOG_FILE
 
-${YELLOW}${BOLD}⌨️  Quick Commands:${RESET}
-${YELLOW}├─${RESET} ${WHITE}Stop all:${RESET}     Press ${BOLD}Ctrl+C${RESET}
-${YELLOW}├─${RESET} ${WHITE}View logs:${RESET}    ${DIM}tail -f $LOG_FILE${RESET}
-${YELLOW}├─${RESET} ${WHITE}Backend shell:${RESET} ${DIM}cd backend && source venv/bin/activate${RESET}
-${YELLOW}└─${RESET} ${WHITE}Restart:${RESET}      ${DIM}$0${RESET}
+${YELLOW}${BOLD}Quick Commands:${RESET}
+  ${WHITE}Stop all:${RESET}     Press ${BOLD}Ctrl+C${RESET}
+  ${WHITE}View logs:${RESET}    tail -f $LOG_FILE
+  ${WHITE}Backend shell:${RESET} cd backend && source venv/bin/activate
+  ${WHITE}Restart:${RESET}      $0
 
 EOF
     
     # System status
     if [ $WORKER_ENABLED -eq 1 ]; then
-        echo -e "${GREEN}${BOLD}✅ All Systems Go!${RESET} Redis worker enabled for background tasks.\n"
+        echo -e "${GREEN}${BOLD}All Systems Go!${RESET} Redis worker enabled for background tasks.\n"
     else
-        echo -e "${YELLOW}${BOLD}⚡ Running in Limited Mode${RESET} Background tasks disabled (no Redis).\n"
+        echo -e "${YELLOW}${BOLD}Running in Limited Mode${RESET} Background tasks disabled (no Redis).\n"
     fi
     
     # WSL-specific instructions
     if [ $IS_WSL -eq 1 ]; then
-        echo -e "${CYAN}${BOLD}🪟 WSL Instructions:${RESET}"
-        echo -e "   • Open in Windows browser: ${UNDERLINE}http://localhost:${frontend_port}${RESET}"
-        echo -e "   • If ports don't work, restart WSL: ${DIM}wsl --shutdown${RESET}\n"
+        echo -e "${CYAN}${BOLD}WSL Instructions:${RESET}"
+        echo -e "   Open in Windows browser: ${UNDERLINE}http://localhost:${frontend_port}${RESET}"
+        echo -e "   If ports don't work, restart WSL: wsl --shutdown\n"
     fi
-    
-    # Performance monitoring
-    echo -e "${DIM}Starting services with resource monitoring...${RESET}\n"
     
     # Build command
     local services=""
@@ -1050,7 +1309,7 @@ EOF
     fi
     
     # Launch with concurrently
-    echo -e "${BOLD}${GREEN}🚀 Launching services...${RESET}\n"
+    echo -e "${BOLD}${GREEN}Launching services...${RESET}\n"
     
     eval "npx --yes concurrently \
         --names '$names' \
@@ -1072,7 +1331,7 @@ cleanup() {
         return
     fi
     
-    echo -e "\n\n${YELLOW}${BOLD}🛑 Shutting down Cosmic Dharma...${RESET}"
+    echo -e "\n\n${YELLOW}${BOLD}Shutting down Cosmic Dharma...${RESET}"
     
     # Calculate runtime
     local end_time=$(date +%s)
@@ -1116,13 +1375,13 @@ cleanup() {
     rm -f "$PID_FILE"
     
     # Show summary
-    echo -e "\n${GREEN}${BOLD}✨ Thanks for using Cosmic Dharma! ✨${RESET}"
+    echo -e "\n${GREEN}${BOLD}Thanks for using Cosmic Dharma!${RESET}"
     
     # Show any errors that occurred
     if [ ${#ERRORS[@]} -gt 0 ]; then
         echo -e "\n${RED}${BOLD}Errors encountered:${RESET}"
         for error in "${ERRORS[@]}"; do
-            echo -e "  ${RED}•${RESET} $error"
+            echo -e "  ${RED}- ${RESET} $error"
         done
     fi
     
@@ -1130,7 +1389,7 @@ cleanup() {
     if [ ${#WARNINGS[@]} -gt 0 ]; then
         echo -e "\n${YELLOW}${BOLD}Warnings:${RESET}"
         for warning in "${WARNINGS[@]}"; do
-            echo -e "  ${YELLOW}•${RESET} $warning"
+            echo -e "  ${YELLOW}- ${RESET} $warning"
         done
     fi
     
@@ -1172,9 +1431,9 @@ run_diagnostics() {
     echo -e "${BOLD}Environment Files:${RESET}"
     for file in "backend/.env" ".env.local" "package.json" "backend/requirements.txt"; do
         if [ -f "$file" ]; then
-            echo -e "  ${GREEN}✓${RESET} $file ($(wc -l < "$file") lines)"
+            echo -e "  ${GREEN}${CHECK}${RESET} $file ($(wc -l < "$file") lines)"
         else
-            echo -e "  ${RED}✗${RESET} $file"
+            echo -e "  ${RED}${CROSS}${RESET} $file"
         fi
     done
     echo
@@ -1238,18 +1497,19 @@ ${BOLD}Options:${RESET}
   -v, --verbose       Enable verbose output
   -t, --skip-tests    Skip running tests
   -a, --auto-fix      Attempt automatic fixes for common issues
+  -D, --debug         Enable debug mode with extra logging
   
 ${BOLD}Examples:${RESET}
   $0                  # Normal startup
   $0 -d               # Run diagnostics
-  $0 -s -t            # Seed database and skip tests
-  $0 -v -a            # Verbose mode with auto-fix
+  $0 -D -v            # Debug mode with verbose output
+  $0 -a               # Auto-fix common issues
 
-${BOLD}WSL Tips:${RESET}
-  • Ensure WSL2 is installed (not WSL1)
-  • Enable systemd for better service management
-  • Install Windows Terminal for better experience
-  • Use VS Code with Remote-WSL extension
+${BOLD}WSL Troubleshooting:${RESET}
+  • If script stops: Run with -D flag for debug info
+  • For network issues: Check Windows Firewall
+  • For permission errors: Run without sudo first
+  • For pip issues: Install python3-venv and python3-dev
 
 EOF
 }
@@ -1280,6 +1540,11 @@ while [[ $# -gt 0 ]]; do
             AUTO_FIX=1
             shift
             ;;
+        -D|--debug)
+            DEBUG_MODE=1
+            VERBOSE=1
+            shift
+            ;;
         *)
             echo "Unknown option: $1"
             usage
@@ -1289,13 +1554,14 @@ while [[ $# -gt 0 ]]; do
 done
 
 # ==========================================
-# MAIN EXECUTION
+# MAIN EXECUTION WITH BETTER ERROR HANDLING
 # ==========================================
 
 main() {
     # Initialize logs
     echo "=== Cosmic Dharma Startup $(date) ===" > "$LOG_FILE"
     > "$ERROR_LOG"
+    > "$DEBUG_LOG"
     
     # Show header
     print_header
@@ -1308,31 +1574,54 @@ main() {
     
     # Welcome message
     echo -e "${BOLD}${WHITE}Welcome to Cosmic Dharma Setup Wizard!${RESET}\n"
-    echo -e "${CYAN}This script will:${RESET}"
-    echo "  • Check system requirements"
-    echo "  • Install all dependencies"
-    echo "  • Configure your environment"
-    echo "  • Start the application"
+    echo -e "${CYAN}This enhanced version includes:${RESET}"
+    echo "  ${CHECK} Better error handling and recovery"
+    echo "  ${CHECK} WSL-optimized UI and progress indicators"
+    echo "  ${CHECK} Interactive error resolution"
+    echo "  ${CHECK} Detailed debug logging"
     echo
     
     if [ $IS_WSL -eq 1 ]; then
         echo -e "${YELLOW}${BOLD}WSL Detected!${RESET}"
-        echo -e "${YELLOW}Special optimizations will be applied for WSL.${RESET}\n"
+        echo -e "${YELLOW}Special optimizations will be applied.${RESET}\n"
+    fi
+    
+    if [ $DEBUG_MODE -eq 1 ]; then
+        echo -e "${MAGENTA}${BOLD}DEBUG MODE ENABLED${RESET}\n"
     fi
     
     echo -e "${GREEN}Press Enter to begin or Ctrl+C to cancel...${RESET}"
     read -r
     
-    # Run all setup steps
-    check_system_requirements
-    setup_directories
-    install_node_dependencies
-    setup_python_environment
-    setup_redis
+    # Run setup steps with error handling
+    local steps=(
+        "check_system_requirements"
+        "setup_directories"
+        "install_node_dependencies"
+        "setup_python_environment"
+        "setup_redis"
+        "run_tests"
+        "check_ports"
+    )
+    
+    for step in "${steps[@]}"; do
+        if ! $step; then
+            print_error "Step failed: $step"
+            
+            if [ $AUTO_FIX -eq 0 ]; then
+                echo -e "\n${YELLOW}Continue with remaining steps? (y/N)${RESET}"
+                read -r continue_choice
+                if [[ ! "$continue_choice" =~ ^[Yy]$ ]]; then
+                    echo -e "${RED}Setup aborted.${RESET}"
+                    exit 1
+                fi
+            fi
+        fi
+    done
     
     # Optional database seeding
     if [ $SEED_DB -eq 1 ]; then
-        print_step 5.5 8 "Database Seeding" $DATABASE
+        print_step 7.5 8 "Database Seeding" $DATABASE
         cd backend
         source venv/bin/activate
         
@@ -1348,13 +1637,19 @@ main() {
         cd ..
     fi
     
-    run_tests
-    check_ports
+    # Final summary
+    echo
+    if [ ${#ERRORS[@]} -eq 0 ]; then
+        print_box "Setup Complete!" "All systems ready! ${ROCKET}" "$GREEN"
+    else
+        print_box "Setup Complete with Warnings" "${#ERRORS[@]} errors occurred" "$YELLOW"
+        echo -e "${YELLOW}Errors encountered during setup:${RESET}"
+        for error in "${ERRORS[@]}"; do
+            echo "  - $error"
+        done
+        echo
+    fi
     
-    # Final summary before launch
-    echo
-    print_box "Setup Complete!" "All systems ready for launch! ${ROCKET}" "$GREEN"
-    echo
     echo -e "${GREEN}${BOLD}Press Enter to launch Cosmic Dharma...${RESET}"
     read -r
     
@@ -1362,5 +1657,8 @@ main() {
     start_services
 }
 
-# Run main function
-main
+# ==========================================
+# RUN MAIN
+# ==========================================
+
+main "$@"
