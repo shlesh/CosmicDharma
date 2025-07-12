@@ -4,11 +4,11 @@ This project contains a Next.js frontend and a FastAPI backend used to generate 
 
 ## Features
 
-* Astrology profile generation with an optional background job queue
-* Blog with a Markdown editor and admin metrics
-* Donor-only prompts and reports
-* Password reset functionality
-* Progressive Web App support
+- Astrology profile generation with an optional background job queue
+- Blog with a Markdown editor and admin metrics
+- Donor-only prompts and reports
+- Password reset functionality
+- Progressive Web App support
 
 ## Setup
 
@@ -19,6 +19,7 @@ Install **Node.js 18** or later (for example via `nvm` or your package manager) 
 ```bash
 npm install --legacy-peer-deps
 ```
+
 Run this after cloning to install all runtime and development packages.
 
 ### Tailwind CSS
@@ -40,6 +41,7 @@ pip install -r requirements.txt
 pip install -r requirements-dev.txt
 cd ..
 ```
+
 Activate this environment whenever you run tests or start the backend.
 
 ### Backend configuration
@@ -47,24 +49,24 @@ Activate this environment whenever you run tests or start the backend.
 Copy `backend/.env.example` to `backend/.env` and fill in the values. The backend
 reads these environment variables:
 
-* `DATABASE_URL` – connection string for the database. Defaults to
+- `DATABASE_URL` – connection string for the database. Defaults to
   `sqlite:///./app.db`.
-* `SECRET_KEY` – secret used to sign authentication tokens.
-* `ACCESS_TOKEN_EXPIRE_MINUTES` – token lifetime in minutes (defaults to `30`).
-* `GOOGLE_MAPS_API_KEY` – optional key for Google Maps geocoding.
-* `AYANAMSA` – ayanamsa used in calculations (`lahiri` by default).
-* `NODE_TYPE` – lunar node calculation (`mean` or `true`).
-* `HOUSE_SYSTEM` – astrological house system (`whole_sign` by default).
-* `CACHE_ENABLED` – enable or disable caching.
-* `CACHE_URL` – Redis URL used for the profile cache.
-* `REDIS_URL` – connection string for Redis used by the background job queue
+- `SECRET_KEY` – secret used to sign authentication tokens.
+- `ACCESS_TOKEN_EXPIRE_MINUTES` – token lifetime in minutes (defaults to `30`).
+- `GOOGLE_MAPS_API_KEY` – optional key for Google Maps geocoding.
+- `AYANAMSA` – ayanamsa used in calculations (`lahiri` by default).
+- `NODE_TYPE` – lunar node calculation (`mean` or `true`).
+- `HOUSE_SYSTEM` – astrological house system (`whole_sign` by default).
+- `CACHE_ENABLED` – enable or disable caching.
+- `CACHE_URL` – Redis URL used for the profile cache.
+- `REDIS_URL` – connection string for Redis used by the background job queue
   (defaults to `redis://localhost:6379/1`).
-* `CACHE_TTL` – cache lifetime in seconds.
-* `SMTP_SERVER` – hostname of your SMTP server for sending email.
-* `SMTP_PORT` – port of the SMTP server (`587` by default).
-* `SMTP_USER` – SMTP username if authentication is required.
-* `SMTP_PASS` – SMTP password for the above user.
-* `FROM_EMAIL` – default sender address for outgoing mail.
+- `CACHE_TTL` – cache lifetime in seconds.
+- `SMTP_SERVER` – hostname of your SMTP server for sending email.
+- `SMTP_PORT` – port of the SMTP server (`587` by default).
+- `SMTP_USER` – SMTP username if authentication is required.
+- `SMTP_PASS` – SMTP password for the above user.
+- `FROM_EMAIL` – default sender address for outgoing mail.
 
 For the Next.js frontend, copy `.env.local.example` to `.env.local` and set
 `NEXT_PUBLIC_API_BASE_URL` to the URL of your backend. During local development
@@ -78,9 +80,9 @@ Seed the database with demo accounts and posts using the helper script:
 
 This creates two accounts:
 
-* **admin** / **admin** – full admin access
-* **user** / **password** – regular account with one post
-* **donor** / **donor** – donor account with access to extra prompts and reports
+- **admin** / **admin** – full admin access
+- **user** / **password** – regular account with one post
+- **donor** / **donor** – donor account with access to extra prompts and reports
 
 ### Password Reset
 
@@ -95,7 +97,17 @@ password to finish the process.
 Run the helper script during the first setup. It verifies that **Node.js 18+** and **Python 3** are available, installs dependencies, runs all tests, and then launches the frontend, backend and worker. The script checks for a local Redis instance and attempts to start one automatically. Colored status messages are printed and the script exits on any failure:
 
 ```bash
+# Normal startup
 ./scripts/script.sh
+
+# Run diagnostics
+./scripts/script.sh --diagnostics
+
+# Skip tests and seed database(USE THIS USUALLY)
+./scripts/script.sh --skip-tests --seed
+
+# Verbose mode with auto-fix
+./scripts/script.sh --verbose --auto-fix
 ```
 
 Pass `--diagnostics` to print environment information and exit:
@@ -181,9 +193,10 @@ docker-compose up --build
 ```
 
 This starts three containers:
-* **backend** – FastAPI app from `backend/Dockerfile` on port 8000
-* **redis** – caching and RQ broker on port 6379
-* **db** – Postgres database on port 5432 stored in the `db_data` volume
+
+- **backend** – FastAPI app from `backend/Dockerfile` on port 8000
+- **redis** – caching and RQ broker on port 6379
+- **db** – Postgres database on port 5432 stored in the `db_data` volume
 
 The backend container reads environment variables from `backend/.env` so
 adjust `DATABASE_URL` or `CACHE_URL` there as needed.
@@ -196,7 +209,6 @@ Install the extra Python packages used during testing:
 pip install -r backend/requirements-dev.txt
 source backend/venv/bin/activate
 ```
-
 
 Use the following scripts to run the tests:
 
@@ -279,7 +291,6 @@ standalone window.
 2. Run `npm run test:all` and ensure all tests pass before opening a pull request.
 3. Format any new code consistently with the existing style.
 4. Write commit messages in the imperative mood, keep the subject under 72 characters and add a body if more context is needed.
-
 
 Repository structure
 
