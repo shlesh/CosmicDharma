@@ -24,6 +24,9 @@ declare -g SKIP_TESTS=0
 declare -g AUTO_FIX=0
 declare -g SEED_DB=0
 declare -g RUN_DIAGNOSTICS=0
+declare -g PYTHON_CMD=""
+declare -g VENV_PATH=""
+declare -g ACTIVATE_SCRIPT=""
 
 # Error tracking
 declare -ga ERRORS=()
@@ -192,21 +195,21 @@ system::check_requirements() {
     fi
     
     # Check Python
-    local python_cmd=""
-    for cmd in python3 python; do
+    PYTHON_CMD=""
+    for cmd in python3.12 python3.11 python3.10 python3.9 python3 python; do
         if command -v "$cmd" >/dev/null 2>&1; then
             local py_version=$($cmd --version 2>&1 | awk '{print $2}')
             local py_major=$(echo "$py_version" | cut -d. -f1)
             local py_minor=$(echo "$py_version" | cut -d. -f2)
             if [[ $py_major -eq 3 ]] && [[ $py_minor -ge 9 ]]; then
-                python_cmd="$cmd"
-                ui::success "Python: $py_version"
+                PYTHON_CMD="$cmd"
+                ui::success "Python: $py_version ($cmd)"
                 break
             fi
         fi
     done
     
-    if [[ -z "$python_cmd" ]]; then
+    if [[ -z "$PYTHON_CMD" ]]; then
         ui::error "Python: Not found (requires 3.9+)"
         ((errors++))
     fi
@@ -219,25 +222,39 @@ system::check_requirements() {
         ((errors++))
     fi
     
+    # Check Redis (optional)
+    if command -v redis-server >/dev/null 2>&1; then
+        ui::success "Redis: $(redis-server --version | awk '{print $3}' | sed 's/v=//')"
+    else
+        ui::warning "Redis: Not found (background tasks will be disabled)"
+    fi
+    
     return $errors
 }
 
 system::get_os_info() {
     if [[ $IS_WSL -eq 1 ]]; then
-        echo "WSL $(wsl.exe -l -v 2>/dev/null | grep -E "^\*" | awk '{print $4}' || echo "2")"
+        local wsl_version=$(wsl.exe -l -v 2>/dev/null | grep -E "^\*" | awk '{print $4}' || echo "2")
+        local distro=$(lsb_release -si 2>/dev/null || echo "Unknown")
+        echo "WSL $wsl_version ($distro)"
     elif [[ "$OSTYPE" == "linux-gnu"* ]]; then
         lsb_release -si 2>/dev/null || echo "Linux"
     elif [[ "$OSTYPE" == "darwin"* ]]; then
-        echo "macOS"
+        echo "macOS $(sw_vers -productVersion 2>/dev/null || echo "")"
     else
         echo "Unknown ($OSTYPE)"
     fi
 }
 
 system::get_memory_info() {
-    local total=$(free -m 2>/dev/null | awk '/^Mem:/{print $2}' || echo "Unknown")
-    local available=$(free -m 2>/dev/null | awk '/^Mem:/{print $7}' || echo "Unknown")
-    echo "${available}MB available of ${total}MB"
+    if [[ "$OSTYPE" == "darwin"* ]]; then
+        local total=$(sysctl -n hw.memsize 2>/dev/null | awk '{print int($1/1024/1024)}' || echo "Unknown")
+        echo "${total}MB total"
+    else
+        local total=$(free -m 2>/dev/null | awk '/^Mem:/{print $2}' || echo "Unknown")
+        local available=$(free -m 2>/dev/null | awk '/^Mem:/{print $7}' || echo "Unknown")
+        echo "${available}MB available of ${total}MB"
+    fi
 }
 
 # ==========================================
@@ -257,8 +274,8 @@ setup::directories() {
     
     local created=0
     for dir in "${dirs[@]}"; do
-        if [[ ! -d "$dir" ]]; then
-            mkdir -p "$dir" 2>/dev/null && ((created++))
+        if [[ ! -d "$REPO_ROOT/$dir" ]]; then
+            mkdir -p "$REPO_ROOT/$dir" 2>/dev/null && ((created++))
         fi
     done
     
@@ -272,13 +289,19 @@ setup::environment_files() {
     local files_created=0
     
     # Backend .env
-    if [[ ! -f backend/.env ]]; then
-        if [[ -f backend/.env.example ]]; then
-            cp backend/.env.example backend/.env
+    if [[ ! -f "$REPO_ROOT/backend/.env" ]]; then
+        if [[ -f "$REPO_ROOT/backend/.env.example" ]]; then
+            cp "$REPO_ROOT/backend/.env.example" "$REPO_ROOT/backend/.env"
             # Generate secure secret key
-            local secret_key=$(openssl rand -hex 32 2>/dev/null || python3 -c 'import secrets; print(secrets.token_hex(32))' 2>/dev/null || date +%s | sha256sum | head -c 64)
-            sed -i "s/change-me/$secret_key/g" backend/.env 2>/dev/null || \
-            sed -i '' "s/change-me/$secret_key/g" backend/.env 2>/dev/null
+            local secret_key=$(openssl rand -hex 32 2>/dev/null || $PYTHON_CMD -c 'import secrets; print(secrets.token_hex(32))' 2>/dev/null || date +%s | sha256sum | head -c 64)
+            # Handle both GNU sed and BSD sed
+            if sed --version >/dev/null 2>&1; then
+                # GNU sed
+                sed -i "s/change-me/$secret_key/g" "$REPO_ROOT/backend/.env"
+            else
+                # BSD sed (macOS)
+                sed -i '' "s/change-me/$secret_key/g" "$REPO_ROOT/backend/.env"
+            fi
             ((files_created++))
         else
             setup::create_backend_env
@@ -287,9 +310,23 @@ setup::environment_files() {
     fi
     
     # Frontend .env.local
-    if [[ ! -f .env.local ]]; then
-        echo "NEXT_PUBLIC_API_BASE_URL=http://localhost:8000" > .env.local
+    if [[ ! -f "$REPO_ROOT/.env.local" ]]; then
+        echo "NEXT_PUBLIC_API_BASE_URL=http://localhost:8000" > "$REPO_ROOT/.env.local"
         ((files_created++))
+    fi
+    
+    # Update Redis URL for WSL if needed
+    if [[ $IS_WSL -eq 1 ]] && [[ -f "$REPO_ROOT/backend/.env" ]]; then
+        # Check if we should use Windows Redis
+        if ! command -v redis-server >/dev/null 2>&1; then
+            ui::info "Updating Redis URL for WSL Windows host"
+            local windows_redis="redis://${WINDOWS_HOST}:6379"
+            if sed --version >/dev/null 2>&1; then
+                sed -i "s|redis://localhost:6379|$windows_redis|g" "$REPO_ROOT/backend/.env"
+            else
+                sed -i '' "s|redis://localhost:6379|$windows_redis|g" "$REPO_ROOT/backend/.env"
+            fi
+        fi
     fi
     
     ui::progress_done "Environment files configured ($files_created created)"
@@ -298,8 +335,14 @@ setup::environment_files() {
 
 setup::create_backend_env() {
     local secret_key=$(openssl rand -hex 32 2>/dev/null || date +%s | sha256sum | head -c 64)
+    local redis_url="redis://localhost:6379"
     
-    cat > backend/.env << EOF
+    # Use Windows host for Redis if WSL and no local Redis
+    if [[ $IS_WSL -eq 1 ]] && ! command -v redis-server >/dev/null 2>&1; then
+        redis_url="redis://${WINDOWS_HOST}:6379"
+    fi
+    
+    cat > "$REPO_ROOT/backend/.env" << EOF
 SECRET_KEY=$secret_key
 DATABASE_URL=sqlite:///./app.db
 ACCESS_TOKEN_EXPIRE_MINUTES=30
@@ -307,8 +350,8 @@ AYANAMSA=lahiri
 NODE_TYPE=mean
 HOUSE_SYSTEM=whole_sign
 CACHE_ENABLED=true
-CACHE_URL=redis://localhost:6379/1
-REDIS_URL=redis://localhost:6379/0
+CACHE_URL=${redis_url}/1
+REDIS_URL=${redis_url}/0
 CACHE_TTL=3600
 EOF
 }
@@ -320,23 +363,30 @@ EOF
 deps::install_node() {
     ui::progress "Checking Node.js dependencies"
     
-    if [[ ! -f package.json ]]; then
+    if [[ ! -f "$REPO_ROOT/package.json" ]]; then
         ui::progress_done "No package.json found" "error"
         return 1
     fi
     
-    if [[ -d node_modules ]] && [[ $AUTO_FIX -eq 0 ]]; then
-        local pkg_count=$(find node_modules -maxdepth 1 -type d | wc -l)
+    # Check if we need to install
+    if [[ -d "$REPO_ROOT/node_modules" ]] && [[ $AUTO_FIX -eq 0 ]]; then
+        local pkg_count=$(find "$REPO_ROOT/node_modules" -maxdepth 1 -type d | wc -l)
         ui::progress_done "Node.js packages already installed ($pkg_count packages)"
         return 0
     fi
     
     ui::progress "Installing Node.js dependencies"
     
+    # Clean install if auto-fix
+    if [[ $AUTO_FIX -eq 1 ]] && [[ -d "$REPO_ROOT/node_modules" ]]; then
+        ui::info "Cleaning node_modules for fresh install"
+        rm -rf "$REPO_ROOT/node_modules" "$REPO_ROOT/package-lock.json"
+    fi
+    
     # Run npm install
     local npm_log=$(mktemp)
     if npm install --legacy-peer-deps --no-audit --no-fund > "$npm_log" 2>&1; then
-        local installed=$(find node_modules -maxdepth 1 -type d 2>/dev/null | wc -l)
+        local installed=$(find "$REPO_ROOT/node_modules" -maxdepth 1 -type d 2>/dev/null | wc -l)
         ui::progress_done "Node.js dependencies installed ($installed packages)"
         rm -f "$npm_log"
         return 0
@@ -344,8 +394,9 @@ deps::install_node() {
         ui::progress_done "Failed to install Node.js dependencies" "error"
         if [[ $VERBOSE -eq 1 ]]; then
             ui::warning "Error output:"
-            head -n 10 "$npm_log"
+            head -n 20 "$npm_log"
         fi
+        log::error "npm install failed: $(cat "$npm_log")"
         rm -f "$npm_log"
         return 1
     fi
@@ -354,69 +405,102 @@ deps::install_node() {
 deps::setup_python() {
     ui::progress "Setting up Python environment"
     
-    # Find Python
-    local python_cmd=""
-    for cmd in python3.12 python3.11 python3.10 python3.9 python3 python; do
-        if command -v "$cmd" >/dev/null 2>&1; then
-            local version=$($cmd --version 2>&1 | awk '{print $2}')
-            local major=$(echo "$version" | cut -d. -f1)
-            local minor=$(echo "$version" | cut -d. -f2)
-            
-            if [[ "$major" -eq 3 ]] && [[ "$minor" -ge 9 ]]; then
-                python_cmd="$cmd"
-                break
-            fi
-        fi
-    done
-    
-    if [[ -z "$python_cmd" ]]; then
-        ui::progress_done "Python 3.9+ not found" "error"
+    # Use the Python command found earlier
+    if [[ -z "$PYTHON_CMD" ]]; then
+        ui::progress_done "Python not found" "error"
         return 1
     fi
     
-    # Virtual environment
-    local venv_path="backend/venv"
+    # Set virtual environment path
+    VENV_PATH="$REPO_ROOT/backend/venv"
     
-    if [[ ! -d "$venv_path" ]]; then
+    # Create virtual environment if it doesn't exist
+    if [[ ! -d "$VENV_PATH" ]]; then
         ui::progress "Creating Python virtual environment"
-        if ! $python_cmd -m venv "$venv_path" >/dev/null 2>&1; then
+        
+        # Ensure python3-venv is installed on Debian/Ubuntu
+        if [[ $IS_WSL -eq 1 ]] || [[ -f /etc/debian_version ]]; then
+            if ! $PYTHON_CMD -m venv --help >/dev/null 2>&1; then
+                ui::warning "python3-venv not installed, attempting to install..."
+                if command -v apt-get >/dev/null 2>&1; then
+                    sudo apt-get update >/dev/null 2>&1
+                    sudo apt-get install -y python3-venv >/dev/null 2>&1
+                fi
+            fi
+        fi
+        
+        # Create venv
+        if ! $PYTHON_CMD -m venv "$VENV_PATH" >/dev/null 2>&1; then
             ui::progress_done "Failed to create virtual environment" "error"
+            ui::info "Try: sudo apt-get install python3-venv"
             return 1
         fi
     fi
     
-    # Determine activation script
-    local activate_script=""
-    if [[ -f "$venv_path/bin/activate" ]]; then
-        activate_script="$venv_path/bin/activate"
-    elif [[ -f "$venv_path/Scripts/activate" ]]; then
-        activate_script="$venv_path/Scripts/activate"
+    # Find activation script
+    if [[ -f "$VENV_PATH/bin/activate" ]]; then
+        ACTIVATE_SCRIPT="$VENV_PATH/bin/activate"
+    elif [[ -f "$VENV_PATH/Scripts/activate" ]]; then
+        ACTIVATE_SCRIPT="$VENV_PATH/Scripts/activate"
     else
         ui::progress_done "Virtual environment corrupted" "error"
+        ui::info "Try removing backend/venv and running again"
         return 1
     fi
+    
+    log::debug "Using activation script: $ACTIVATE_SCRIPT"
     
     # Install packages
     ui::progress "Installing Python packages"
     
-    if [[ ! -f backend/requirements.txt ]]; then
+    if [[ ! -f "$REPO_ROOT/backend/requirements.txt" ]]; then
         ui::progress_done "requirements.txt not found" "error"
         return 1
     fi
     
+    # Install in a subshell to preserve parent environment
+    local pip_log=$(mktemp)
     (
-        cd backend
-        source "$activate_script"
-        pip install --upgrade pip >/dev/null 2>&1
-        pip install -r requirements.txt -r requirements-dev.txt >/dev/null 2>&1
+        cd "$REPO_ROOT/backend"
+        source "$ACTIVATE_SCRIPT"
+        
+        # Upgrade pip first
+        python -m pip install --upgrade pip >/dev/null 2>&1
+        
+        # Install requirements
+        pip install -r requirements.txt > "$pip_log" 2>&1
+        local req_status=$?
+        
+        # Install dev requirements if they exist
+        if [[ -f requirements-dev.txt ]]; then
+            pip install -r requirements-dev.txt >> "$pip_log" 2>&1
+        fi
+        
+        exit $req_status
     )
     
-    if [[ $? -eq 0 ]]; then
-        ui::progress_done "Python environment ready"
+    local install_status=$?
+    
+    if [[ $install_status -eq 0 ]]; then
+        # Verify key packages
+        local packages_installed=0
+        (
+            cd "$REPO_ROOT/backend"
+            source "$ACTIVATE_SCRIPT"
+            packages_installed=$(pip list 2>/dev/null | wc -l)
+        )
+        ui::progress_done "Python environment ready ($packages_installed packages)"
+        rm -f "$pip_log"
         return 0
     else
         ui::progress_done "Some Python packages failed to install" "warning"
-        return 0
+        if [[ $VERBOSE -eq 1 ]]; then
+            ui::warning "Error output:"
+            tail -n 20 "$pip_log"
+        fi
+        log::error "pip install failed: $(cat "$pip_log")"
+        rm -f "$pip_log"
+        return 0  # Continue anyway
     fi
 }
 
@@ -427,29 +511,52 @@ deps::setup_python() {
 service::setup_redis() {
     ui::progress "Checking Redis"
     
-    # Check if Redis is already running
-    if python3 -c "import redis; redis.from_url('redis://localhost:6379').ping()" 2>/dev/null; then
-        ui::progress_done "Redis is running"
+    # First check if we have Python redis module
+    local has_redis_module=0
+    if [[ -n "$ACTIVATE_SCRIPT" ]]; then
+        (
+            cd "$REPO_ROOT/backend"
+            source "$ACTIVATE_SCRIPT"
+            python -c "import redis" 2>/dev/null && has_redis_module=1
+        )
+    fi
+    
+    if [[ $has_redis_module -eq 0 ]]; then
+        ui::progress_done "Redis module not installed" "warning"
+        WORKER_ENABLED=0
+        return 0
+    fi
+    
+    # Check if Redis is already running locally
+    if service::check_redis_connection "redis://localhost:6379"; then
+        ui::progress_done "Redis is running locally"
         return 0
     fi
     
     # WSL: Check Windows Redis
     if [[ $IS_WSL -eq 1 ]]; then
         local windows_redis="redis://${WINDOWS_HOST}:6379"
-        if python3 -c "import redis; redis.from_url('$windows_redis').ping()" 2>/dev/null; then
+        if service::check_redis_connection "$windows_redis"; then
             ui::progress_done "Redis found on Windows host"
-            ui::info "Update backend/.env to use: REDIS_URL=$windows_redis"
+            ui::info "Backend configured to use: $windows_redis"
             return 0
         fi
     fi
     
     # Try to start local Redis
     if command -v redis-server >/dev/null 2>&1; then
-        redis-server --daemonize yes --port 6379 --dir "$REPO_ROOT" >/dev/null 2>&1
-        sleep 1
+        ui::progress "Starting Redis server"
         
-        if python3 -c "import redis; redis.from_url('redis://localhost:6379').ping()" 2>/dev/null; then
-            ui::progress_done "Redis started"
+        # Kill any existing Redis on our port
+        pkill -f "redis-server.*:6379" 2>/dev/null || true
+        
+        # Start Redis
+        redis-server --daemonize yes --port 6379 --dir "$REPO_ROOT" --logfile "$LOG_DIR/redis.log" >/dev/null 2>&1
+        sleep 2
+        
+        if service::check_redis_connection "redis://localhost:6379"; then
+            ui::progress_done "Redis started successfully"
+            echo $! > "$REDIS_PID_FILE"
             return 0
         fi
     fi
@@ -457,7 +564,22 @@ service::setup_redis() {
     # Redis not available
     WORKER_ENABLED=0
     ui::progress_done "Redis not available (background tasks disabled)" "warning"
+    ui::info "Install Redis for full functionality"
     return 0
+}
+
+service::check_redis_connection() {
+    local redis_url="$1"
+    
+    if [[ -n "$ACTIVATE_SCRIPT" ]]; then
+        (
+            cd "$REPO_ROOT/backend"
+            source "$ACTIVATE_SCRIPT"
+            python -c "import redis; redis.from_url('$redis_url').ping()" 2>/dev/null
+        )
+    else
+        return 1
+    fi
 }
 
 service::check_ports() {
@@ -467,8 +589,21 @@ service::check_ports() {
     local backend_port=${BACKEND_PORT:-8000}
     local issues=0
     
+    # Function to check port
+    check_port() {
+        local port=$1
+        if command -v lsof >/dev/null 2>&1; then
+            lsof -Pi :$port -sTCP:LISTEN -t >/dev/null 2>&1
+        elif command -v netstat >/dev/null 2>&1; then
+            netstat -tuln 2>/dev/null | grep -q ":$port "
+        else
+            # Can't check, assume available
+            return 1
+        fi
+    }
+    
     # Check frontend port
-    if ! lsof -Pi :$frontend_port -sTCP:LISTEN -t >/dev/null 2>&1; then
+    if ! check_port $frontend_port; then
         log::debug "Port $frontend_port is available"
     else
         ui::warning "Port $frontend_port is in use"
@@ -476,7 +611,7 @@ service::check_ports() {
     fi
     
     # Check backend port
-    if ! lsof -Pi :$backend_port -sTCP:LISTEN -t >/dev/null 2>&1; then
+    if ! check_port $backend_port; then
         log::debug "Port $backend_port is available"
     else
         ui::warning "Port $backend_port is in use"
@@ -487,8 +622,45 @@ service::check_ports() {
         ui::progress_done "All ports available"
     else
         ui::progress_done "Some ports in use" "warning"
+        ui::info "Services will fail if ports are not freed"
     fi
     
+    return 0
+}
+
+# ==========================================
+# DATABASE MODULE
+# ==========================================
+
+db::initialize() {
+    ui::progress "Initializing database"
+    
+    if [[ ! -n "$ACTIVATE_SCRIPT" ]]; then
+        ui::progress_done "Python environment not set up" "error"
+        return 1
+    fi
+    
+    (
+        cd "$REPO_ROOT/backend"
+        source "$ACTIVATE_SCRIPT"
+        
+        # Run migrations if alembic is available
+        if command -v alembic >/dev/null 2>&1; then
+            alembic upgrade head >/dev/null 2>&1 || true
+        fi
+        
+        # Create tables
+        python -c "
+from app.database import engine, Base
+try:
+    Base.metadata.create_all(bind=engine)
+    print('Database initialized')
+except Exception as e:
+    print(f'Database error: {e}')
+" 2>/dev/null || true
+    )
+    
+    ui::progress_done "Database initialized"
     return 0
 }
 
@@ -508,13 +680,21 @@ test::run_all() {
     local failures=0
     
     # Frontend tests
-    if [[ -f vitest.config.js ]] || [[ -f vite.config.js ]]; then
-        npm run test:frontend > "$test_log" 2>&1 || ((failures++))
+    if [[ -f "$REPO_ROOT/vitest.config.js" ]] || [[ -f "$REPO_ROOT/vite.config.js" ]]; then
+        ui::progress "Running frontend tests"
+        (cd "$REPO_ROOT" && npm run test:frontend > "$test_log" 2>&1) || ((failures++))
     fi
     
     # Backend tests
-    if [[ -f backend/pytest.ini ]] || [[ -d backend/tests ]]; then
-        (cd backend && source venv/bin/activate && pytest -q > "$test_log" 2>&1) || ((failures++))
+    if [[ -f "$REPO_ROOT/backend/pytest.ini" ]] || [[ -d "$REPO_ROOT/backend/tests" ]]; then
+        ui::progress "Running backend tests"
+        if [[ -n "$ACTIVATE_SCRIPT" ]]; then
+            (
+                cd "$REPO_ROOT/backend"
+                source "$ACTIVATE_SCRIPT"
+                pytest -q > "$test_log" 2>&1
+            ) || ((failures++))
+        fi
     fi
     
     rm -f "$test_log"
@@ -546,6 +726,7 @@ ${CYAN}${BOLD}Service Endpoints:${RESET}
 
 ${YELLOW}${BOLD}Controls:${RESET}
   Stop all: Press ${BOLD}Ctrl+C${RESET}
+  View logs: Check ${DIM}logs/${RESET} directory
 
 EOF
     
@@ -561,13 +742,32 @@ EOF
     
     ui::print "\n${BOLD}${GREEN}Launching services...${RESET}\n"
     
+    # Create custom scripts for better process management
+    cat > "$REPO_ROOT/.run-backend.sh" << EOF
+#!/bin/bash
+cd "$REPO_ROOT/backend"
+source "$ACTIVATE_SCRIPT"
+uvicorn main:app --reload --host 0.0.0.0 --port $backend_port
+EOF
+    chmod +x "$REPO_ROOT/.run-backend.sh"
+    
+    if [[ $WORKER_ENABLED -eq 1 ]]; then
+        cat > "$REPO_ROOT/.run-worker.sh" << EOF
+#!/bin/bash
+cd "$REPO_ROOT/backend"
+source "$ACTIVATE_SCRIPT"
+python -m rq.cli worker profiles --url redis://localhost:6379/0
+EOF
+        chmod +x "$REPO_ROOT/.run-worker.sh"
+    fi
+    
     # Build command
-    local services="\"npm run dev\" \"npm run backend\""
+    local services="\"npm run dev\" \"$REPO_ROOT/.run-backend.sh\""
     local names="Frontend,Backend"
     local colors="cyan,magenta"
     
     if [[ $WORKER_ENABLED -eq 1 ]]; then
-        services="$services \"npm run worker\""
+        services="$services \"$REPO_ROOT/.run-worker.sh\""
         names="$names,Worker"
         colors="$colors,yellow"
     fi
@@ -603,6 +803,9 @@ main() {
         if [[ $IS_WSL -eq 1 ]]; then
             ui::info "WSL detected - optimizations applied"
         fi
+        if [[ $AUTO_FIX -eq 1 ]]; then
+            ui::info "Auto-fix mode enabled"
+        fi
         ui::print "\n${GREEN}Press Enter to begin...${RESET}"
         read -r
     fi
@@ -620,6 +823,7 @@ main() {
         "setup::environment_files|Environment Configuration"
         "deps::install_node|Node.js Dependencies"
         "deps::setup_python|Python Environment"
+        "db::initialize|Database Setup"
         "service::setup_redis|Redis Setup"
         "test::run_all|Running Tests"
         "service::check_ports|Port Availability"
@@ -646,8 +850,26 @@ main() {
     
     # Summary
     ui::print "\n${GREEN}${BOLD}Setup complete!${RESET}"
+    
+    local elapsed=$(($(date +%s) - START_TIME))
+    ui::info "Setup time: ${elapsed}s"
+    
     if [[ ${#WARNINGS[@]} -gt 0 ]]; then
-        ui::print "${YELLOW}${#WARNINGS[@]} warnings occurred${RESET}"
+        ui::print "\n${YELLOW}Warnings (${#WARNINGS[@]}):${RESET}"
+        for warning in "${WARNINGS[@]:0:3}"; do
+            ui::print "  - $warning"
+        done
+        [[ ${#WARNINGS[@]} -gt 3 ]] && ui::print "  ... and $((${#WARNINGS[@]} - 3)) more"
+    fi
+    
+    # Seed database if requested
+    if [[ $SEED_DB -eq 1 ]]; then
+        ui::print "\n${CYAN}Seeding database...${RESET}"
+        (
+            cd "$REPO_ROOT/backend"
+            source "$ACTIVATE_SCRIPT"
+            python -m scripts.seed_db 2>/dev/null || ui::warning "Database seeding failed"
+        )
     fi
     
     # Launch
@@ -670,36 +892,79 @@ run_diagnostics() {
     ui::info "Memory: $(system::get_memory_info)"
     ui::info "Script: $SCRIPT_DIR"
     ui::info "Repository: $REPO_ROOT"
+    ui::info "User: $(whoami)"
+    ui::info "Shell: $SHELL"
     
     # Software
     ui::print "\n${BOLD}Software Versions:${RESET}"
-    for cmd in node npm python3 pip3 git docker redis-server; do
+    for cmd in node npm python3 pip3 git docker redis-server make gcc; do
         if command -v "$cmd" >/dev/null 2>&1; then
-            ui::success "$cmd: installed"
+            local version=$($cmd --version 2>&1 | head -n1 || echo "unknown")
+            ui::success "$cmd: $version"
         else
             ui::error "$cmd: not found"
         fi
     done
     
+    # Python details
+    if [[ -n "$PYTHON_CMD" ]]; then
+        ui::print "\n${BOLD}Python Environment:${RESET}"
+        ui::info "Python command: $PYTHON_CMD"
+        ui::info "Python path: $(which $PYTHON_CMD)"
+        $PYTHON_CMD -m pip --version >/dev/null 2>&1 && ui::success "pip: available" || ui::error "pip: not available"
+        $PYTHON_CMD -m venv --help >/dev/null 2>&1 && ui::success "venv: available" || ui::error "venv: not available"
+    fi
+    
     # Ports
     ui::print "\n${BOLD}Port Status:${RESET}"
     for port in 3000 8000 6379; do
-        if lsof -Pi :$port -sTCP:LISTEN -t >/dev/null 2>&1; then
-            ui::warning "Port $port: in use"
+        if command -v lsof >/dev/null 2>&1; then
+            if lsof -Pi :$port -sTCP:LISTEN -t >/dev/null 2>&1; then
+                local process=$(lsof -Pi :$port -sTCP:LISTEN | tail -n1 | awk '{print $1}')
+                ui::warning "Port $port: in use by $process"
+            else
+                ui::success "Port $port: available"
+            fi
         else
-            ui::success "Port $port: available"
+            ui::info "Port $port: cannot check (lsof not available)"
         fi
     done
     
     # Files
     ui::print "\n${BOLD}Configuration Files:${RESET}"
-    for file in "backend/.env" ".env.local" "package.json" "backend/requirements.txt"; do
-        if [[ -f "$file" ]]; then
-            ui::success "$file exists"
-        else
-            ui::error "$file missing"
-        fi
+    local files=(
+        "package.json"
+        "backend/requirements.txt"
+        "backend/.env"
+        ".env.local"
+        "backend/venv/bin/activate:backend/venv/Scripts/activate"
+    )
+    
+    for file_spec in "${files[@]}"; do
+        # Handle multiple possible paths
+        IFS=':' read -ra PATHS <<< "$file_spec"
+        local found=0
+        for file in "${PATHS[@]}"; do
+            if [[ -f "$REPO_ROOT/$file" ]]; then
+                ui::success "$file exists"
+                found=1
+                break
+            fi
+        done
+        [[ $found -eq 0 ]] && ui::error "${PATHS[0]} missing"
     done
+    
+    # Permissions
+    ui::print "\n${BOLD}Permissions:${RESET}"
+    [[ -w "$REPO_ROOT" ]] && ui::success "Repository: writable" || ui::error "Repository: not writable"
+    [[ -w "$LOG_DIR" ]] && ui::success "Logs: writable" || ui::warning "Logs: not writable"
+    
+    # Environment
+    ui::print "\n${BOLD}Environment Variables:${RESET}"
+    [[ -n "$NODE_ENV" ]] && ui::info "NODE_ENV: $NODE_ENV"
+    [[ -n "$PORT" ]] && ui::info "PORT: $PORT"
+    [[ -n "$BACKEND_PORT" ]] && ui::info "BACKEND_PORT: $BACKEND_PORT"
+    [[ -n "$VIRTUAL_ENV" ]] && ui::warning "VIRTUAL_ENV already set: $VIRTUAL_ENV"
     
     ui::print ""
 }
@@ -735,12 +1000,19 @@ ${BOLD}Options:${RESET}
   -D, --debug         Enable debug mode
   -t, --skip-tests    Skip running tests
   -a, --auto-fix      Auto-fix common issues
-  -s, --seed          Seed database
+  -s, --seed          Seed database with sample data
 
 ${BOLD}Examples:${RESET}
   $0                  Normal startup
   $0 -d               Run diagnostics
   $0 -t -a            Skip tests with auto-fix
+  $0 -a -s            Auto-fix and seed database
+
+${BOLD}Troubleshooting:${RESET}
+  Port in use:        Kill process or change PORT/BACKEND_PORT
+  Redis issues:       Install Redis or use Docker
+  Python issues:      Ensure python3-venv is installed
+  WSL issues:         Enable systemd or use Windows Redis
 
 EOF
 }
@@ -752,8 +1024,18 @@ EOF
 cleanup() {
     ui::print "\n${YELLOW}Shutting down...${RESET}"
     
+    # Remove temporary run scripts
+    rm -f "$REPO_ROOT/.run-backend.sh" "$REPO_ROOT/.run-worker.sh"
+    
     # Kill child processes
     pkill -P $$ 2>/dev/null || true
+    
+    # Stop Redis if we started it
+    if [[ -f "$REDIS_PID_FILE" ]]; then
+        local redis_pid=$(cat "$REDIS_PID_FILE")
+        kill $redis_pid 2>/dev/null || true
+        rm -f "$REDIS_PID_FILE"
+    fi
     
     # Calculate runtime
     local runtime=$(($(date +%s) - START_TIME))
