@@ -94,44 +94,46 @@ password to finish the process.
 
 ## Running the application
 
-Run the helper script during the first setup. It verifies that **Node.js 18+** and **Python 3** are available, installs dependencies, runs all tests, and then launches the frontend, backend and worker. The script checks for a local Redis instance and attempts to start one automatically. Colored status messages are printed and the script exits on any failure:
+### First Time Setup
+
+Run the setup script which installs all dependencies, runs tests, and launches the application:
 
 ```bash
-# Normal startup
+# Full setup with tests
 ./scripts/script.sh
 
-# Run diagnostics
-./scripts/script.sh --diagnostics
+# Skip tests for faster startup
+./scripts/script.sh --skip-tests
 
-# Skip tests and seed database(USE THIS USUALLY)
+# Skip tests and seed database
 ./scripts/script.sh --skip-tests --seed
-
-# Verbose mode with auto-fix
-./scripts/script.sh --verbose --auto-fix
 ```
 
-Pass `--diagnostics` to print environment information and exit:
+### Quick Start (After Initial Setup)
+
+Once you've run the setup script at least once:
 
 ```bash
-./scripts/script.sh --diagnostics
-```
+# Quick run - just starts the services
+./scripts/quick-run.sh
 
-Internally it runs
-
-```bash
-npx concurrently --kill-others-on-fail "npm run dev" "npm run worker"
-```
-
-to launch the Next.js frontend, FastAPI backend and RQ worker. After the initial setup you can simply run:
-
-```bash
+# Or use npm directly
 npm run dev
 ```
 
-to launch the frontend and backend. You may run the worker separately if you prefer:
+### Manual Start
+
+You can also run services individually:
 
 ```bash
-npm run worker
+# Terminal 1: Frontend
+npm run dev:frontend
+
+# Terminal 2: Backend
+cd backend && venv/bin/python run_server.py
+
+# Terminal 3: Worker (optional, requires Redis)
+cd backend && venv/bin/python -m rq.cli worker profiles --url redis://localhost:6379/0
 ```
 
 Redis must be running locally before starting the worker. `scripts/script.sh`

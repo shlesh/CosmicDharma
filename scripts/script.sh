@@ -761,13 +761,20 @@ EOF
         chmod +x "$REPO_ROOT/.run-worker.sh"
     fi
     
-    # Build command
-    local services="\"npm run dev\" \"$REPO_ROOT/.run-backend.sh\""
-    local names="Frontend,Backend"
-    local colors="cyan,magenta"
+    # Build command using npm scripts
+    local services="\"npm run dev:frontend\""
+    local names="Frontend"
+    local colors="cyan"
+    
+    # Backend service (using the Python from venv directly)
+    local backend_cmd="cd $REPO_ROOT/backend && $VENV_PATH/bin/python run_server.py"
+    services="$services \"$backend_cmd\""
+    names="$names,Backend"
+    colors="$colors,magenta"
     
     if [[ $WORKER_ENABLED -eq 1 ]]; then
-        services="$services \"$REPO_ROOT/.run-worker.sh\""
+        local worker_cmd="cd $REPO_ROOT/backend && $VENV_PATH/bin/python -m rq.cli worker profiles --url redis://localhost:6379/0"
+        services="$services \"$worker_cmd\""
         names="$names,Worker"
         colors="$colors,yellow"
     fi
