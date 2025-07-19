@@ -29,11 +29,5 @@ echo ""
 echo "Press Ctrl+C to stop all services"
 echo ""
 
-# Run all services
-npx concurrently \
-    --names "Frontend,Backend" \
-    --prefix-colors "cyan,magenta" \
-    --prefix "[{name}]" \
-    --kill-others-on-fail \
-    "npm run dev:frontend" \
-    "cd backend && venv/bin/python run_server.py"
+# Run using the dev script from package.json
+npm run dev

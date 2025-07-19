@@ -37,11 +37,13 @@
     "test:frontend": "vitest run",
     "test:backend": "cd backend && source venv/bin/activate && PYTHONPATH=. pytest -q",
     "test:all": "npm run test:frontend && npm run test:backend",
-    "dev": "concurrently --kill-others-on-fail \"next dev\" \"npm:backend\"",
-    "backend": "cd backend && . venv/bin/activate && cd .. && python backend/run_server.py",
-    "worker": "cd backend && ../.venv/bin/activate && python -m rq.cli worker profiles --url redis://localhost:6379/0",
+    "dev": "concurrently --kill-others-on-fail \"npm run dev:frontend\" \"npm run dev:backend\"",
+    "dev:frontend": "next dev",
+    "dev:backend": "cd backend && venv/bin/python run_server.py",
+    "backend": "cd backend && venv/bin/python run_server.py",
+    "worker": "cd backend && venv/bin/python -m rq.cli worker profiles --url redis://localhost:6379/0",
     "setup": "./scripts/script.sh",
-    "quick": "./scripts/script.sh"
+    "quick": "./scripts/quick-run.sh"
   },
   "eslintConfig": {
     "extends": [

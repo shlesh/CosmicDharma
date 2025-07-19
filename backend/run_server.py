@@ -1,4 +1,3 @@
-# backend/run_server.py
 #!/usr/bin/env python3
 """
 Cosmic Dharma Backend Server
@@ -14,21 +13,11 @@ from pathlib import Path
 backend_dir = Path(__file__).parent
 project_root = backend_dir.parent
 sys.path.insert(0, str(project_root))
-sys.path.insert(0, str(backend_dir))
 
 def main():
     """Start the FastAPI server"""
-    # Set environment variables if not set
+    # Set environment variables
     os.environ.setdefault("PYTHONPATH", str(project_root))
-    
-    # Import after path setup
-    try:
-        from main import app
-    except ImportError as e:
-        print(f"❌ Import Error: {e}")
-        print(f"Current working directory: {os.getcwd()}")
-        print(f"Python path: {sys.path}")
-        sys.exit(1)
     
     # Configuration
     host = os.getenv("HOST", "0.0.0.0")
@@ -39,10 +28,11 @@ def main():
     print(f"📍 Server: http://{host}:{port}")
     print(f"📚 API Docs: http://{host}:{port}/docs")
     print(f"🔧 Debug mode: {debug}")
+    print(f"📂 Working directory: {os.getcwd()}")
     
-    # Start server
+    # Start server - use module path notation
     uvicorn.run(
-        "main:app",
+        "backend.main:app",
         host=host,
         port=port,
         reload=debug,
