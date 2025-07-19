@@ -1,4 +1,15 @@
+# backend/main.py - Fixed imports
 import logging
+import os
+import sys
+from pathlib import Path
+
+# Add proper paths
+backend_dir = Path(__file__).parent
+project_root = backend_dir.parent
+sys.path.insert(0, str(project_root))
+sys.path.insert(0, str(backend_dir))
+
 from fastapi import FastAPI, HTTPException, Depends, Response
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.exceptions import RequestValidationError
@@ -6,17 +17,14 @@ from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 from datetime import datetime
-import os
-import sys
 
-# Add the parent directory to Python path to allow imports
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+# Use relative imports for backend modules
+from .db import Base, engine, get_session
+from .models import User, Prompt, Report
+from .auth import get_current_user
+from .routes import auth_router, profile_router, blog_router, admin_router
 
-from backend.db import Base, engine, get_session
-from backend.models import User, Prompt, Report
-from backend.auth import get_current_user
-from backend.routes import auth_router, profile_router, blog_router, admin_router
-from backend.utils.email_utils import send_email
+# Rest of the file remains the same...
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
