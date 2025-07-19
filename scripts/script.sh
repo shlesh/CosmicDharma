@@ -747,7 +747,7 @@ EOF
 #!/bin/bash
 cd "$REPO_ROOT/backend"
 source "$ACTIVATE_SCRIPT"
-uvicorn main:app --reload --host 0.0.0.0 --port $backend_port
+python -m uvicorn main:app --reload --host 0.0.0.0 --port $backend_port
 EOF
     chmod +x "$REPO_ROOT/.run-backend.sh"
     

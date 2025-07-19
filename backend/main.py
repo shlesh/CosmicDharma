@@ -7,12 +7,16 @@ from pydantic import BaseModel
 from sqlalchemy.orm import Session
 from datetime import datetime
 import os
+import sys
 
-from .db import Base, engine, get_session
-from .models import User, Prompt, Report
-from .auth import get_current_user
-from .routes import auth_router, profile_router, blog_router, admin_router
-from .utils.email_utils import send_email
+# Add the parent directory to Python path to allow imports
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+from backend.db import Base, engine, get_session
+from backend.models import User, Prompt, Report
+from backend.auth import get_current_user
+from backend.routes import auth_router, profile_router, blog_router, admin_router
+from backend.utils.email_utils import send_email
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
