@@ -57,6 +57,7 @@ export default function ProfilePage() {
   const [jobId, setJobId] = useState<string | null>(null);
   const [jobStart, setJobStart] = useState<number | null>(null);
   const [progress, setProgress] = useState(0);
+  const [announcement, setAnnouncement] = useState('');
   const toast = useToast();
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) =>
@@ -68,6 +69,7 @@ export default function ProfilePage() {
     setError('');
     setProfile(null);
     setProgress(0);
+    setAnnouncement('Calculation started');
     
     try {
       const data = await fetchJson<JobResponse>('/profile/job', {
@@ -114,6 +116,7 @@ export default function ProfilePage() {
           setJobStart(null);
           setLoading(false);
           setProgress(100);
+          setAnnouncement('Calculation complete');
           toast('Birth chart calculated successfully!');
         } else if (data.status === 'error') {
           setError(data.error || 'Calculation failed');
@@ -151,6 +154,7 @@ export default function ProfilePage() {
 
   return (
     <main className="container py-8">
+      <span className="sr-only" aria-live="polite">{announcement}</span>
       <motion.div
         initial={{ opacity: 0, y: 30 }}
         animate={{ opacity: 1, y: 0 }}
@@ -185,6 +189,10 @@ export default function ProfilePage() {
               </div>
               <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
                 <motion.div
+                  role="progressbar"
+                  aria-valuenow={Math.round(progress)}
+                  aria-valuemin={0}
+                  aria-valuemax={100}
                   className="bg-gradient-to-r from-purple-600 to-blue-600 h-2 rounded-full"
                   initial={{ width: 0 }}
                   animate={{ width: `${progress}%` }}
