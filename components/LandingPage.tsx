@@ -104,7 +104,14 @@ export default function LandingPage() {
             className="absolute bottom-10 left-1/2 -translate-x-1/2"
           >
             <a href="#features" className="block p-2 animate-bounce">
-              <svg className="w-6 h-6 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <span className="sr-only">Scroll to features</span>
+              <svg
+                className="w-6 h-6 text-gray-400"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                aria-hidden="true"
+              >
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
               </svg>
             </a>
