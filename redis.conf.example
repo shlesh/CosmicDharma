@@ -1,0 +1,16 @@
+# Example Redis configuration for local development
+# Copy this file to `.redis.conf` and adjust paths as needed.
+
+port 6379
+bind 127.0.0.1
+
+# Run Redis as a daemon so npm scripts can start it automatically
+daemonize yes
+
+# Update these paths for your environment
+pidfile /path/to/project/.redis.pid
+dir /path/to/project
+
+# Disable persistence for temporary local data
+save ""
+appendonly no

@@ -143,7 +143,8 @@ the automatic startup to succeed. If the script cannot start Redis, it continues
 without the worker. Start Redis manually (for example with `docker compose up -d
 redis` or `docker-compose up -d redis`) and run `npm run worker` in a separate
 terminal to enable background tasks. You may also launch Redis yourself and
-rerun the script.
+rerun the script. If you use `redis-server`, copy `redis.conf.example` to
+`.redis.conf` and update the `pidfile` and `dir` paths to suit your environment.
 
 ```bash
 docker compose up -d redis
