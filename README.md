@@ -67,6 +67,9 @@ reads these environment variables:
 - `SMTP_USER` – SMTP username if authentication is required.
 - `SMTP_PASS` – SMTP password for the above user.
 - `FROM_EMAIL` – default sender address for outgoing mail.
+- `FRONTEND_URL` – URL of the frontend allowed by CORS. Set this to the
+  domain serving the Next.js app so the backend accepts requests from it
+  (defaults to `http://localhost:3000`).
 
 For the Next.js frontend, copy `.env.local.example` to `.env.local` and set
 `NEXT_PUBLIC_API_BASE_URL` to the URL of your backend. During local development
