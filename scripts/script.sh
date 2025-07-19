@@ -18,6 +18,8 @@ readonly REDIS_PID_FILE="$REPO_ROOT/.redis.pid"
 declare -g WORKER_ENABLED=1
 declare -g START_TIME=$(date +%s)
 declare -g IS_WSL=0
+declare -g WSL_HAS_SYSTEMD=0
+declare -g WSL_WINDOWS_REDIS=0
 declare -g VERBOSE=0
 declare -g DEBUG_MODE=0
 declare -g SKIP_TESTS=0
@@ -27,6 +29,7 @@ declare -g RUN_DIAGNOSTICS=0
 declare -g PYTHON_CMD=""
 declare -g VENV_PATH=""
 declare -g ACTIVATE_SCRIPT=""
+declare -g WINDOWS_HOST=""
 
 # Error tracking
 declare -ga ERRORS=()
@@ -49,7 +52,7 @@ ui::init() {
     readonly BOLD='\033[1m'
     readonly DIM='\033[2m'
     readonly RESET='\033[0m'
-    
+
     # Icons
     readonly CHECK="✓"
     readonly CROSS="✗"
@@ -57,12 +60,9 @@ ui::init() {
     readonly INFO="ℹ"
     readonly WARN="⚠"
     readonly GEAR="⚙"
-    
-    # Detect WSL
-    if grep -qEi "(Microsoft|WSL)" /proc/version &> /dev/null; then
-        IS_WSL=1
-        export WINDOWS_HOST=$(cat /etc/resolv.conf 2>/dev/null | grep nameserver | awk '{print $2}' || echo "172.17.0.1")
-    fi
+
+    # Enhanced WSL detection
+    wsl::detect_and_configure
 }
 
 # Clear current line
@@ -74,9 +74,7 @@ ui::clear_line() {
 ui::print() {
     local message="$1"
     local no_newline="${2:-false}"
-    
     ui::clear_line
-    
     if [[ "$no_newline" == "true" ]]; then
         printf "%b" "$message"
     else
@@ -85,24 +83,22 @@ ui::print() {
 }
 
 # Status messages
-ui::success() { ui::print "  ${GREEN}${CHECK}${RESET} $1"; }
-ui::error() { ui::print "  ${RED}${CROSS}${RESET} $1"; ERRORS+=("$1"); }
-ui::warning() { ui::print "  ${YELLOW}${WARN}${RESET} $1"; WARNINGS+=("$1"); }
-ui::info() { ui::print "  ${CYAN}${INFO}${RESET} $1"; }
+ui::success() { ui::print " ${GREEN}${CHECK}${RESET} $1"; }
+ui::error() { ui::print " ${RED}${CROSS}${RESET} $1"; ERRORS+=("$1"); }
+ui::warning() { ui::print " ${YELLOW}${WARN}${RESET} $1"; WARNINGS+=("$1"); }
+ui::info() { ui::print " ${CYAN}${INFO}${RESET} $1"; }
 
 # Progress indicator without repetition
 ui::progress() {
     local message="$1"
-    ui::print "  ${CYAN}${GEAR}${RESET} ${message}..." true
+    ui::print " ${CYAN}${GEAR}${RESET} ${message}..." true
 }
 
 # Complete progress
 ui::progress_done() {
     local message="${1:-Done}"
     local status="${2:-success}"
-    
     ui::clear_line
-    
     case "$status" in
         success) ui::success "$message" ;;
         error) ui::error "$message" ;;
@@ -116,11 +112,10 @@ ui::header() {
     clear
     ui::print "${PURPLE}${BOLD}"
     ui::print "=============================================================="
-    ui::print "                    COSMIC DHARMA"
-    ui::print "                Vedic Astrology Platform"
+    ui::print " COSMIC DHARMA"
+    ui::print " Vedic Astrology Platform"
     ui::print "=============================================================="
     ui::print "${RESET}"
-    
     [[ $IS_WSL -eq 1 ]] && ui::print "${CYAN}Running on Windows Subsystem for Linux (WSL)${RESET}\n"
 }
 
@@ -129,9 +124,33 @@ ui::step() {
     local step=$1
     local total=$2
     local title="$3"
-    
     ui::print "\n${BOLD}${BLUE}[${step}/${total}]${RESET} ${BOLD}${WHITE}${title}${RESET}"
     ui::print "${DIM}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${RESET}"
+}
+
+# ==========================================
+# WSL DETECTION AND CONFIGURATION
+# ==========================================
+
+wsl::detect_and_configure() {
+    if grep -qEi "(Microsoft|WSL)" /proc/version 2>/dev/null; then
+        IS_WSL=1
+        
+        # More robust Windows host detection
+        WINDOWS_HOST=$(ip route show | grep default | awk '{print $3}' 2>/dev/null)
+        [[ -z "$WINDOWS_HOST" ]] && WINDOWS_HOST=$(cat /etc/resolv.conf 2>/dev/null | grep nameserver | awk '{print $2}' | head -1)
+        [[ -z "$WINDOWS_HOST" ]] && WINDOWS_HOST="172.17.0.1"
+        
+        # Check for systemd support (WSL2)
+        if command -v systemctl >/dev/null 2>&1 && systemctl is-system-running >/dev/null 2>&1; then
+            WSL_HAS_SYSTEMD=1
+        fi
+        
+        # Windows executable detection
+        if command -v redis-server.exe >/dev/null 2>&1; then
+            WSL_WINDOWS_REDIS=1
+        fi
+    fi
 }
 
 # ==========================================
@@ -149,9 +168,7 @@ log::write() {
     local level="$1"
     local message="$2"
     local timestamp=$(date '+%Y-%m-%d %H:%M:%S')
-    
     echo "[$timestamp] [$level] $message" >> "$LOG_FILE"
-    
     case "$level" in
         ERROR) echo "[$timestamp] $message" >> "$ERROR_LOG" ;;
         DEBUG) [[ $DEBUG_MODE -eq 1 ]] && echo "[$timestamp] $message" >> "$DEBUG_LOG" ;;
@@ -163,12 +180,99 @@ log::error() { log::write "ERROR" "$1"; }
 log::debug() { log::write "DEBUG" "$1"; }
 
 # ==========================================
+# SECURITY MODULE
+# ==========================================
+
+security::generate_secure_key() {
+    local key=""
+    
+    # Try multiple methods for cross-platform compatibility
+    if command -v openssl >/dev/null 2>&1; then
+        key=$(openssl rand -hex 32 2>/dev/null)
+    elif [[ -r /dev/urandom ]]; then
+        key=$(head -c 32 /dev/urandom | xxd -p | tr -d '\n' 2>/dev/null)
+    elif command -v python3 >/dev/null 2>&1; then
+        key=$(python3 -c 'import secrets; print(secrets.token_hex(32))' 2>/dev/null)
+    else
+        # Fallback (less secure)
+        key=$(date +%s%N | sha256sum | head -c 64)
+        ui::warning "Using fallback key generation (less secure)"
+    fi
+    
+    [[ -n "$key" ]] || key="fallback-$(date +%s)-$(whoami)"
+    echo "$key"
+}
+
+# ==========================================
+# RETRY AND VALIDATION MODULE
+# ==========================================
+
+retry::with_backoff() {
+    local max_attempts=${1:-3}
+    local delay=${2:-2}
+    local description="$3"
+    shift 3
+    
+    local attempt=1
+    while [[ $attempt -le $max_attempts ]]; do
+        if "$@"; then
+            return 0
+        fi
+        
+        if [[ $attempt -lt $max_attempts ]]; then
+            ui::warning "$description failed (attempt $attempt/$max_attempts), retrying in ${delay}s..."
+            sleep "$delay"
+            delay=$((delay * 2))  # Exponential backoff
+        fi
+        ((attempt++))
+    done
+    
+    ui::error "$description failed after $max_attempts attempts"
+    return 1
+}
+
+validate::configuration() {
+    local issues=0
+    
+    ui::progress "Validating configuration"
+    
+    # Check environment file completeness
+    if [[ -f "$REPO_ROOT/backend/.env" ]]; then
+        local required_vars=("SECRET_KEY" "DATABASE_URL" "REDIS_URL")
+        for var in "${required_vars[@]}"; do
+            if ! grep -q "^$var=" "$REPO_ROOT/backend/.env"; then
+                ui::error "Missing required environment variable: $var"
+                ((issues++))
+            fi
+        done
+    fi
+    
+    # Validate URLs and paths
+    if [[ -f "$REPO_ROOT/backend/.env" ]]; then
+        local db_url=$(grep "^DATABASE_URL=" "$REPO_ROOT/backend/.env" | cut -d'=' -f2-)
+        if [[ "$db_url" == *"sqlite:///"* ]]; then
+            local db_path=$(echo "$db_url" | sed 's/sqlite:\/\/\///')
+            local db_dir=$(dirname "$db_path")
+            [[ ! -d "$db_dir" ]] && mkdir -p "$db_dir"
+        fi
+    fi
+    
+    if [[ $issues -eq 0 ]]; then
+        ui::progress_done "Configuration validated"
+    else
+        ui::progress_done "Configuration issues found" "warning"
+    fi
+    
+    return $issues
+}
+
+# ==========================================
 # SYSTEM CHECK MODULE
 # ==========================================
 
 system::check_requirements() {
     local errors=0
-    
+
     # OS Detection
     ui::info "Operating System: $(system::get_os_info)"
     
@@ -177,9 +281,9 @@ system::check_requirements() {
     ui::info "Memory: $mem_info"
     
     # Required software
-    ui::print "\n  ${CYAN}Checking required software:${RESET}"
+    ui::print "\n ${CYAN}Checking required software:${RESET}"
     
-    # Check Node.js
+    # Check Node.js with retry
     if command -v node >/dev/null 2>&1; then
         local node_version=$(node --version 2>&1 | sed 's/v//')
         local node_major=$(echo "$node_version" | cut -d. -f1)
@@ -194,7 +298,7 @@ system::check_requirements() {
         ((errors++))
     fi
     
-    # Check Python
+    # Enhanced Python detection
     PYTHON_CMD=""
     for cmd in python3.12 python3.11 python3.10 python3.9 python3 python; do
         if command -v "$cmd" >/dev/null 2>&1; then
@@ -222,9 +326,12 @@ system::check_requirements() {
         ((errors++))
     fi
     
-    # Check Redis (optional)
+    # Enhanced Redis check for WSL
     if command -v redis-server >/dev/null 2>&1; then
         ui::success "Redis: $(redis-server --version | awk '{print $3}' | sed 's/v=//')"
+    elif [[ $IS_WSL -eq 1 ]] && command -v redis-server.exe >/dev/null 2>&1; then
+        ui::success "Redis: Found Windows executable"
+        WSL_WINDOWS_REDIS=1
     else
         ui::warning "Redis: Not found (background tasks will be disabled)"
     fi
@@ -292,8 +399,10 @@ setup::environment_files() {
     if [[ ! -f "$REPO_ROOT/backend/.env" ]]; then
         if [[ -f "$REPO_ROOT/backend/.env.example" ]]; then
             cp "$REPO_ROOT/backend/.env.example" "$REPO_ROOT/backend/.env"
+            
             # Generate secure secret key
-            local secret_key=$(openssl rand -hex 32 2>/dev/null || $PYTHON_CMD -c 'import secrets; print(secrets.token_hex(32))' 2>/dev/null || date +%s | sha256sum | head -c 64)
+            local secret_key=$(security::generate_secure_key)
+            
             # Handle both GNU sed and BSD sed
             if sed --version >/dev/null 2>&1; then
                 # GNU sed
@@ -317,8 +426,7 @@ setup::environment_files() {
     
     # Update Redis URL for WSL if needed
     if [[ $IS_WSL -eq 1 ]] && [[ -f "$REPO_ROOT/backend/.env" ]]; then
-        # Check if we should use Windows Redis
-        if ! command -v redis-server >/dev/null 2>&1; then
+        if [[ $WSL_WINDOWS_REDIS -eq 1 ]] || ! command -v redis-server >/dev/null 2>&1; then
             ui::info "Updating Redis URL for WSL Windows host"
             local windows_redis="redis://${WINDOWS_HOST}:6379"
             if sed --version >/dev/null 2>&1; then
@@ -334,7 +442,7 @@ setup::environment_files() {
 }
 
 setup::create_backend_env() {
-    local secret_key=$(openssl rand -hex 32 2>/dev/null || date +%s | sha256sum | head -c 64)
+    local secret_key=$(security::generate_secure_key)
     local redis_url="redis://localhost:6379"
     
     # Use Windows host for Redis if WSL and no local Redis
@@ -360,6 +468,31 @@ EOF
 # DEPENDENCY MODULE
 # ==========================================
 
+deps::verify_installation() {
+    local component=$1
+    local verification_cmd=$2
+    local max_retries=3
+    local retry_count=0
+    
+    while [[ $retry_count -lt $max_retries ]]; do
+        ui::progress "Verifying $component installation (attempt $((retry_count + 1)))"
+        
+        if eval "$verification_cmd" >/dev/null 2>&1; then
+            ui::progress_done "$component verified"
+            return 0
+        fi
+        
+        ((retry_count++))
+        if [[ $retry_count -lt $max_retries ]]; then
+            ui::warning "$component verification failed, retrying..."
+            sleep 2
+        fi
+    done
+    
+    ui::progress_done "$component verification failed" "error"
+    return 1
+}
+
 deps::install_node() {
     ui::progress "Checking Node.js dependencies"
     
@@ -383,9 +516,9 @@ deps::install_node() {
         rm -rf "$REPO_ROOT/node_modules" "$REPO_ROOT/package-lock.json"
     fi
     
-    # Run npm install
+    # Run npm install with retry
     local npm_log=$(mktemp)
-    if npm install --legacy-peer-deps --no-audit --no-fund > "$npm_log" 2>&1; then
+    if retry::with_backoff 3 5 "npm install" bash -c "cd '$REPO_ROOT' && npm install --legacy-peer-deps --no-audit --no-fund" > "$npm_log" 2>&1; then
         local installed=$(find "$REPO_ROOT/node_modules" -maxdepth 1 -type d 2>/dev/null | wc -l)
         ui::progress_done "Node.js dependencies installed ($installed packages)"
         rm -f "$npm_log"
@@ -429,8 +562,8 @@ deps::setup_python() {
             fi
         fi
         
-        # Create venv
-        if ! $PYTHON_CMD -m venv "$VENV_PATH" >/dev/null 2>&1; then
+        # Create venv with retry
+        if ! retry::with_backoff 3 2 "virtual environment creation" $PYTHON_CMD -m venv "$VENV_PATH"; then
             ui::progress_done "Failed to create virtual environment" "error"
             ui::info "Try: sudo apt-get install python3-venv"
             return 1
@@ -451,6 +584,10 @@ deps::setup_python() {
     log::debug "Using activation script: $ACTIVATE_SCRIPT"
     
     # Install packages
+    deps::install_python_packages
+}
+
+deps::install_python_packages() {
     ui::progress "Installing Python packages"
     
     if [[ ! -f "$REPO_ROOT/backend/requirements.txt" ]]; then
@@ -458,37 +595,18 @@ deps::setup_python() {
         return 1
     fi
     
-    # Install in a subshell to preserve parent environment
     local pip_log=$(mktemp)
-    (
-        cd "$REPO_ROOT/backend"
-        source "$ACTIVATE_SCRIPT"
-        
-        # Upgrade pip first
-        python -m pip install --upgrade pip >/dev/null 2>&1
-        
-        # Install requirements
-        pip install -r requirements.txt > "$pip_log" 2>&1
-        local req_status=$?
-        
-        # Install dev requirements if they exist
-        if [[ -f requirements-dev.txt ]]; then
-            pip install -r requirements-dev.txt >> "$pip_log" 2>&1
-        fi
-        
-        exit $req_status
-    )
+    local install_cmd="cd '$REPO_ROOT/backend' && source '$ACTIVATE_SCRIPT' && python -m pip install --upgrade pip && pip install -r requirements.txt"
     
-    local install_status=$?
+    if [[ -f "$REPO_ROOT/backend/requirements-dev.txt" ]]; then
+        install_cmd="$install_cmd && pip install -r requirements-dev.txt"
+    fi
     
-    if [[ $install_status -eq 0 ]]; then
+    if retry::with_backoff 3 5 "Python package installation" bash -c "$install_cmd" > "$pip_log" 2>&1; then
         # Verify key packages
         local packages_installed=0
-        (
-            cd "$REPO_ROOT/backend"
-            source "$ACTIVATE_SCRIPT"
-            packages_installed=$(pip list 2>/dev/null | wc -l)
-        )
+        packages_installed=$(bash -c "cd '$REPO_ROOT/backend' && source '$ACTIVATE_SCRIPT' && pip list 2>/dev/null | wc -l")
+        
         ui::progress_done "Python environment ready ($packages_installed packages)"
         rm -f "$pip_log"
         return 0
@@ -500,13 +618,83 @@ deps::setup_python() {
         fi
         log::error "pip install failed: $(cat "$pip_log")"
         rm -f "$pip_log"
-        return 0  # Continue anyway
+        return 0 # Continue anyway
     fi
+}
+
+# Verification functions
+deps::verify_node() {
+    deps::verify_installation "Node.js" "node --version && npm --version"
+}
+
+deps::verify_python() {
+    local cmd="cd '$REPO_ROOT/backend' && source '$ACTIVATE_SCRIPT' && python -c 'import fastapi, redis, sqlalchemy'"
+    deps::verify_installation "Python environment" "$cmd"
 }
 
 # ==========================================
 # SERVICE MODULE
 # ==========================================
+
+service::is_port_in_use() {
+    local port=$1
+    if command -v ss >/dev/null 2>&1; then
+        ss -tuln | grep -q ":$port "
+    elif command -v netstat >/dev/null 2>&1; then
+        netstat -tuln 2>/dev/null | grep -q ":$port "
+    else
+        return 1
+    fi
+}
+
+service::get_port_process() {
+    local port=$1
+    if command -v lsof >/dev/null 2>&1; then
+        lsof -Pi :$port -sTCP:LISTEN | tail -n1 | awk '{print $1" (PID "$2")"}'
+    else
+        echo "Unknown process"
+    fi
+}
+
+service::kill_port_process() {
+    local port=$1
+    if command -v lsof >/dev/null 2>&1; then
+        local pid=$(lsof -Pi :$port -sTCP:LISTEN -t 2>/dev/null)
+        if [[ -n "$pid" ]]; then
+            kill -TERM "$pid" 2>/dev/null
+            sleep 2
+            kill -0 "$pid" 2>/dev/null && kill -KILL "$pid" 2>/dev/null
+            return 0
+        fi
+    fi
+    return 1
+}
+
+service::manage_ports() {
+    local frontend_port=${PORT:-3000}
+    local backend_port=${BACKEND_PORT:-8000}
+    local ports_freed=0
+    
+    ui::progress "Managing port conflicts"
+    
+    for port in $frontend_port $backend_port 6379; do
+        if service::is_port_in_use "$port"; then
+            local process_info=$(service::get_port_process "$port")
+            ui::warning "Port $port in use: $process_info"
+            
+            if [[ $AUTO_FIX -eq 1 ]]; then
+                if service::kill_port_process "$port"; then
+                    ui::success "Freed port $port"
+                    ((ports_freed++))
+                else
+                    ui::warning "Could not free port $port"
+                fi
+            fi
+        fi
+    done
+    
+    ui::progress_done "Port management complete ($ports_freed freed)"
+}
 
 service::setup_redis() {
     ui::progress "Checking Redis"
@@ -514,11 +702,7 @@ service::setup_redis() {
     # First check if we have Python redis module
     local has_redis_module=0
     if [[ -n "$ACTIVATE_SCRIPT" ]]; then
-        (
-            cd "$REPO_ROOT/backend"
-            source "$ACTIVATE_SCRIPT"
-            python -c "import redis" 2>/dev/null && has_redis_module=1
-        )
+        bash -c "cd '$REPO_ROOT/backend' && source '$ACTIVATE_SCRIPT' && python -c 'import redis'" 2>/dev/null && has_redis_module=1
     fi
     
     if [[ $has_redis_module -eq 0 ]]; then
@@ -551,12 +735,13 @@ service::setup_redis() {
         pkill -f "redis-server.*:6379" 2>/dev/null || true
         
         # Start Redis
-        redis-server --daemonize yes --port 6379 --dir "$REPO_ROOT" --logfile "$LOG_DIR/redis.log" >/dev/null 2>&1
+        redis-server --daemonize yes --port 6379 --dir "$REPO_ROOT" --logfile "$LOG_DIR/redis.log" >/dev/null 2>&1 &
+        local redis_pid=$!
         sleep 2
         
         if service::check_redis_connection "redis://localhost:6379"; then
             ui::progress_done "Redis started successfully"
-            echo $! > "$REDIS_PID_FILE"
+            echo $redis_pid > "$REDIS_PID_FILE"
             return 0
         fi
     fi
@@ -570,62 +755,54 @@ service::setup_redis() {
 
 service::check_redis_connection() {
     local redis_url="$1"
-    
     if [[ -n "$ACTIVATE_SCRIPT" ]]; then
-        (
-            cd "$REPO_ROOT/backend"
-            source "$ACTIVATE_SCRIPT"
-            python -c "import redis; redis.from_url('$redis_url').ping()" 2>/dev/null
-        )
+        bash -c "cd '$REPO_ROOT/backend' && source '$ACTIVATE_SCRIPT' && python -c 'import redis; redis.from_url(\"$redis_url\").ping()'" 2>/dev/null
     else
         return 1
     fi
 }
 
 service::check_ports() {
-    ui::progress "Checking port availability"
-    
+    service::manage_ports
+}
+
+# ==========================================
+# HEALTH CHECK MODULE
+# ==========================================
+
+health::check_services() {
     local frontend_port=${PORT:-3000}
     local backend_port=${BACKEND_PORT:-8000}
-    local issues=0
+    local max_wait=30
+    local wait_time=0
     
-    # Function to check port
-    check_port() {
-        local port=$1
-        if command -v lsof >/dev/null 2>&1; then
-            lsof -Pi :$port -sTCP:LISTEN -t >/dev/null 2>&1
-        elif command -v netstat >/dev/null 2>&1; then
-            netstat -tuln 2>/dev/null | grep -q ":$port "
-        else
-            # Can't check, assume available
-            return 1
+    ui::progress "Waiting for services to become healthy"
+    
+    while [[ $wait_time -lt $max_wait ]]; do
+        local frontend_ok=0
+        local backend_ok=0
+        
+        # Check frontend
+        if curl -s "http://localhost:$frontend_port" >/dev/null 2>&1; then
+            frontend_ok=1
         fi
-    }
+        
+        # Check backend health endpoint
+        if curl -s "http://localhost:$backend_port/health" >/dev/null 2>&1; then
+            backend_ok=1
+        fi
+        
+        if [[ $frontend_ok -eq 1 && $backend_ok -eq 1 ]]; then
+            ui::progress_done "All services healthy"
+            return 0
+        fi
+        
+        sleep 2
+        ((wait_time += 2))
+    done
     
-    # Check frontend port
-    if ! check_port $frontend_port; then
-        log::debug "Port $frontend_port is available"
-    else
-        ui::warning "Port $frontend_port is in use"
-        ((issues++))
-    fi
-    
-    # Check backend port
-    if ! check_port $backend_port; then
-        log::debug "Port $backend_port is available"
-    else
-        ui::warning "Port $backend_port is in use"
-        ((issues++))
-    fi
-    
-    if [[ $issues -eq 0 ]]; then
-        ui::progress_done "All ports available"
-    else
-        ui::progress_done "Some ports in use" "warning"
-        ui::info "Services will fail if ports are not freed"
-    fi
-    
-    return 0
+    ui::progress_done "Service health check timeout" "warning"
+    return 1
 }
 
 # ==========================================
@@ -640,25 +817,25 @@ db::initialize() {
         return 1
     fi
     
-    (
-        cd "$REPO_ROOT/backend"
-        source "$ACTIVATE_SCRIPT"
-        
-        # Run migrations if alembic is available
-        if command -v alembic >/dev/null 2>&1; then
-            alembic upgrade head >/dev/null 2>&1 || true
-        fi
-        
-        # Create tables
-        python -c "
+    bash -c "
+    cd '$REPO_ROOT/backend'
+    source '$ACTIVATE_SCRIPT'
+    
+    # Run migrations if alembic is available
+    if command -v alembic >/dev/null 2>&1; then
+        alembic upgrade head >/dev/null 2>&1 || true
+    fi
+    
+    # Create tables
+    python -c '
 from app.database import engine, Base
 try:
     Base.metadata.create_all(bind=engine)
-    print('Database initialized')
+    print(\"Database initialized\")
 except Exception as e:
-    print(f'Database error: {e}')
-" 2>/dev/null || true
-    )
+    print(f\"Database error: {e}\")
+    ' 2>/dev/null || true
+    "
     
     ui::progress_done "Database initialized"
     return 0
@@ -675,7 +852,6 @@ test::run_all() {
     fi
     
     ui::progress "Running tests"
-    
     local test_log=$(mktemp)
     local failures=0
     
@@ -689,11 +865,7 @@ test::run_all() {
     if [[ -f "$REPO_ROOT/backend/pytest.ini" ]] || [[ -d "$REPO_ROOT/backend/tests" ]]; then
         ui::progress "Running backend tests"
         if [[ -n "$ACTIVATE_SCRIPT" ]]; then
-            (
-                cd "$REPO_ROOT/backend"
-                source "$ACTIVATE_SCRIPT"
-                pytest -q > "$test_log" 2>&1
-            ) || ((failures++))
+            bash -c "cd '$REPO_ROOT/backend' && source '$ACTIVATE_SCRIPT' && pytest -q" > "$test_log" 2>&1 || ((failures++))
         fi
     fi
     
@@ -709,6 +881,52 @@ test::run_all() {
 }
 
 # ==========================================
+# PROCESS MANAGEMENT MODULE
+# ==========================================
+
+process::manage_lifecycle() {
+    local pids=()
+    
+    # Store PIDs for proper cleanup
+    start_service_with_pid() {
+        local name=$1
+        local cmd=$2
+        local log_file="$LOG_DIR/${name,,}.log"
+        
+        ui::info "Starting $name service"
+        eval "$cmd" > "$log_file" 2>&1 &
+        local pid=$!
+        pids+=("$pid:$name")
+        
+        # Wait briefly to check if service started
+        sleep 2
+        if kill -0 "$pid" 2>/dev/null; then
+            ui::success "$name started (PID: $pid)"
+            echo "$pid" > "$REPO_ROOT/.${name,,}.pid"
+        else
+            ui::error "$name failed to start"
+            return 1
+        fi
+    }
+    
+    # Cleanup function
+    cleanup_processes() {
+        ui::info "Stopping services..."
+        for pid_info in "${pids[@]}"; do
+            IFS=':' read -r pid name <<< "$pid_info"
+            if kill -0 "$pid" 2>/dev/null; then
+                kill -TERM "$pid" 2>/dev/null
+                sleep 2
+                kill -0 "$pid" 2>/dev/null && kill -KILL "$pid" 2>/dev/null
+                ui::info "$name stopped"
+            fi
+        done
+    }
+    
+    trap cleanup_processes EXIT INT TERM
+}
+
+# ==========================================
 # LAUNCH MODULE
 # ==========================================
 
@@ -719,14 +937,15 @@ launch::start_services() {
     local backend_port=${BACKEND_PORT:-8000}
     
     cat << EOF
+
 ${CYAN}${BOLD}Service Endpoints:${RESET}
-  ${GREEN}Frontend:${RESET}   http://localhost:${frontend_port}
-  ${GREEN}Backend:${RESET}    http://localhost:${backend_port}
-  ${GREEN}API Docs:${RESET}   http://localhost:${backend_port}/docs
+${GREEN}Frontend:${RESET} http://localhost:${frontend_port}
+${GREEN}Backend:${RESET} http://localhost:${backend_port}
+${GREEN}API Docs:${RESET} http://localhost:${backend_port}/docs
 
 ${YELLOW}${BOLD}Controls:${RESET}
-  Stop all: Press ${BOLD}Ctrl+C${RESET}
-  View logs: Check ${DIM}logs/${RESET} directory
+Stop all: Press ${BOLD}Ctrl+C${RESET}
+View logs: Check ${DIM}logs/${RESET} directory
 
 EOF
     
@@ -741,6 +960,9 @@ EOF
     fi
     
     ui::print "\n${BOLD}${GREEN}Launching services...${RESET}\n"
+    
+    # Initialize process management
+    process::manage_lifecycle
     
     # Create custom scripts for better process management
     cat > "$REPO_ROOT/.run-backend.sh" << EOF
@@ -767,7 +989,7 @@ EOF
     local colors="cyan"
     
     # Backend service (using the Python from venv directly)
-    local backend_cmd="cd $REPO_ROOT/backend && $VENV_PATH/bin/python run_server.py"
+    local backend_cmd="cd $REPO_ROOT/backend && $VENV_PATH/bin/python -m uvicorn main:app --reload --host 0.0.0.0 --port $backend_port"
     services="$services \"$backend_cmd\""
     names="$names,Backend"
     colors="$colors,magenta"
@@ -779,14 +1001,18 @@ EOF
         colors="$colors,yellow"
     fi
     
-    # Launch services
+    # Launch services with health checks
     eval "npx --yes concurrently \
-        --names '$names' \
-        --prefix-colors '$colors' \
-        --prefix '[{name}]' \
-        --kill-others-on-fail \
-        --restart-tries 3 \
-        $services"
+    --names '$names' \
+    --prefix-colors '$colors' \
+    --prefix '[{name}]' \
+    --kill-others-on-fail \
+    --restart-tries 3 \
+    $services" &
+    
+    # Wait a moment then run health checks
+    sleep 10
+    health::check_services || ui::warning "Some services may not be ready"
 }
 
 # ==========================================
@@ -807,12 +1033,17 @@ main() {
     # Welcome message
     if [[ $RUN_DIAGNOSTICS -eq 0 ]]; then
         ui::print "${BOLD}${WHITE}Welcome to Cosmic Dharma Setup!${RESET}\n"
+        
         if [[ $IS_WSL -eq 1 ]]; then
             ui::info "WSL detected - optimizations applied"
+            ui::info "Windows Host: $WINDOWS_HOST"
+            [[ $WSL_HAS_SYSTEMD -eq 1 ]] && ui::info "Systemd support: Available"
         fi
+        
         if [[ $AUTO_FIX -eq 1 ]]; then
             ui::info "Auto-fix mode enabled"
         fi
+        
         ui::print "\n${GREEN}Press Enter to begin...${RESET}"
         read -r
     fi
@@ -828,12 +1059,15 @@ main() {
         "system::check_requirements|System Requirements"
         "setup::directories|Directory Setup"
         "setup::environment_files|Environment Configuration"
+        "validate::configuration|Configuration Validation"
         "deps::install_node|Node.js Dependencies"
         "deps::setup_python|Python Environment"
+        "deps::verify_node|Node.js Verification"
+        "deps::verify_python|Python Verification"
         "db::initialize|Database Setup"
         "service::setup_redis|Redis Setup"
         "test::run_all|Running Tests"
-        "service::check_ports|Port Availability"
+        "service::check_ports|Port Management"
     )
     
     local step_num=1
@@ -851,38 +1085,31 @@ main() {
                 [[ ! "$REPLY" =~ ^[Yy]$ ]] && exit 1
             fi
         fi
-        
         ((step_num++))
     done
     
     # Summary
     ui::print "\n${GREEN}${BOLD}Setup complete!${RESET}"
-    
     local elapsed=$(($(date +%s) - START_TIME))
     ui::info "Setup time: ${elapsed}s"
     
     if [[ ${#WARNINGS[@]} -gt 0 ]]; then
         ui::print "\n${YELLOW}Warnings (${#WARNINGS[@]}):${RESET}"
         for warning in "${WARNINGS[@]:0:3}"; do
-            ui::print "  - $warning"
+            ui::print " - $warning"
         done
-        [[ ${#WARNINGS[@]} -gt 3 ]] && ui::print "  ... and $((${#WARNINGS[@]} - 3)) more"
+        [[ ${#WARNINGS[@]} -gt 3 ]] && ui::print " ... and $((${#WARNINGS[@]} - 3)) more"
     fi
     
     # Seed database if requested
     if [[ $SEED_DB -eq 1 ]]; then
         ui::print "\n${CYAN}Seeding database...${RESET}"
-        (
-            cd "$REPO_ROOT/backend"
-            source "$ACTIVATE_SCRIPT"
-            python -m scripts.seed_db 2>/dev/null || ui::warning "Database seeding failed"
-        )
+        bash -c "cd '$REPO_ROOT/backend' && source '$ACTIVATE_SCRIPT' && python -m scripts.seed_db" 2>/dev/null || ui::warning "Database seeding failed"
     fi
     
     # Launch
     ui::print "\n${GREEN}Press Enter to launch Cosmic Dharma...${RESET}"
     read -r
-    
     launch::start_services
 }
 
@@ -901,6 +1128,13 @@ run_diagnostics() {
     ui::info "Repository: $REPO_ROOT"
     ui::info "User: $(whoami)"
     ui::info "Shell: $SHELL"
+    
+    if [[ $IS_WSL -eq 1 ]]; then
+        ui::print "\n${BOLD}WSL Information:${RESET}"
+        ui::info "Windows Host: $WINDOWS_HOST"
+        ui::info "Systemd Support: $([[ $WSL_HAS_SYSTEMD -eq 1 ]] && echo "Yes" || echo "No")"
+        ui::info "Windows Redis: $([[ $WSL_WINDOWS_REDIS -eq 1 ]] && echo "Detected" || echo "Not found")"
+    fi
     
     # Software
     ui::print "\n${BOLD}Software Versions:${RESET}"
@@ -925,15 +1159,11 @@ run_diagnostics() {
     # Ports
     ui::print "\n${BOLD}Port Status:${RESET}"
     for port in 3000 8000 6379; do
-        if command -v lsof >/dev/null 2>&1; then
-            if lsof -Pi :$port -sTCP:LISTEN -t >/dev/null 2>&1; then
-                local process=$(lsof -Pi :$port -sTCP:LISTEN | tail -n1 | awk '{print $1}')
-                ui::warning "Port $port: in use by $process"
-            else
-                ui::success "Port $port: available"
-            fi
+        if service::is_port_in_use "$port"; then
+            local process=$(service::get_port_process "$port")
+            ui::warning "Port $port: in use by $process"
         else
-            ui::info "Port $port: cannot check (lsof not available)"
+            ui::success "Port $port: available"
         fi
     done
     
@@ -998,28 +1228,29 @@ parse_args() {
 
 show_usage() {
     cat << EOF
+
 ${BOLD}Usage:${RESET} $0 [options]
 
 ${BOLD}Options:${RESET}
-  -h, --help          Show this help
-  -d, --diagnostics   Run system diagnostics
-  -v, --verbose       Enable verbose output
-  -D, --debug         Enable debug mode
-  -t, --skip-tests    Skip running tests
-  -a, --auto-fix      Auto-fix common issues
-  -s, --seed          Seed database with sample data
+  -h, --help         Show this help
+  -d, --diagnostics  Run system diagnostics
+  -v, --verbose      Enable verbose output
+  -D, --debug        Enable debug mode
+  -t, --skip-tests   Skip running tests
+  -a, --auto-fix     Auto-fix common issues
+  -s, --seed         Seed database with sample data
 
 ${BOLD}Examples:${RESET}
-  $0                  Normal startup
-  $0 -d               Run diagnostics
-  $0 -t -a            Skip tests with auto-fix
-  $0 -a -s            Auto-fix and seed database
+  $0                 Normal startup
+  $0 -d              Run diagnostics
+  $0 -t -a           Skip tests with auto-fix
+  $0 -a -s           Auto-fix and seed database
 
 ${BOLD}Troubleshooting:${RESET}
-  Port in use:        Kill process or change PORT/BACKEND_PORT
-  Redis issues:       Install Redis or use Docker
-  Python issues:      Ensure python3-venv is installed
-  WSL issues:         Enable systemd or use Windows Redis
+  Port in use:       Kill process or change PORT/BACKEND_PORT
+  Redis issues:      Install Redis or use Docker
+  Python issues:     Ensure python3-venv is installed
+  WSL issues:        Enable systemd or use Windows Redis
 
 EOF
 }
@@ -1052,7 +1283,7 @@ cleanup() {
     if [[ ${#ERRORS[@]} -gt 0 ]]; then
         ui::print "\n${RED}Errors encountered:${RESET}"
         for err in "${ERRORS[@]}"; do
-            ui::print "  - $err"
+            ui::print " - $err"
         done
     fi
     
@@ -1070,6 +1301,9 @@ cd "$REPO_ROOT" || {
     echo "Error: Cannot change to repository root"
     exit 1
 }
+
+# Store PID
+echo $$ > "$PID_FILE"
 
 # Run main
 main "$@"
