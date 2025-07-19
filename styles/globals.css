@@ -235,6 +235,19 @@ h3 { font-size: clamp(1.25rem, 3vw, 1.875rem); }
   background-clip: text;
 }
 
+/* Glassmorphism Utility Classes */
+.glass-card {
+  @apply glass border border-white/10 shadow-xl rounded-xl p-6;
+}
+
+.glass-input {
+  @apply glass w-full px-4 py-2 rounded-lg border border-white/20 placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-white/50;
+}
+
+.glass-button {
+  @apply glass inline-flex items-center justify-center font-medium px-4 py-2 rounded-xl border border-white/20 text-gray-900 dark:text-white transition-colors duration-200 hover:bg-white/20 dark:hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-white/50;
+}
+
 /* Animations */
 @keyframes float {
   0%, 100% { transform: translateY(0); }
