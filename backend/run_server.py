@@ -14,7 +14,6 @@ def main():
     # Add backend to Python path
     backend_dir = Path(__file__).parent
     sys.path.insert(0, str(backend_dir))
-    sys.path.insert(0, str(backend_dir.parent))
     
     # Set environment variables
     os.environ.setdefault("PYTHONPATH", str(backend_dir))
@@ -31,11 +30,7 @@ def main():
     print(f"📂 Working directory: {os.getcwd()}")
     
     try:
-        # Import main app to check for errors
-        from main import app
-        print("✅ App imported successfully")
-        
-        # Start server
+        # Start server with main:app reference
         uvicorn.run(
             "main:app",
             host=host,
@@ -44,10 +39,6 @@ def main():
             reload_dirs=[str(backend_dir)] if debug else None,
             log_level="info" if debug else "warning"
         )
-    except ImportError as e:
-        print(f"❌ Import error: {e}")
-        print("Please ensure your backend modules are properly structured")
-        sys.exit(1)
     except Exception as e:
         print(f"❌ Server error: {e}")
         sys.exit(1)
