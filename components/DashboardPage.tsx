@@ -1,237 +1,346 @@
-// components/DashboardPage.tsx - COMPREHENSIVE IMPROVEMENT
-import React, { useState, useEffect } from 'react';
+// components/DashboardPage.tsx
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { 
-  Star, Moon, Sun, Compass, Calendar, 
-  TrendingUp, Info, Download, Share2,
-  ChevronDown, ChevronUp
-} from 'lucide-react';
 import { Card } from './ui/Card';
 import { Button } from './ui/Button';
+import { BasicInfo } from './BasicInfo';
 import { PlanetTable } from './PlanetTable';
-import { DashaChart } from './DashaChart';
 import { HouseAnalysis } from './HouseAnalysis';
+import { DashaChart } from './DashaChart';
+import { CoreElements } from './CoreElements';
 
 interface DashboardPageProps {
   profileData: any;
-  loading?: boolean;
+  onNewChart: () => void;
 }
 
-export const DashboardPage: React.FC<DashboardPageProps> = ({ profileData, loading = false }) => {
-  const [activeTab, setActiveTab] = useState('overview');
-  const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set(['planets']));
+const tabConfig = [
+  { id: 'overview', label: 'Overview', icon: '🌟' },
+  { id: 'planets', label: 'Planets', icon: '🪐' },
+  { id: 'houses', label: 'Houses', icon: '🏠' },
+  { id: 'dasha', label: 'Dasha', icon: '⏰' },
+  { id: 'charts', label: 'Divisional Charts', icon: '📊' },
+  { id: 'yogas', label: 'Yogas', icon: '🕉️' },
+  { id: 'predictions', label: 'Predictions', icon: '🔮' },
+];
 
-  const toggleSection = (section: string) => {
-    const newExpanded = new Set(expandedSections);
-    if (newExpanded.has(section)) {
-      newExpanded.delete(section);
+export function DashboardPage({ profileData, onNewChart }: DashboardPageProps) {
+  const [activeTab, setActiveTab] = useState('overview');
+  const [isLoading, setIsLoading] = useState(false);
+  const [shareUrl, setShareUrl] = useState('');
+
+  const handleShare = async () => {
+    if (navigator.share && /Mobile|Android|iPhone|iPad/.test(navigator.userAgent)) {
+      try {
+        await navigator.share({
+          title: 'My Vedic Birth Chart',
+          text: 'Check out my Vedic astrology birth chart analysis!',
+          url: window.location.href,
+        });
+      } catch (err) {
+        console.log('Share failed');
+      }
     } else {
-      newExpanded.add(section);
+      // Fallback: copy to clipboard
+      navigator.clipboard.writeText(window.location.href);
+      alert('Chart URL copied to clipboard!');
     }
-    setExpandedSections(newExpanded);
   };
 
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <motion.div
-          animate={{ rotate: 360 }}
-          transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
-          className="w-16 h-16 border-4 border-purple-500 border-t-transparent rounded-full"
-        />
-      </div>
-    );
-  }
+  const handleDownload = () => {
+    const data = {
+      ...profileData,
+      generated_at: new Date().toISOString(),
+      generated_by: 'Cosmic Dharma',
+    };
+    
+    const blob = new Blob([JSON.stringify(data, null, 2)], {
+      type: 'application/json',
+    });
+    
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `birth-chart-${new Date().toISOString().split('T')[0]}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
 
-  const tabs = [
-    { id: 'overview', name: 'Overview', icon: <Compass className="w-4 h-4" /> },
-    { id: 'planets', name: 'Planets', icon: <Star className="w-4 h-4" /> },
-    { id: 'houses', name: 'Houses', icon: <Sun className="w-4 h-4" /> },
-    { id: 'dashas', name: 'Dashas', icon: <Calendar className="w-4 h-4" /> },
-    { id: 'analysis', name: 'Analysis', icon: <TrendingUp className="w-4 h-4" /> },
-  ];
+  const renderTabContent = () => {
+    switch (activeTab) {
+      case 'overview':
+        return (
+          <div className="grid lg:grid-cols-2 gap-8">
+            <motion.div
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 0.1 }}
+            >
+              <BasicInfo data={profileData} />
+            </motion.div>
+            
+            <motion.div
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 0.2 }}
+            >
+              <CoreElements data={profileData.coreElements} />
+            </motion.div>
+            
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.3 }}
+              className="lg:col-span-2"
+            >
+              <Card className="p-6">
+                <h3 className="text-xl font-bold mb-4 text-gray-800">Quick Insights</h3>
+                <div className="grid md:grid-cols-3 gap-4">
+                  <div className="bg-gradient-to-br from-orange-50 to-orange-100 p-4 rounded-lg">
+                    <div className="text-orange-600 font-semibold mb-1">Ascendant</div>
+                    <div className="text-lg font-bold text-gray-800">
+                      {profileData.birthInfo?.ascendant_sign || 'N/A'}
+                    </div>
+                  </div>
+                  
+                  <div className="bg-gradient-to-br from-blue-50 to-blue-100 p-4 rounded-lg">
+                    <div className="text-blue-600 font-semibold mb-1">Moon Sign</div>
+                    <div className="text-lg font-bold text-gray-800">
+                      {profileData.planetaryPositions?.find(p => p.name === 'Moon')?.sign || 'N/A'}
+                    </div>
+                  </div>
+                  
+                  <div className="bg-gradient-to-br from-purple-50 to-purple-100 p-4 rounded-lg">
+                    <div className="text-purple-600 font-semibold mb-1">Current Dasha</div>
+                    <div className="text-lg font-bold text-gray-800">
+                      {profileData.vimshottariDasha?.[0]?.lord || 'N/A'}
+                    </div>
+                  </div>
+                </div>
+              </Card>
+            </motion.div>
+          </div>
+        );
+        
+      case 'planets':
+        return (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+          >
+            <PlanetTable planets={profileData.planetaryPositions} />
+          </motion.div>
+        );
+        
+      case 'houses':
+        return (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+          >
+            <HouseAnalysis houses={profileData.houses} />
+          </motion.div>
+        );
+        
+      case 'dasha':
+        return (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+          >
+            <DashaChart dasha={profileData.vimshottariDasha} />
+          </motion.div>
+        );
+        
+      case 'charts':
+        return (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+          >
+            <Card className="p-6">
+              <h3 className="text-xl font-bold mb-4 text-gray-800">Divisional Charts</h3>
+              <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {Object.entries(profileData.divisionalCharts || {}).map(([chart, data]) => (
+                  <div key={chart} className="border border-gray-200 rounded-lg p-4">
+                    <h4 className="font-semibold mb-2">{chart}</h4>
+                    <div className="text-sm text-gray-600">
+                      {typeof data === 'object' ? Object.keys(data).length : 0} planets
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </Card>
+          </motion.div>
+        );
+        
+      case 'yogas':
+        return (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+          >
+            <Card className="p-6">
+              <h3 className="text-xl font-bold mb-4 text-gray-800">Yoga Combinations</h3>
+              <div className="space-y-4">
+                {profileData.yogas && Object.entries(profileData.yogas).map(([category, yogas]) => (
+                  <div key={category} className="border border-gray-200 rounded-lg p-4">
+                    <h4 className="font-semibold mb-2 capitalize">{category}</h4>
+                    <div className="grid gap-2">
+                      {Array.isArray(yogas) ? yogas.map((yoga, index) => (
+                        <div key={index} className="bg-gray-50 p-3 rounded">
+                          <div className="font-medium">{yoga.name}</div>
+                          <div className="text-sm text-gray-600">{yoga.description}</div>
+                        </div>
+                      )) : (
+                        <div className="text-gray-500">No yogas found in this category</div>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </Card>
+          </motion.div>
+        );
+        
+      case 'predictions':
+        return (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+          >
+            <Card className="p-6">
+              <h3 className="text-xl font-bold mb-4 text-gray-800">Predictions & Analysis</h3>
+              <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-6">
+                <div className="flex">
+                  <div className="text-yellow-600 mr-3">⚠️</div>
+                  <div>
+                    <h4 className="text-yellow-800 font-medium">Disclaimer</h4>
+                    <p className="text-yellow-700 text-sm mt-1">
+                      These are general interpretations based on traditional Vedic astrology. 
+                      For personalized guidance, consult a qualified astrologer.
+                    </p>
+                  </div>
+                </div>
+              </div>
+              
+              <div className="space-y-6">
+                {profileData.analysis && Object.entries(profileData.analysis).map(([section, content]) => (
+                  <div key={section} className="border border-gray-200 rounded-lg p-4">
+                    <h4 className="font-semibold mb-3 capitalize">{section.replace(/([A-Z])/g, ' $1')}</h4>
+                    <div className="prose prose-sm max-w-none">
+                      {typeof content === 'object' ? (
+                        Object.entries(content).map(([key, value]) => (
+                          <div key={key} className="mb-3">
+                            <div className="font-medium">{key}:</div>
+                            <div className="text-gray-700">{String(value)}</div>
+                          </div>
+                        ))
+                      ) : (
+                        <p className="text-gray-700">{String(content)}</p>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </Card>
+          </motion.div>
+        );
+        
+      default:
+        return null;
+    }
+  };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-indigo-900 via-purple-900 to-blue-900 py-8">
-      <div className="container mx-auto px-4">
+    <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-purple-50">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header */}
         <motion.div
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="text-center mb-8"
+          className="mb-8"
         >
-          <h1 className="text-4xl font-bold text-white mb-2">Your Vedic Birth Chart</h1>
-          <p className="text-gray-300">
-            Born on {profileData?.birthInfo?.date} at {profileData?.birthInfo?.time} in {profileData?.birthInfo?.location}
-          </p>
-          
-          <div className="flex justify-center space-x-4 mt-4">
-            <Button variant="outline" size="small" className="flex items-center space-x-2">
-              <Download className="w-4 h-4" />
-              <span>Export PDF</span>
-            </Button>
-            <Button variant="outline" size="small" className="flex items-center space-x-2">
-              <Share2 className="w-4 h-4" />
-              <span>Share</span>
-            </Button>
+          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between bg-white rounded-xl shadow-sm p-6">
+            <div>
+              <h1 className="text-3xl font-bold text-gray-900 mb-2">
+                Your Vedic Birth Chart
+              </h1>
+              <p className="text-gray-600">
+                {profileData.birthInfo?.date} at {profileData.birthInfo?.time} 
+                {profileData.birthInfo?.location && ` in ${profileData.birthInfo.location}`}
+              </p>
+            </div>
+            
+            <div className="flex gap-3 mt-4 lg:mt-0">
+              <Button
+                onClick={handleShare}
+                variant="outline"
+                className="flex items-center gap-2"
+              >
+                📤 Share
+              </Button>
+              
+              <Button
+                onClick={handleDownload}
+                variant="outline"
+                className="flex items-center gap-2"
+              >
+                💾 Download
+              </Button>
+              
+              <Button
+                onClick={onNewChart}
+                className="bg-gradient-to-r from-orange-500 to-pink-500 hover:from-orange-600 hover:to-pink-600 text-white flex items-center gap-2"
+              >
+                ✨ New Chart
+              </Button>
+            </div>
           </div>
         </motion.div>
 
-        {/* Tabs */}
-        <motion.div 
+        {/* Tab Navigation */}
+        <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2 }}
-          className="flex justify-center mb-8"
+          transition={{ delay: 0.1 }}
+          className="mb-8"
         >
-          <div className="bg-white/10 backdrop-blur-lg rounded-full p-1 flex space-x-1">
-            {tabs.map((tab) => (
-              <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
-                className={`flex items-center space-x-2 px-4 py-2 rounded-full transition-all duration-200 ${
-                  activeTab === tab.id
-                    ? 'bg-purple-600 text-white shadow-lg'
-                    : 'text-gray-300 hover:text-white hover:bg-white/10'
-                }`}
-              >
-                {tab.icon}
-                <span className="font-medium">{tab.name}</span>
-              </button>
-            ))}
+          <div className="bg-white rounded-xl shadow-sm p-2 overflow-x-auto">
+            <div className="flex gap-1 min-w-max">
+              {tabConfig.map((tab) => (
+                <button
+                  key={tab.id}
+                  onClick={() => setActiveTab(tab.id)}
+                  className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all whitespace-nowrap ${
+                    activeTab === tab.id
+                      ? 'bg-gradient-to-r from-orange-500 to-pink-500 text-white shadow-md'
+                      : 'text-gray-600 hover:bg-gray-50 hover:text-gray-800'
+                  }`}
+                >
+                  <span>{tab.icon}</span>
+                  {tab.label}
+                </button>
+              ))}
+            </div>
           </div>
         </motion.div>
 
-        {/* Content */}
+        {/* Tab Content */}
         <AnimatePresence mode="wait">
           <motion.div
             key={activeTab}
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -20 }}
-            transition={{ duration: 0.3 }}
+            transition={{ duration: 0.2 }}
           >
-            {activeTab === 'overview' && (
-              <div className="grid lg:grid-cols-3 gap-6">
-                {/* Basic Info */}
-                <Card className="lg:col-span-1 p-6 bg-white/10 backdrop-blur-lg border border-white/20">
-                  <h3 className="text-xl font-semibold text-white mb-4 flex items-center space-x-2">
-                    <Info className="w-5 h-5" />
-                    <span>Birth Details</span>
-                  </h3>
-                  <div className="space-y-3 text-gray-300">
-                    <div className="flex justify-between">
-                      <span>Ascendant:</span>
-                      <span className="text-white font-medium">{profileData?.coreElements?.ascendant || 'N/A'}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span>Moon Sign:</span>
-                      <span className="text-white font-medium">{profileData?.nakshatra?.nakshatra || 'N/A'}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span>Nakshatra:</span>
-                      <span className="text-white font-medium">{profileData?.nakshatra?.nakshatra || 'N/A'}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span>Current Dasha:</span>
-                      <span className="text-white font-medium">{profileData?.vimshottariDasha?.[0]?.lord || 'N/A'}</span>
-                    </div>
-                  </div>
-                </Card>
-
-                {/* Elemental Balance */}
-                <Card className="lg:col-span-2 p-6 bg-white/10 backdrop-blur-lg border border-white/20">
-                  <h3 className="text-xl font-semibold text-white mb-4">Elemental Balance</h3>
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                    {Object.entries(profileData?.coreElements?.elements || {}).map(([element, percentage]) => (
-                      <div key={element} className="text-center">
-                        <div className="relative w-16 h-16 mx-auto mb-2">
-                          <svg className="w-16 h-16 transform -rotate-90">
-                            <circle
-                              cx="32"
-                              cy="32"
-                              r="28"
-                              stroke="rgba(255,255,255,0.2)"
-                              strokeWidth="4"
-                              fill="transparent"
-                            />
-                            <circle
-                              cx="32"
-                              cy="32"
-                              r="28"
-                              stroke={
-                                element === 'Fire' ? '#f59e0b' :
-                                element === 'Earth' ? '#84cc16' :
-                                element === 'Air' ? '#06b6d4' :
-                                element === 'Water' ? '#3b82f6' : '#8b5cf6'
-                              }
-                              strokeWidth="4"
-                              fill="transparent"
-                              strokeDasharray={`${2 * Math.PI * 28}`}
-                              strokeDashoffset={`${2 * Math.PI * 28 * (1 - (percentage as number) / 100)}`}
-                              className="transition-all duration-1000 ease-out"
-                            />
-                          </svg>
-                          <div className="absolute inset-0 flex items-center justify-center">
-                            <span className="text-white font-semibold text-sm">{percentage}%</span>
-                          </div>
-                        </div>
-                        <p className="text-gray-300 text-sm font-medium">{element}</p>
-                      </div>
-                    ))}
-                  </div>
-                </Card>
-              </div>
-            )}
-
-            {activeTab === 'planets' && <PlanetTable planets={profileData?.planetaryPositions || []} />}
-            {activeTab === 'houses' && <HouseAnalysis houses={profileData?.houses || {}} />}
-            {activeTab === 'dashas' && <DashaChart dashas={profileData?.vimshottariDasha || []} />}
-            
-            {activeTab === 'analysis' && (
-              <div className="space-y-6">
-                {/* Collapsible Sections */}
-                {[
-                  { key: 'yogas', title: 'Planetary Yogas', data: profileData?.yogas },
-                  { key: 'strengths', title: 'Planetary Strengths', data: profileData?.shadbala },
-                  { key: 'aspects', title: 'Vedic Aspects', data: profileData?.vedicAspects },
-                ].map((section) => (
-                  <Card key={section.key} className="bg-white/10 backdrop-blur-lg border border-white/20">
-                    <button
-                      onClick={() => toggleSection(section.key)}
-                      className="w-full p-6 text-left flex items-center justify-between hover:bg-white/5 transition-colors"
-                    >
-                      <h3 className="text-xl font-semibold text-white">{section.title}</h3>
-                      {expandedSections.has(section.key) ? (
-                        <ChevronUp className="w-5 h-5 text-gray-300" />
-                      ) : (
-                        <ChevronDown className="w-5 h-5 text-gray-300" />
-                      )}
-                    </button>
-                    
-                    <AnimatePresence>
-                      {expandedSections.has(section.key) && (
-                        <motion.div
-                          initial={{ height: 0, opacity: 0 }}
-                          animate={{ height: 'auto', opacity: 1 }}
-                          exit={{ height: 0, opacity: 0 }}
-                          className="overflow-hidden"
-                        >
-                          <div className="px-6 pb-6">
-                            <pre className="text-gray-300 text-sm bg-black/20 rounded p-4 overflow-auto">
-                              {JSON.stringify(section.data, null, 2)}
-                            </pre>
-                          </div>
-                        </motion.div>
-                      )}
-                    </AnimatePresence>
-                  </Card>
-                ))}
-              </div>
-            )}
+            {renderTabContent()}
           </motion.div>
         </AnimatePresence>
       </div>
     </div>
   );
-};
+}
