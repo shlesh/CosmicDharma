@@ -39,18 +39,33 @@ declare -ga WARNINGS=()
 # ==========================================
 
 ui::init() {
-    # Terminal colors
-    readonly RED='\033[0;31m'
-    readonly GREEN='\033[0;32m'
-    readonly YELLOW='\033[1;33m'
-    readonly BLUE='\033[0;34m'
-    readonly MAGENTA='\033[0;35m'
-    readonly CYAN='\033[0;36m'
-    readonly WHITE='\033[1;37m'
-    readonly PURPLE='\033[0;35m'
-    readonly BOLD='\033[1m'
-    readonly DIM='\033[2m'
-    readonly RESET='\033[0m'
+    if [[ -t 1 ]] && command -v tput >/dev/null 2>&1; then
+        # Use tput for better compatibility
+        readonly RED="$(tput setaf 1)"
+        readonly GREEN="$(tput setaf 2)"
+        readonly YELLOW="$(tput setaf 3)"
+        readonly BLUE="$(tput setaf 4)"
+        readonly MAGENTA="$(tput setaf 5)"
+        readonly CYAN="$(tput setaf 6)"
+        readonly WHITE="$(tput bold)"
+        readonly PURPLE="$(tput setaf 5)"
+        readonly BOLD="$(tput bold)"
+        readonly DIM="$(tput dim)"
+        readonly RESET="$(tput sgr0)"
+    else
+        # Fallback to ANSI codes with proper formatting
+        readonly RED=$'\033[0;31m'
+        readonly GREEN=$'\033[0;32m'
+        readonly YELLOW=$'\033[1;33m'
+        readonly BLUE=$'\033[0;34m'
+        readonly MAGENTA=$'\033[0;35m'
+        readonly CYAN=$'\033[0;36m'
+        readonly WHITE=$'\033[1;37m'
+        readonly PURPLE=$'\033[0;35m'
+        readonly BOLD=$'\033[1m'
+        readonly DIM=$'\033[2m'
+        readonly RESET=$'\033[0m'
+    fi
 
     # Icons
     readonly CHECK="✓"
@@ -75,11 +90,12 @@ ui::print() {
     local no_newline="${2:-false}"
     ui::clear_line
     if [[ "$no_newline" == "true" ]]; then
-        printf "%b" "$message"
+        printf '%b' "$message"
     else
-        printf "%b\n" "$message"
+        printf '%b\n' "$message"
     fi
 }
+
 
 # Status messages
 ui::success() { ui::print " ${GREEN}${CHECK}${RESET} $1"; }
