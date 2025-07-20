@@ -1,172 +1,138 @@
-// components/ProfileForm.tsx
-import { useState, useEffect } from 'react';
+import { useState, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { format } from 'date-fns';
-import { Button } from './ui';
-import { Card } from './ui';
-import { api } from '../util/api';
+import { Calendar, Clock, MapPin, Loader2, AlertCircle } from 'lucide-react';
+import { Button } from './ui/Button';
+import { Card } from './ui/Card';
+import { Input } from './ui/Input';
+import { LocationSearch } from './LocationSearch';
+import { DatePicker } from './ui/DatePicker';
+import { TimePicker } from './ui/TimePicker';
+import { useForm } from '@/hooks/useForm';
+import { cn } from '@/util/cn';
 
-interface ProfileFormProps {
-  onSubmit: (data: ProfileData) => void;
-  loading?: boolean;
-  error?: string | null;
-}
-
-interface ProfileData {
+interface ProfileFormData {
   date: string;
   time: string;
   location: string;
   timezone?: string;
+  latitude?: number;
+  longitude?: number;
 }
 
-interface LocationSuggestion {
-  display_name: string;
-  lat: string;
-  lon: string;
+interface ProfileFormProps {
+  onSubmit: (data: ProfileFormData) => Promise<void>;
+  loading?: boolean;
+  error?: string | null;
 }
+
+const steps = [
+  {
+    id: 'date',
+    title: 'When were you born?',
+    description: 'Your birth date determines planetary positions',
+    icon: Calendar,
+  },
+  {
+    id: 'time',
+    title: 'What time were you born?',
+    description: 'Birth time is crucial for house calculations',
+    icon: Clock,
+  },
+  {
+    id: 'location',
+    title: 'Where were you born?',
+    description: 'Location provides geographical coordinates',
+    icon: MapPin,
+  },
+];
 
 export function ProfileForm({ onSubmit, loading = false, error }: ProfileFormProps) {
-  const [formData, setFormData] = useState<ProfileData>({
-    date: '',
-    time: '',
-    location: '',
-  });
+  const [currentStep, setCurrentStep] = useState(0);
   
-  const [locationSuggestions, setLocationSuggestions] = useState<LocationSuggestion[]>([]);
-  const [showSuggestions, setShowSuggestions] = useState(false);
-  const [locationLoading, setLocationLoading] = useState(false);
-  const [currentStep, setCurrentStep] = useState(1);
-  const [errors, setErrors] = useState<Record<string, string>>({});
+  const {
+    values,
+    errors,
+    touched,
+    handleChange,
+    handleBlur,
+    setFieldValue,
+    setFieldError,
+    validateField,
+    validateForm,
+    isValid,
+  } = useForm<ProfileFormData>({
+    initialValues: {
+      date: '',
+      time: '',
+      location: '',
+    },
+    validate: (values) => {
+      const errors: Partial<ProfileFormData> = {};
+      
+      if (!values.date) {
+        errors.date = 'Birth date is required';
+      } else {
+        const birthDate = new Date(values.date);
+        const today = new Date();
+        if (birthDate > today) {
+          errors.date = 'Birth date cannot be in the future';
+        }
+        if (birthDate.getFullYear() < 1800) {
+          errors.date = 'Birth date must be after 1800';
+        }
+      }
+      
+      if (!values.time) {
+        errors.time = 'Birth time is required';
+      }
+      
+      if (!values.location) {
+        errors.location = 'Birth location is required';
+      }
+      
+      return errors;
+    },
+  });
 
-  // Auto-detect user location
-  useEffect(() => {
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        async (position) => {
-          try {
-            const response = await fetch(
-              `https://nominatim.openstreetmap.org/reverse?lat=${position.coords.latitude}&lon=${position.coords.longitude}&format=json`
-            );
-            const data = await response.json();
-            if (data.display_name) {
-              const city = data.address?.city || data.address?.town || data.address?.village || '';
-              const state = data.address?.state || '';
-              const country = data.address?.country || '';
-              const detectedLocation = [city, state, country].filter(Boolean).join(', ');
-              
-              setFormData(prev => ({ ...prev, location: detectedLocation }));
-            }
-          } catch (err) {
-            console.log('Could not detect location');
-          }
-        },
-        (err) => console.log('Location access denied')
-      );
-    }
-  }, []);
-
-  const searchLocations = async (query: string) => {
-    if (query.length < 3) {
-      setLocationSuggestions([]);
-      setShowSuggestions(false);
-      return;
-    }
-
-    setLocationLoading(true);
-    try {
-      const response = await fetch(
-        `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}&format=json&limit=5&addressdetails=1`
-      );
-      const data = await response.json();
-      setLocationSuggestions(data);
-      setShowSuggestions(true);
-    } catch (err) {
-      console.error('Location search failed:', err);
-    } finally {
-      setLocationLoading(false);
-    }
-  };
-
-  const handleLocationChange = (value: string) => {
-    setFormData(prev => ({ ...prev, location: value }));
-    searchLocations(value);
+  const handleNext = async () => {
+    const field = steps[currentStep].id as keyof ProfileFormData;
+    await validateField(field);
     
-    // Clear location error when user starts typing
-    if (errors.location) {
-      setErrors(prev => ({ ...prev, location: '' }));
-    }
-  };
-
-  const selectLocation = (suggestion: LocationSuggestion) => {
-    setFormData(prev => ({ ...prev, location: suggestion.display_name }));
-    setLocationSuggestions([]);
-    setShowSuggestions(false);
-  };
-
-  const validateForm = (): boolean => {
-    const newErrors: Record<string, string> = {};
-
-    if (!formData.date) {
-      newErrors.date = 'Birth date is required';
-    } else {
-      const birthDate = new Date(formData.date);
-      const today = new Date();
-      if (birthDate > today) {
-        newErrors.date = 'Birth date cannot be in the future';
-      }
-      if (birthDate.getFullYear() < 1800) {
-        newErrors.date = 'Birth date must be after 1800';
+    if (!errors[field] && values[field]) {
+      if (currentStep < steps.length - 1) {
+        setCurrentStep(currentStep + 1);
       }
     }
-
-    if (!formData.time) {
-      newErrors.time = 'Birth time is required';
-    } else if (!/^([01]?[0-9]|2[0-3]):[0-5][0-9]$/.test(formData.time)) {
-      newErrors.time = 'Please enter time in HH:MM format';
-    }
-
-    if (!formData.location || formData.location.length < 2) {
-      newErrors.location = 'Birth location is required';
-    }
-
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handlePrevious = () => {
+    setCurrentStep(Math.max(0, currentStep - 1));
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (validateForm()) {
-      onSubmit(formData);
+    const formErrors = await validateForm();
+    
+    if (Object.keys(formErrors).length === 0) {
+      await onSubmit(values);
     }
   };
 
-  const nextStep = () => {
-    if (currentStep === 1 && formData.date) {
-      setCurrentStep(2);
-    } else if (currentStep === 2 && formData.time) {
-      setCurrentStep(3);
-    }
-  };
+  const handleLocationSelect = useCallback((location: {
+    address: string;
+    lat: number;
+    lng: number;
+    timezone: string;
+  }) => {
+    setFieldValue('location', location.address);
+    setFieldValue('latitude', location.lat);
+    setFieldValue('longitude', location.lng);
+    setFieldValue('timezone', location.timezone);
+  }, [setFieldValue]);
 
-  const prevStep = () => {
-    setCurrentStep(Math.max(1, currentStep - 1));
-  };
-
-  const getTodayDate = () => {
-    return format(new Date(), 'yyyy-MM-dd');
-  };
-
-  const stepTitles = [
-    'When were you born?',
-    'What time were you born?',
-    'Where were you born?'
-  ];
-
-  const stepDescriptions = [
-    'Your birth date is essential for accurate planetary positions',
-    'Birth time determines your ascendant and house cusps',
-    'Birth location is needed for precise geographical calculations'
-  ];
+  const progress = ((currentStep + 1) / steps.length) * 100;
+  const currentStepData = steps[currentStep];
+  const StepIcon = currentStepData.icon;
 
   return (
     <motion.div
@@ -174,244 +140,197 @@ export function ProfileForm({ onSubmit, loading = false, error }: ProfileFormPro
       animate={{ opacity: 1, y: 0 }}
       className="max-w-2xl mx-auto"
     >
-      <Card className="bg-white/95 backdrop-blur-sm shadow-2xl border-0 overflow-hidden">
+      <Card className="overflow-hidden">
         {/* Progress Bar */}
-        <div className="h-2 bg-gray-200">
+        <div className="h-2 bg-gray-200 dark:bg-gray-800">
           <motion.div
-            className="h-full bg-gradient-to-r from-orange-500 to-pink-500"
-            initial={{ width: '33%' }}
-            animate={{ width: `${(currentStep / 3) * 100}%` }}
+            className="h-full bg-gradient-to-r from-purple-600 to-blue-600"
+            initial={{ width: 0 }}
+            animate={{ width: `${progress}%` }}
             transition={{ duration: 0.3 }}
           />
         </div>
 
-        <div className="p-8">
+        <form onSubmit={handleSubmit} className="p-8">
           {/* Step Header */}
           <div className="text-center mb-8">
-            <motion.h2
+            <motion.div
               key={currentStep}
+              initial={{ scale: 0 }}
+              animate={{ scale: 1 }}
+              className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-purple-600 to-blue-600 rounded-full mb-4"
+            >
+              <StepIcon className="w-8 h-8 text-white" />
+            </motion.div>
+            
+            <motion.h2
+              key={`title-${currentStep}`}
               initial={{ opacity: 0, x: 20 }}
               animate={{ opacity: 1, x: 0 }}
-              className="text-2xl font-bold text-gray-800 mb-2"
+              className="text-2xl font-bold mb-2"
             >
-              {stepTitles[currentStep - 1]}
+              {currentStepData.title}
             </motion.h2>
+            
             <motion.p
               key={`desc-${currentStep}`}
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
-              className="text-gray-600"
+              className="text-gray-600 dark:text-gray-400"
             >
-              {stepDescriptions[currentStep - 1]}
+              {currentStepData.description}
             </motion.p>
           </div>
 
-          <form onSubmit={handleSubmit} className="space-y-6">
-            <AnimatePresence mode="wait">
-              {currentStep === 1 && (
-                <motion.div
-                  key="step1"
-                  initial={{ opacity: 0, x: 50 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: -50 }}
-                  className="space-y-4"
-                >
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Birth Date *
-                    </label>
-                    <input
-                      type="date"
-                      value={formData.date}
-                      onChange={(e) => setFormData(prev => ({ ...prev, date: e.target.value }))}
-                      max={getTodayDate()}
-                      className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all ${
-                        errors.date ? 'border-red-500' : 'border-gray-300'
-                      }`}
-                      autoFocus
-                    />
-                    {errors.date && (
-                      <motion.p
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        className="text-red-500 text-sm mt-1"
-                      >
-                        {errors.date}
-                      </motion.p>
-                    )}
-                  </div>
-                </motion.div>
-              )}
+          {/* Step Content */}
+          <AnimatePresence mode="wait">
+            {currentStep === 0 && (
+              <motion.div
+                key="date-step"
+                initial={{ opacity: 0, x: 50 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -50 }}
+                className="space-y-4"
+              >
+                <DatePicker
+                  value={values.date}
+                  onChange={(date) => setFieldValue('date', date)}
+                  onBlur={() => handleBlur('date')}
+                  max={new Date().toISOString().split('T')[0]}
+                  error={touched.date && errors.date}
+                  label="Birth Date"
+                  required
+                />
+              </motion.div>
+            )}
 
-              {currentStep === 2 && (
-                <motion.div
-                  key="step2"
-                  initial={{ opacity: 0, x: 50 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: -50 }}
-                  className="space-y-4"
-                >
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Birth Time *
-                    </label>
-                    <input
-                      type="time"
-                      value={formData.time}
-                      onChange={(e) => setFormData(prev => ({ ...prev, time: e.target.value }))}
-                      className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all ${
-                        errors.time ? 'border-red-500' : 'border-gray-300'
-                      }`}
-                      autoFocus
-                    />
-                    {errors.time && (
-                      <motion.p
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        className="text-red-500 text-sm mt-1"
-                      >
-                        {errors.time}
-                      </motion.p>
-                    )}
-                    <p className="text-xs text-gray-500 mt-1">
-                      💡 If exact time is unknown, sunrise time often works well
-                    </p>
-                  </div>
-                </motion.div>
-              )}
+            {currentStep === 1 && (
+              <motion.div
+                key="time-step"
+                initial={{ opacity: 0, x: 50 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -50 }}
+                className="space-y-4"
+              >
+                <TimePicker
+                  value={values.time}
+                  onChange={(time) => setFieldValue('time', time)}
+                  onBlur={() => handleBlur('time')}
+                  error={touched.time && errors.time}
+                  label="Birth Time"
+                  required
+                  helpText="If exact time is unknown, use sunrise time (around 6:00 AM)"
+                />
+              </motion.div>
+            )}
 
-              {currentStep === 3 && (
-                <motion.div
-                  key="step3"
-                  initial={{ opacity: 0, x: 50 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: -50 }}
-                  className="space-y-4"
-                >
-                  <div className="relative">
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Birth Location *
-                    </label>
-                    <div className="relative">
-                      <input
-                        type="text"
-                        value={formData.location}
-                        onChange={(e) => handleLocationChange(e.target.value)}
-                        onFocus={() => setShowSuggestions(locationSuggestions.length > 0)}
-                        placeholder="e.g., Mumbai, Maharashtra, India"
-                        className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all ${
-                          errors.location ? 'border-red-500' : 'border-gray-300'
-                        }`}
-                        autoFocus
-                      />
-                      {locationLoading && (
-                        <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
-                          <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-orange-500"></div>
-                        </div>
-                      )}
-                    </div>
-                    
-                    {/* Location Suggestions */}
-                    <AnimatePresence>
-                      {showSuggestions && locationSuggestions.length > 0 && (
-                        <motion.div
-                          initial={{ opacity: 0, y: -10 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          exit={{ opacity: 0, y: -10 }}
-                          className="absolute z-10 w-full bg-white border border-gray-300 rounded-lg mt-1 shadow-lg max-h-60 overflow-y-auto"
-                        >
-                          {locationSuggestions.map((suggestion, index) => (
-                            <button
-                              key={index}
-                              type="button"
-                              onClick={() => selectLocation(suggestion)}
-                              className="w-full text-left px-4 py-3 hover:bg-orange-50 border-b border-gray-100 last:border-b-0 transition-colors"
-                            >
-                              <div className="font-medium text-gray-800">
-                                {suggestion.display_name}
-                              </div>
-                            </button>
-                          ))}
-                        </motion.div>
-                      )}
-                    </AnimatePresence>
-                    
-                    {errors.location && (
-                      <motion.p
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        className="text-red-500 text-sm mt-1"
-                      >
-                        {errors.location}
-                      </motion.p>
-                    )}
-                  </div>
-                </motion.div>
-              )}
-            </AnimatePresence>
+            {currentStep === 2 && (
+              <motion.div
+                key="location-step"
+                initial={{ opacity: 0, x: 50 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -50 }}
+                className="space-y-4"
+              >
+                <LocationSearch
+                  value={values.location}
+                  onChange={handleLocationSelect}
+                  onBlur={() => handleBlur('location')}
+                  error={touched.location && errors.location}
+                  label="Birth Location"
+                  placeholder="Search for a city..."
+                  required
+                />
+              </motion.div>
+            )}
+          </AnimatePresence>
 
-            {/* Error Message */}
+          {/* Error Message */}
+          <AnimatePresence>
             {error && (
               <motion.div
-                initial={{ opacity: 0, scale: 0.95 }}
-                animate={{ opacity: 1, scale: 1 }}
-                className="bg-red-50 border border-red-200 rounded-lg p-4"
+                initial={{ opacity: 0, scale: 0.95, y: -10 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.95, y: -10 }}
+                className="mt-6"
               >
-                <div className="flex">
-                  <div className="text-red-600 mr-3">⚠️</div>
-                  <div>
-                    <h4 className="text-red-800 font-medium">Calculation Error</h4>
-                    <p className="text-red-700 text-sm mt-1">{error}</p>
+                <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4">
+                  <div className="flex items-start">
+                    <AlertCircle className="w-5 h-5 text-red-600 dark:text-red-400 mt-0.5 mr-3 flex-shrink-0" />
+                    <div>
+                      <h4 className="text-red-800 dark:text-red-200 font-medium">
+                        Calculation Error
+                      </h4>
+                      <p className="text-red-700 dark:text-red-300 text-sm mt-1">
+                        {error}
+                      </p>
+                    </div>
                   </div>
                 </div>
               </motion.div>
             )}
+          </AnimatePresence>
 
-            {/* Navigation Buttons */}
-            <div className="flex justify-between pt-6">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={prevStep}
-                disabled={currentStep === 1}
-                className="px-6 py-2"
-              >
-                Previous
-              </Button>
+          {/* Navigation */}
+          <div className="flex justify-between items-center mt-8">
+            <Button
+              type="button"
+              variant="ghost"
+              onClick={handlePrevious}
+              disabled={currentStep === 0}
+              className={cn(
+                'transition-opacity',
+                currentStep === 0 && 'opacity-0 pointer-events-none'
+              )}
+            >
+              Previous
+            </Button>
 
-              <div className="flex gap-3">
-                {currentStep < 3 ? (
-                  <Button
-                    type="button"
-                    onClick={nextStep}
-                    disabled={
-                      (currentStep === 1 && !formData.date) ||
-                      (currentStep === 2 && !formData.time)
-                    }
-                    className="bg-gradient-to-r from-orange-500 to-pink-500 hover:from-orange-600 hover:to-pink-600 text-white px-8 py-2"
-                  >
-                    Continue
-                  </Button>
-                ) : (
-                  <Button
-                    type="submit"
-                    disabled={loading || !formData.date || !formData.time || !formData.location}
-                    className="bg-gradient-to-r from-orange-500 to-pink-500 hover:from-orange-600 hover:to-pink-600 text-white px-8 py-2 min-w-[120px]"
-                  >
-                    {loading ? (
-                      <div className="flex items-center">
-                        <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
-                        Calculating...
-                      </div>
-                    ) : (
-                      'Generate Chart'
-                    )}
-                  </Button>
-                )}
-              </div>
+            <div className="flex gap-2">
+              {steps.map((_, index) => (
+                <button
+                  key={index}
+                  type="button"
+                  onClick={() => setCurrentStep(index)}
+                  className={cn(
+                    'w-2 h-2 rounded-full transition-all',
+                    index === currentStep
+                      ? 'w-8 bg-gradient-to-r from-purple-600 to-blue-600'
+                      : 'bg-gray-300 dark:bg-gray-700'
+                  )}
+                  aria-label={`Go to step ${index + 1}`}
+                />
+              ))}
+            </div>
+
+            <div>
+              {currentStep < steps.length - 1 ? (
+                <Button
+                  type="button"
+                  onClick={handleNext}
+                  disabled={!values[steps[currentStep].id as keyof ProfileFormData]}
+                >
+                  Continue
+                </Button>
+              ) : (
+                <Button
+                  type="submit"
+                  disabled={loading || !isValid}
+                  className="min-w-[140px]"
+                >
+                  {loading ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                      Calculating...
+                    </>
+                  ) : (
+                    'Generate Chart'
+                  )}
+                </Button>
+              )}
             </div>
           </div>
-        </div>
+        </form>
       </Card>
     </motion.div>
   );
