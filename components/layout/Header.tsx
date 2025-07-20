@@ -1,4 +1,3 @@
-// components/layout/Header.tsx
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
@@ -12,6 +11,86 @@ const navigation = [
   { name: 'Astrology', href: '/profile' },
   { name: 'Dashboard', href: '/dashboard' },
 ];
+
+// Star Icon Component with proper sizing
+const StarIcon = ({ className = "w-8 h-8" }: { className?: string }) => (
+  <svg
+    className={className}
+    fill="none"
+    viewBox="0 0 24 24"
+    stroke="currentColor"
+    aria-hidden="true"
+  >
+    <path 
+      strokeLinecap="round" 
+      strokeLinejoin="round" 
+      strokeWidth={2} 
+      d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" 
+    />
+  </svg>
+);
+
+// Sun Icon Component
+const SunIcon = ({ className = "w-5 h-5" }: { className?: string }) => (
+  <svg
+    className={className}
+    fill="none"
+    viewBox="0 0 24 24"
+    stroke="currentColor"
+    aria-hidden="true"
+  >
+    <path 
+      strokeLinecap="round" 
+      strokeLinejoin="round" 
+      strokeWidth={2} 
+      d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" 
+    />
+  </svg>
+);
+
+// Moon Icon Component
+const MoonIcon = ({ className = "w-5 h-5" }: { className?: string }) => (
+  <svg
+    className={className}
+    fill="none"
+    viewBox="0 0 24 24"
+    stroke="currentColor"
+    aria-hidden="true"
+  >
+    <path 
+      strokeLinecap="round" 
+      strokeLinejoin="round" 
+      strokeWidth={2} 
+      d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" 
+    />
+  </svg>
+);
+
+// Menu Icon Component
+const MenuIcon = ({ className = "w-6 h-6" }: { className?: string }) => (
+  <svg
+    className={className}
+    fill="none"
+    viewBox="0 0 24 24"
+    stroke="currentColor"
+    aria-hidden="true"
+  >
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+  </svg>
+);
+
+// Close Icon Component
+const CloseIcon = ({ className = "w-6 h-6" }: { className?: string }) => (
+  <svg
+    className={className}
+    fill="none"
+    viewBox="0 0 24 24"
+    stroke="currentColor"
+    aria-hidden="true"
+  >
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+  </svg>
+);
 
 export default function Header() {
   const router = useRouter();
@@ -47,7 +126,7 @@ export default function Header() {
       className={`
         fixed top-0 left-0 right-0 z-50
         transition-all duration-500
-        ${scrolled ? 'py-3' : 'py-6'}
+        ${scrolled ? 'py-2' : 'py-4'}
       `}
       initial={{ y: -100 }}
       animate={{ y: 0 }}
@@ -55,7 +134,7 @@ export default function Header() {
     >
       <div className="container">
         <nav className={`
-          glass rounded-2xl px-6 py-4
+          glass rounded-2xl px-4 py-3 sm:px-6 sm:py-4
           ${scrolled ? 'shadow-2xl' : 'shadow-xl'}
           transition-all duration-300
         `}>
@@ -65,18 +144,10 @@ export default function Header() {
               <div className="relative">
                 <div className="absolute inset-0 bg-gradient-to-r from-purple-600 to-blue-600 rounded-xl blur-lg opacity-75 group-hover:opacity-100 transition-opacity" />
                 <div className="relative bg-gradient-to-r from-purple-600 to-blue-600 rounded-xl p-2">
-                  <svg
-                    className="w-8 h-8 text-white"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                    aria-hidden="true"
-                  >
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
-                  </svg>
+                  <StarIcon className="w-6 h-6 sm:w-8 sm:h-8 text-white" />
                 </div>
               </div>
-              <span className="text-xl font-bold gradient-text">Cosmic Dharma</span>
+              <span className="text-lg sm:text-xl font-bold gradient-text">Cosmic Dharma</span>
             </Link>
 
             {/* Desktop Navigation */}
@@ -86,7 +157,7 @@ export default function Header() {
                   key={item.name}
                   href={item.href}
                   className={`
-                    px-4 py-2 rounded-xl font-medium transition-all duration-300
+                    px-3 py-2 rounded-xl font-medium transition-all duration-300 text-sm lg:text-base
                     ${isActive(item.href)
                       ? 'bg-gradient-to-r from-purple-600 to-blue-600 text-white shadow-lg'
                       : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'
@@ -99,7 +170,7 @@ export default function Header() {
             </div>
 
             {/* Actions */}
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2 sm:gap-3">
               {/* Theme Toggle */}
               <motion.button
                 onClick={toggleTheme}
@@ -109,25 +180,9 @@ export default function Header() {
                 aria-label="Toggle theme"
               >
                 {theme === 'dark' ? (
-                  <svg
-                    className="w-5 h-5"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                    aria-hidden="true"
-                  >
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
-                  </svg>
+                  <SunIcon className="w-4 h-4 sm:w-5 sm:h-5" />
                 ) : (
-                  <svg
-                    className="w-5 h-5"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                    aria-hidden="true"
-                  >
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
-                  </svg>
+                  <MoonIcon className="w-4 h-4 sm:w-5 sm:h-5" />
                 )}
               </motion.button>
 
@@ -151,19 +206,11 @@ export default function Header() {
                 aria-label={mobileMenuOpen ? 'Close menu' : 'Open menu'}
                 aria-expanded={mobileMenuOpen}
               >
-                <svg
-                  className="w-6 h-6"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                  aria-hidden="true"
-                >
-                  {mobileMenuOpen ? (
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                  ) : (
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-                  )}
-                </svg>
+                {mobileMenuOpen ? (
+                  <CloseIcon className="w-5 h-5 sm:w-6 sm:h-6" />
+                ) : (
+                  <MenuIcon className="w-5 h-5 sm:w-6 sm:h-6" />
+                )}
               </button>
             </div>
           </div>
@@ -176,24 +223,26 @@ export default function Header() {
                 animate={{ height: 'auto', opacity: 1 }}
                 exit={{ height: 0, opacity: 0 }}
                 transition={{ duration: 0.3 }}
-                className="md:hidden mt-4 pt-4 border-t border-gray-200 dark:border-gray-800"
+                className="md:hidden mt-4 pt-4 border-t border-gray-200 dark:border-gray-800 overflow-hidden"
               >
-                {navigation.map((item) => (
-                  <Link
-                    key={item.name}
-                    href={item.href}
-                    onClick={() => setMobileMenuOpen(false)}
-                    className={`
-                      block px-4 py-3 rounded-xl font-medium transition-all duration-300
-                      ${isActive(item.href)
-                        ? 'bg-gradient-to-r from-purple-600 to-blue-600 text-white'
-                        : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'
-                      }
-                    `}
-                  >
-                    {item.name}
-                  </Link>
-                ))}
+                <div className="space-y-2">
+                  {navigation.map((item) => (
+                    <Link
+                      key={item.name}
+                      href={item.href}
+                      onClick={() => setMobileMenuOpen(false)}
+                      className={`
+                        block px-4 py-3 rounded-xl font-medium transition-all duration-300
+                        ${isActive(item.href)
+                          ? 'bg-gradient-to-r from-purple-600 to-blue-600 text-white'
+                          : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'
+                        }
+                      `}
+                    >
+                      {item.name}
+                    </Link>
+                  ))}
+                </div>
               </motion.div>
             )}
           </AnimatePresence>

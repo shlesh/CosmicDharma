@@ -1,4 +1,3 @@
-// components/ui/Card.tsx
 import React from 'react';
 import { motion } from 'framer-motion';
 import { cn } from '../../util/cn';
@@ -25,7 +24,7 @@ const Card = React.forwardRef<HTMLDivElement, CardProps>(({
     default: `
       bg-white dark:bg-gray-900
       border border-gray-200 dark:border-gray-800
-      shadow-sm
+      shadow-sm hover:shadow-md
     `,
     glass: `
       glass
@@ -53,13 +52,14 @@ const Card = React.forwardRef<HTMLDivElement, CardProps>(({
   const hoverStyles = hover ? `
     hover:shadow-2xl hover:scale-[1.02]
     hover:border-purple-500/50
+    cursor-pointer
   ` : '';
 
   const paddings = {
     none: '',
-    sm: 'p-3',
-    md: 'p-6',
-    lg: 'p-8'
+    sm: 'p-3 sm:p-4',
+    md: 'p-4 sm:p-6',
+    lg: 'p-6 sm:p-8'
   };
 
   const roundings = {
@@ -85,7 +85,7 @@ const Card = React.forwardRef<HTMLDivElement, CardProps>(({
         className
       )}
       whileHover={hover ? { y: -4 } : undefined}
-      transition={{ type: "spring", stiffness: 300 }}
+      transition={{ type: "spring", stiffness: 300, damping: 20 }}
       {...props}
     >
       {children}
@@ -110,7 +110,7 @@ export const CardTitle: React.FC<React.HTMLAttributes<HTMLHeadingElement>> = ({
   children,
   ...props
 }) => (
-  <h3 className={cn('text-2xl font-bold gradient-text', className)} {...props}>
+  <h3 className={cn('text-xl sm:text-2xl font-bold gradient-text', className)} {...props}>
     {children}
   </h3>
 );
@@ -120,7 +120,7 @@ export const CardDescription: React.FC<React.HTMLAttributes<HTMLParagraphElement
   children,
   ...props
 }) => (
-  <p className={cn('text-gray-600 dark:text-gray-400 mt-2', className)} {...props}>
+  <p className={cn('text-gray-600 dark:text-gray-400 mt-2 text-sm sm:text-base', className)} {...props}>
     {children}
   </p>
 );

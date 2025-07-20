@@ -1,4 +1,3 @@
-// components/ui/Button.tsx
 import React from 'react';
 import { motion } from 'framer-motion';
 import { cn } from '../../util/cn';
@@ -28,6 +27,7 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(({
     focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2
     disabled:opacity-50 disabled:cursor-not-allowed
     relative overflow-hidden
+    whitespace-nowrap
   `;
 
   const variants = {
@@ -36,6 +36,7 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(({
       hover:from-purple-700 hover:to-blue-700
       shadow-lg hover:shadow-xl hover:shadow-purple-500/25
       focus-visible:ring-purple-500
+      border-0
     `,
     secondary: `
       bg-white dark:bg-gray-800 text-gray-900 dark:text-white
@@ -48,6 +49,7 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(({
       text-gray-700 dark:text-gray-300
       hover:bg-gray-100 dark:hover:bg-gray-800
       focus-visible:ring-gray-500
+      border-0
     `,
     glass: `
       glass text-gray-900 dark:text-white
@@ -61,6 +63,7 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(({
       shadow-lg hover:shadow-2xl hover:shadow-purple-500/50
       transform hover:scale-105
       focus-visible:ring-purple-500
+      border-0
       before:absolute before:inset-0
       before:bg-gradient-to-r before:from-transparent before:via-white/20 before:to-transparent
       before:translate-x-[-200%] hover:before:translate-x-[200%]
@@ -69,9 +72,9 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(({
   };
 
   const sizes = {
-    sm: 'px-3 py-1.5 text-sm rounded-lg gap-1.5',
-    md: 'px-5 py-2.5 text-base rounded-xl gap-2',
-    lg: 'px-7 py-3.5 text-lg rounded-2xl gap-3'
+    sm: 'px-3 py-1.5 text-sm rounded-lg gap-1.5 min-h-[2rem]',
+    md: 'px-4 py-2 text-base rounded-xl gap-2 min-h-[2.5rem] sm:px-5 sm:py-2.5',
+    lg: 'px-6 py-3 text-lg rounded-2xl gap-3 min-h-[3rem] sm:px-7 sm:py-3.5'
   };
 
   return (
@@ -84,14 +87,14 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(({
         className
       )}
       disabled={disabled || loading}
-      whileHover={{ scale: variant === 'cosmic' ? 1.05 : 1 }}
-      whileTap={{ scale: 0.95 }}
+      whileHover={{ scale: variant === 'cosmic' ? 1.05 : 1.02 }}
+      whileTap={{ scale: 0.98 }}
       {...props}
     >
       {loading ? (
         <span className="inline-flex items-center gap-2">
           <svg
-            className="animate-spin h-4 w-4"
+            className="animate-spin h-4 w-4 flex-shrink-0"
             viewBox="0 0 24 24"
             aria-hidden="true"
           >
@@ -110,13 +113,17 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(({
               d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
             />
           </svg>
-          Loading...
+          <span>Loading...</span>
         </span>
       ) : (
         <>
-          {icon && iconPosition === 'left' && <span>{icon}</span>}
-          {children}
-          {icon && iconPosition === 'right' && <span>{icon}</span>}
+          {icon && iconPosition === 'left' && (
+            <span className="flex-shrink-0">{icon}</span>
+          )}
+          <span className="truncate">{children}</span>
+          {icon && iconPosition === 'right' && (
+            <span className="flex-shrink-0">{icon}</span>
+          )}
         </>
       )}
     </motion.button>
