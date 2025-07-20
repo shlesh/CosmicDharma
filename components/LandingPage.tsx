@@ -1,230 +1,104 @@
+// components/LandingPage.tsx - IMPROVED VERSION
 import React from 'react';
-import Link from 'next/link';
 import { motion } from 'framer-motion';
-import Button from './ui/Button';
-import Card from './ui/Card';
+import { Star, BookOpen, Users, Sparkles } from 'lucide-react';
+import { Button } from './ui/Button';
+import { StarryBackground } from './StarryBackground';
 
-const features = [
-  {
-    icon: '🌟',
-    title: 'Vedic Astrology',
-    description: 'Get detailed insights into your birth chart with authentic Vedic calculations.'
-  },
-  {
-    icon: '📚',
-    title: 'Spiritual Blog',
-    description: 'Explore articles on astrology, spirituality, and cosmic wisdom.'
-  },
-  {
-    icon: '🔮',
-    title: 'Personalized Reports',
-    description: 'Receive custom astrological reports tailored to your unique cosmic blueprint.'
-  },
-  {
-    icon: '✨',
-    title: 'Daily Panchanga',
-    description: 'Stay aligned with cosmic rhythms through daily planetary positions.'
-  }
-];
-
-const testimonials = [
-  {
-    name: 'Sarah M.',
-    role: 'Spiritual Seeker',
-    content: 'The accuracy of the Vedic calculations blew my mind. This has become my go-to resource for astrological guidance.',
-    avatar: '👩'
-  },
-  {
-    name: 'Raj K.',
-    role: 'Yoga Teacher',
-    content: 'Finally, an authentic Vedic astrology platform that respects the traditional wisdom while being modern and accessible.',
-    avatar: '🧘‍♂️'
-  },
-  {
-    name: 'Elena P.',
-    role: 'Life Coach',
-    content: 'The insights I\'ve gained have transformed how I understand myself and guide my clients. Truly revolutionary!',
-    avatar: '👩‍💼'
-  }
-];
-
-// Arrow Down Icon Component
-const ArrowDownIcon = ({ className = "w-6 h-6" }: { className?: string }) => (
-  <svg
-    className={className}
-    fill="none"
-    viewBox="0 0 24 24"
-    stroke="currentColor"
-    aria-hidden="true"
-  >
-    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
-  </svg>
-);
-
-export default function LandingPage() {
+export const LandingPage: React.FC = () => {
   return (
-    <>
+    <div className="min-h-screen bg-gradient-to-br from-indigo-900 via-purple-900 to-blue-900 relative overflow-hidden">
+      <StarryBackground />
+      
       {/* Hero Section */}
-      <section className="relative min-h-screen flex items-center justify-center overflow-hidden">
-        {/* Animated Background Elements */}
-        <div className="absolute inset-0 overflow-hidden">
-          <div className="absolute top-20 left-10 w-32 h-32 sm:w-48 sm:h-48 lg:w-72 lg:h-72 bg-purple-500 rounded-full blur-3xl opacity-20 animate-float" />
-          <div className="absolute bottom-20 right-10 w-48 h-48 sm:w-64 sm:h-64 lg:w-96 lg:h-96 bg-blue-500 rounded-full blur-3xl opacity-20 animate-float" style={{ animationDelay: '3s' }} />
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-80 h-80 sm:w-96 sm:h-96 lg:w-[600px] lg:h-[600px] bg-pink-500 rounded-full blur-3xl opacity-10 animate-float" style={{ animationDelay: '6s' }} />
-        </div>
-
-        <div className="container relative z-10 text-center px-4">
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8 }}
-          >
-            <h1 className="text-4xl sm:text-6xl md:text-7xl lg:text-8xl font-bold mb-6 leading-tight">
-              Cosmic
-              <span className="block">Dharma</span>
-            </h1>
-            <p className="text-lg sm:text-xl md:text-2xl text-gray-600 dark:text-gray-300 mb-8 sm:mb-12 max-w-3xl mx-auto px-4">
-              Unlock the mysteries of your cosmic blueprint through authentic Vedic astrology 
-              and embark on a journey of self-discovery.
-            </p>
-          </motion.div>
-
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8, delay: 0.2 }}
-            className="flex flex-col sm:flex-row gap-4 justify-center px-4"
-          >
-            <Link href="/profile">
-              <Button variant="cosmic" size="lg" className="w-full sm:w-auto min-w-[200px]">
-                Get Your Chart
-                <span className="ml-2">→</span>
-              </Button>
-            </Link>
-            <Link href="/posts">
-              <Button variant="glass" size="lg" className="w-full sm:w-auto min-w-[200px]">
-                Explore Blog
-              </Button>
-            </Link>
-          </motion.div>
-
-          {/* Scroll Indicator */}
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ duration: 0.8, delay: 0.8 }}
-            className="absolute bottom-10 left-1/2 -translate-x-1/2"
-          >
-            <a href="#features" className="block p-2 animate-bounce-gentle">
-              <span className="sr-only">Scroll to features</span>
-              <ArrowDownIcon className="w-5 h-5 sm:w-6 sm:h-6 text-gray-400" />
-            </a>
-          </motion.div>
-        </div>
+      <section className="relative z-10 container mx-auto px-4 pt-20 pb-32">
+        <motion.div 
+          initial={{ opacity: 0, y: 30 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.8 }}
+          className="text-center max-w-4xl mx-auto"
+        >
+          <div className="flex justify-center mb-6">
+            <motion.div
+              animate={{ rotate: 360 }}
+              transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
+              className="w-20 h-20 border-2 border-yellow-400 rounded-full flex items-center justify-center"
+            >
+              <Star className="w-10 h-10 text-yellow-400 fill-current" />
+            </motion.div>
+          </div>
+          
+          <h1 className="text-5xl md:text-7xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-yellow-400 via-orange-300 to-purple-300 mb-6">
+            Cosmic Dharma
+          </h1>
+          
+          <p className="text-xl md:text-2xl text-gray-300 mb-8 leading-relaxed">
+            Discover your cosmic blueprint through authentic Vedic astrology. 
+            Get comprehensive birth chart analysis, planetary insights, and life guidance.
+          </p>
+          
+          <div className="flex flex-col sm:flex-row gap-4 justify-center items-center mb-12">
+            <Button 
+              size="large" 
+              variant="primary"
+              className="px-8 py-4 text-lg font-semibold rounded-full bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 transform hover:scale-105 transition-all duration-200 shadow-xl"
+            >
+              Get Your Chart
+            </Button>
+            <Button 
+              size="large" 
+              variant="outline"
+              className="px-8 py-4 text-lg font-semibold rounded-full border-2 border-white/30 text-white hover:bg-white/10 transition-all duration-200"
+            >
+              Learn More
+            </Button>
+          </div>
+        </motion.div>
       </section>
 
       {/* Features Section */}
-      <section id="features" className="section">
-        <div className="container px-4">
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.8 }}
-            className="text-center mb-12 sm:mb-16"
-          >
-            <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold mb-4">
-              Discover Your Cosmic Path
-            </h2>
-            <p className="text-lg sm:text-xl text-gray-600 dark:text-gray-400 max-w-2xl mx-auto">
-              Combine ancient wisdom with modern technology for profound astrological insights
-            </p>
-          </motion.div>
-
-          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            {features.map((feature, index) => (
-              <motion.div
-                key={feature.title}
-                initial={{ opacity: 0, y: 30 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.5, delay: index * 0.1 }}
-              >
-                <Card variant="glass" hover className="h-full text-center">
-                  <div className="text-4xl sm:text-5xl mb-4">{feature.icon}</div>
-                  <h3 className="text-lg sm:text-xl font-bold mb-2">{feature.title}</h3>
-                  <p className="text-sm sm:text-base text-gray-600 dark:text-gray-400">{feature.description}</p>
-                </Card>
-              </motion.div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* CTA Section */}
-      <section className="section">
-        <div className="container px-4">
-          <div className="bg-gradient-to-br from-purple-900/20 to-blue-900/20 rounded-3xl p-8 sm:p-12 lg:p-16">
+      <section className="relative z-10 container mx-auto px-4 py-20">
+        <motion.div 
+          initial={{ opacity: 0, y: 50 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.8 }}
+          viewport={{ once: true }}
+          className="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto"
+        >
+          {[
+            {
+              icon: <BookOpen className="w-8 h-8" />,
+              title: "Comprehensive Analysis",
+              description: "Complete birth chart with planetary positions, houses, dashas, and yogas"
+            },
+            {
+              icon: <Users className="w-8 h-8" />,
+              title: "Expert Interpretations",
+              description: "Traditional Vedic principles with modern accessibility and insights"
+            },
+            {
+              icon: <Sparkles className="w-8 h-8" />,
+              title: "Personalized Guidance",
+              description: "Detailed life predictions and remedial measures for spiritual growth"
+            }
+          ].map((feature, index) => (
             <motion.div
-              initial={{ opacity: 0, scale: 0.9 }}
-              whileInView={{ opacity: 1, scale: 1 }}
+              key={index}
+              initial={{ opacity: 0, y: 30 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, delay: index * 0.2 }}
               viewport={{ once: true }}
-              transition={{ duration: 0.5 }}
-              className="text-center"
+              className="bg-white/10 backdrop-blur-lg rounded-2xl p-8 text-center hover:bg-white/20 transition-all duration-300 border border-white/20"
             >
-              <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold mb-6">
-                Ready to Begin Your Journey?
-              </h2>
-              <p className="text-lg sm:text-xl text-gray-600 dark:text-gray-300 mb-8 max-w-2xl mx-auto">
-                Join thousands discovering their true potential through Vedic wisdom
-              </p>
-              <Link href="/register">
-                <Button variant="cosmic" size="lg">
-                  Start Free Today
-                </Button>
-              </Link>
+              <div className="text-yellow-400 mb-4 flex justify-center">
+                {feature.icon}
+              </div>
+              <h3 className="text-xl font-semibold text-white mb-4">{feature.title}</h3>
+              <p className="text-gray-300 leading-relaxed">{feature.description}</p>
             </motion.div>
-          </div>
-        </div>
+          ))}
+        </motion.div>
       </section>
-
-      {/* Testimonials */}
-      <section className="section">
-        <div className="container px-4">
-          <motion.h2
-            initial={{ opacity: 0, y: 30 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.8 }}
-            className="text-3xl sm:text-4xl md:text-5xl font-bold text-center mb-12 sm:mb-16"
-          >
-            What People Are Saying
-          </motion.h2>
-
-          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
-            {testimonials.map((testimonial, index) => (
-              <motion.div
-                key={testimonial.name}
-                initial={{ opacity: 0, y: 30 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.5, delay: index * 0.1 }}
-              >
-                <Card variant="gradient" className="h-full">
-                  <div className="text-3xl sm:text-4xl mb-4">{testimonial.avatar}</div>
-                  <p className="text-gray-700 dark:text-gray-300 mb-4 italic text-sm sm:text-base">
-                    "{testimonial.content}"
-                  </p>
-                  <div>
-                    <p className="font-bold text-sm sm:text-base">{testimonial.name}</p>
-                    <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">{testimonial.role}</p>
-                  </div>
-                </Card>
-              </motion.div>
-            ))}
-          </div>
-        </div>
-      </section>
-    </>
+    </div>
   );
-}
+};
