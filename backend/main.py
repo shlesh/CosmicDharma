@@ -1,16 +1,15 @@
-# backend/main.py - Fixed imports
+# backend/main.py - Fixed imports for proper package structure
+
 import logging
 import os
 import sys
 from pathlib import Path
 
-# Add proper paths
+# Add backend directory to Python path
 backend_dir = Path(__file__).parent
-project_root = backend_dir.parent
-sys.path.insert(0, str(project_root))
 sys.path.insert(0, str(backend_dir))
 
-from fastapi import FastAPI, HTTPException, Depends, Response
+from fastapi import FastAPI, HTTPException, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
@@ -18,13 +17,23 @@ from pydantic import BaseModel
 from sqlalchemy.orm import Session
 from datetime import datetime
 
-# Use relative imports for backend modules
-from .db import Base, engine, get_session
-from .models import User, Prompt, Report
-from .auth import get_current_user
-from .routes import auth_router, profile_router, blog_router, admin_router
-
-# Rest of the file remains the same...
+# Fixed imports - use absolute imports instead of relative
+try:
+    from app.database import Base, engine, get_session
+    from app.models import User, Prompt, Report
+    from app.auth import get_current_user
+    from app.routes import auth_router, profile_router, blog_router, admin_router
+except ImportError:
+    # Fallback imports if app package structure doesn't exist
+    try:
+        from db import Base, engine, get_session
+        from models import User, Prompt, Report
+        from auth import get_current_user
+        from routes import auth_router, profile_router, blog_router, admin_router
+    except ImportError as e:
+        print(f"Import error: {e}")
+        print("Please ensure your backend modules are properly structured")
+        sys.exit(1)
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -35,7 +44,7 @@ app = FastAPI(
     version="2.0",
 )
 
-# Update CORS configuration for proper frontend integration
+# Update CORS configuration
 frontend_url = os.getenv("FRONTEND_URL", "http://localhost:3000")
 app.add_middleware(
     CORSMiddleware,
@@ -51,13 +60,17 @@ app.add_middleware(
     expose_headers=["*"],
 )
 
-Base.metadata.create_all(bind=engine)
+# Create tables
+try:
+    Base.metadata.create_all(bind=engine)
+except Exception as e:
+    logger.error(f"Database initialization error: {e}")
 
 @app.exception_handler(RequestValidationError)
 async def validation_exception_handler(request, exc):
     logger.error("Validation error: %s", exc)
     return JSONResponse(
-        status_code=422, 
+        status_code=422,
         content={"detail": str(exc).split('\n')[0] if exc.errors() else "Validation error"}
     )
 
@@ -69,11 +82,16 @@ async def general_exception_handler(request, exc):
         content={"detail": "Internal server error"}
     )
 
-app.include_router(auth_router, prefix="/api")
-app.include_router(profile_router, prefix="/api")
-app.include_router(blog_router, prefix="/api")
-app.include_router(admin_router, prefix="/api")
+# Include routers with error handling
+try:
+    app.include_router(auth_router, prefix="/api")
+    app.include_router(profile_router, prefix="/api")
+    app.include_router(blog_router, prefix="/api")
+    app.include_router(admin_router, prefix="/api")
+except Exception as e:
+    logger.warning(f"Some routers could not be loaded: {e}")
 
+# Pydantic models
 class PromptCreate(BaseModel):
     text: str
 
@@ -97,7 +115,12 @@ def require_donor(current_user: User = Depends(get_current_user)) -> User:
 
 @app.get("/api/health")
 async def health_check():
-    return {"status": "healthy", "version": "2.0", "timestamp": datetime.utcnow().isoformat()}
+    return {
+        "status": "healthy", 
+        "version": "2.0", 
+        "timestamp": datetime.utcnow().isoformat(),
+        "python_path": sys.path[:3]  # Debug info
+    }
 
 @app.post("/api/prompts", response_model=PromptOut)
 def create_prompt(
@@ -152,4 +175,8 @@ def get_reports(
 # Root endpoint
 @app.get("/")
 async def root():
-    return {"message": "Cosmic Dharma API", "docs": "/docs"}
+    return {"message": "Cosmic Dharma API v2.0", "docs": "/docs"}
+
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run(app, host="0.0.0.0", port=8000)
