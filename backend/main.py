@@ -1,5 +1,4 @@
-# backend/main.py - Fixed imports for proper package structure
-
+# backend/main.py - Fixed imports
 import logging
 import os
 import sys
@@ -8,6 +7,7 @@ from pathlib import Path
 # Add backend directory to Python path
 backend_dir = Path(__file__).parent
 sys.path.insert(0, str(backend_dir))
+sys.path.insert(0, str(backend_dir.parent))
 
 from fastapi import FastAPI, HTTPException, Depends
 from fastapi.middleware.cors import CORSMiddleware
@@ -17,23 +17,20 @@ from pydantic import BaseModel
 from sqlalchemy.orm import Session
 from datetime import datetime
 
-# Fixed imports - use absolute imports instead of relative
+# Use absolute imports instead of relative
 try:
-    from app.database import Base, engine, get_session
-    from app.models import User, Prompt, Report
-    from app.auth import get_current_user
-    from app.routes import auth_router, profile_router, blog_router, admin_router
-except ImportError:
-    # Fallback imports if app package structure doesn't exist
-    try:
-        from db import Base, engine, get_session
-        from models import User, Prompt, Report
-        from auth import get_current_user
-        from routes import auth_router, profile_router, blog_router, admin_router
-    except ImportError as e:
-        print(f"Import error: {e}")
-        print("Please ensure your backend modules are properly structured")
-        sys.exit(1)
+    from db import Base, engine, get_session
+    from models import User, BlogPost, Prompt, Report, PasswordResetToken
+    from auth import get_current_user
+    from routes.auth import router as auth_router
+    from routes.profile import router as profile_router
+    from routes.blog import router as blog_router
+    from routes.admin import router as admin_router
+except ImportError as e:
+    print(f"Import error: {e}")
+    print("Backend modules not properly configured")
+    sys.exit(1)
+
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)

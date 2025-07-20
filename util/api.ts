@@ -1,12 +1,10 @@
-// util/api.ts - Fixed version
-const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000';
+// util/api.ts
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL_URL || 'http://localhost:8000/api';
 
 export default function apiFetch(path: string, options: RequestInit = {}): Promise<Response> {
-  // Clean path - remove /api prefix if present since backend doesn't use it
-  const cleanPath = path.replace(/^\/api/, '');
-  const url = `${API_BASE}${cleanPath.startsWith('/') ? cleanPath : '/' + cleanPath}`;
-  
-  console.log(`🌐 API Call: ${options.method || 'GET'} ${url}`);
+  // Ensure path starts with /
+  const cleanPath = path.startsWith('/') ? path : `/${path}`;
+  const url = `${API_BASE_URL}${cleanPath}`;
   
   return fetch(url, {
     ...options,
@@ -17,6 +15,7 @@ export default function apiFetch(path: string, options: RequestInit = {}): Promi
     mode: 'cors',
   });
 }
+
 
 export async function fetchJson<T = unknown>(path: string, options: RequestInit = {}): Promise<T> {
   try {

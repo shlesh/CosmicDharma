@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import { blogApi } from '../../util/api';
-import { Button } from '../ui/Button';
+import {Button} from '../ui/Button';
 import { Card } from '../ui/Card';
 import MDEditor from '@uiw/react-md-editor';
 import '@uiw/react-md-editor/markdown-editor.css';
