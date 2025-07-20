@@ -1,5 +1,7 @@
-from sqlalchemy import Column, Integer, String, Text, DateTime, ForeignKey, Boolean, func
+from sqlalchemy import Column, Integer, String, Text, DateTime, ForeignKey, Boolean
+from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship
+from datetime import datetime
 
 from .db import Base
 
@@ -22,20 +24,25 @@ class User(Base):
     prompts = relationship("Prompt", back_populates="user")
     reports = relationship("Report", back_populates="user")
 
+    blog_posts = relationship("BlogPost", back_populates="owner")
+
 
 class BlogPost(Base):
-    __tablename__ = "posts"
+    __tablename__ = "blog_posts"
 
     id = Column(Integer, primary_key=True, index=True)
-    title = Column(String, nullable=False)
+    title = Column(String(200), nullable=False, index=True)
     content = Column(Text, nullable=False)
-    created_at = Column(DateTime(timezone=True), server_default=func.now())
-    updated_at = Column(
-        DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
-    )
-    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
-
-    owner = relationship("User", back_populates="posts")
+    excerpt = Column(String(500))  # Short description
+    slug = Column(String(200), unique=True, index=True)  # URL-friendly title
+    published = Column(Boolean, default=True)
+    featured = Column(Boolean, default=False)
+    tags = Column(String(500))  # Comma-separated tags
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    user_id = Column(Integer, ForeignKey("users.id"))
+    
+    owner = relationship("User", back_populates="blog_posts")
 
 
 class Prompt(Base):

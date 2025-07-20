@@ -1,258 +1,182 @@
-# backend/main.py - ENHANCED ERROR HANDLING
+# backend/main.py - Fixed imports for proper package structure
+
 import logging
 import os
 import sys
 from pathlib import Path
-from typing import Dict, Any
-import traceback
 
 # Add backend directory to Python path
 backend_dir = Path(__file__).parent
 sys.path.insert(0, str(backend_dir))
-sys.path.insert(0, str(backend_dir.parent))
 
-from fastapi import FastAPI, HTTPException, Depends, Request
+from fastapi import FastAPI, HTTPException, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
-from pydantic import BaseModel, ValidationError
+from pydantic import BaseModel
 from sqlalchemy.orm import Session
 from datetime import datetime
-import swisseph as swe
 
-# Import with proper error handling
+# Fixed imports - use absolute imports instead of relative
 try:
-    from db import Base, engine, get_session
-    from models import User, BlogPost, Prompt, Report, PasswordResetToken
-    from auth import get_current_user
-    from routes import auth_router, profile_router, blog_router, admin_router
-    from utils.email_utils import send_email
-except ImportError as e:
-    logging.error(f"Import error: {e}")
-    logging.error("Please ensure your backend modules are properly structured")
+    from app.database import Base, engine, get_session
+    from app.models import User, Prompt, Report
+    from app.auth import get_current_user
+    from app.routes import auth_router, profile_router, blog_router, admin_router
+except ImportError:
+    # Fallback imports if app package structure doesn't exist
+    try:
+        from db import Base, engine, get_session
+        from models import User, Prompt, Report
+        from auth import get_current_user
+        from routes import auth_router, profile_router, blog_router, admin_router
+    except ImportError as e:
+        print(f"Import error: {e}")
+        print("Please ensure your backend modules are properly structured")
+        sys.exit(1)
 
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-    handlers=[
-        logging.StreamHandler(),
-        logging.FileHandler('app.log') if os.getenv('LOG_TO_FILE') else logging.NullHandler()
-    ]
-)
+logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 app = FastAPI(
-    title="Cosmic Dharma - Vedic Astrology API",
+    title="Vedic Astrology Service",
     description="Comprehensive Vedic astrology calculations following traditional principles",
-    version="2.1.0",
-    docs_url="/docs",
-    redoc_url="/redoc"
+    version="2.0",
 )
 
-# Enhanced CORS configuration
-frontend_urls = [
-    os.getenv("FRONTEND_URL", "http://localhost:3000"),
-    "http://localhost:3000",
-    "http://localhost:3001",
-    "http://localhost:3002",
-    "https://cosmicdharma.netlify.app",  # Add production URL
-]
-
+# Update CORS configuration
+frontend_url = os.getenv("FRONTEND_URL", "http://localhost:3000")
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=frontend_urls,
+    allow_origins=[
+        frontend_url,
+        "http://localhost:3000",
+        "http://localhost:3001",
+        "http://localhost:3002",
+    ],
     allow_credentials=True,
-    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allow_methods=["*"],
     allow_headers=["*"],
     expose_headers=["*"],
 )
 
-# Request logging middleware
-@app.middleware("http")
-async def log_requests(request: Request, call_next):
-    start_time = datetime.utcnow()
-    
-    # Log request
-    logger.info(f"Request: {request.method} {request.url}")
-    
-    try:
-        response = await call_next(request)
-        
-        # Log response
-        process_time = (datetime.utcnow() - start_time).total_seconds()
-        logger.info(f"Response: {response.status_code} - {process_time:.4f}s")
-        
-        return response
-    except Exception as e:
-        logger.error(f"Request failed: {str(e)}")
-        raise
+# Create tables
+try:
+    Base.metadata.create_all(bind=engine)
+except Exception as e:
+    logger.error(f"Database initialization error: {e}")
 
-# Enhanced error handlers
 @app.exception_handler(RequestValidationError)
-async def validation_exception_handler(request: Request, exc: RequestValidationError):
-    logger.error(f"Validation error on {request.method} {request.url}: {exc}")
-    
-    # Extract readable error messages
-    errors = []
-    for error in exc.errors():
-        field = " -> ".join(str(x) for x in error["loc"])
-        message = error["msg"]
-        errors.append(f"{field}: {message}")
-    
+async def validation_exception_handler(request, exc):
+    logger.error("Validation error: %s", exc)
     return JSONResponse(
         status_code=422,
-        content={
-            "detail": "Validation failed",
-            "errors": errors,
-            "timestamp": datetime.utcnow().isoformat()
-        }
-    )
-
-@app.exception_handler(HTTPException)
-async def http_exception_handler(request: Request, exc: HTTPException):
-    logger.warning(f"HTTP {exc.status_code} on {request.method} {request.url}: {exc.detail}")
-    
-    return JSONResponse(
-        status_code=exc.status_code,
-        content={
-            "detail": exc.detail,
-            "status_code": exc.status_code,
-            "timestamp": datetime.utcnow().isoformat()
-        }
-    )
-
-@app.exception_handler(ValueError)
-async def value_error_handler(request: Request, exc: ValueError):
-    logger.error(f"ValueError on {request.method} {request.url}: {str(exc)}")
-    
-    return JSONResponse(
-        status_code=400,
-        content={
-            "detail": f"Invalid input: {str(exc)}",
-            "error_type": "ValueError",
-            "timestamp": datetime.utcnow().isoformat()
-        }
-    )
-
-@app.exception_handler(swe.Error)
-async def swisseph_error_handler(request: Request, exc: swe.Error):
-    logger.error(f"SwissEph error on {request.method} {request.url}: {str(exc)}")
-    
-    return JSONResponse(
-        status_code=500,
-        content={
-            "detail": "Astronomical calculation error. Please check your input data.",
-            "error_type": "SwissEphError",
-            "timestamp": datetime.utcnow().isoformat()
-        }
+        content={"detail": str(exc).split('\n')[0] if exc.errors() else "Validation error"}
     )
 
 @app.exception_handler(Exception)
-async def general_exception_handler(request: Request, exc: Exception):
-    logger.error(f"Unhandled error on {request.method} {request.url}: {str(exc)}")
-    logger.error(traceback.format_exc())
-    
+async def general_exception_handler(request, exc):
+    logger.error("Unhandled error: %s", exc)
     return JSONResponse(
         status_code=500,
-        content={
-            "detail": "Internal server error. Please try again later.",
-            "error_type": type(exc).__name__,
-            "timestamp": datetime.utcnow().isoformat(),
-            "request_id": f"{request.method}_{hash(str(request.url))}_{int(datetime.utcnow().timestamp())}"
-        }
+        content={"detail": "Internal server error"}
     )
-
-# Create tables with enhanced error handling
-try:
-    Base.metadata.create_all(bind=engine)
-    logger.info("✅ Database tables created successfully")
-except Exception as e:
-    logger.error(f"❌ Database initialization error: {e}")
-    logger.error(traceback.format_exc())
 
 # Include routers with error handling
 try:
-    app.include_router(auth_router, prefix="/api", tags=["Authentication"])
-    app.include_router(profile_router, prefix="/api", tags=["Astrology"])
-    app.include_router(blog_router, prefix="/api", tags=["Blog"])
-    app.include_router(admin_router, prefix="/api", tags=["Admin"])
-    logger.info("✅ All routers loaded successfully")
+    app.include_router(auth_router, prefix="/api")
+    app.include_router(profile_router, prefix="/api")
+    app.include_router(blog_router, prefix="/api")
+    app.include_router(admin_router, prefix="/api")
 except Exception as e:
-    logger.warning(f"⚠️ Some routers could not be loaded: {e}")
+    logger.warning(f"Some routers could not be loaded: {e}")
 
-# Enhanced health check with system info
+# Pydantic models
+class PromptCreate(BaseModel):
+    text: str
+
+class PromptOut(BaseModel):
+    id: int
+    text: str
+    created_at: datetime
+
+class ReportCreate(BaseModel):
+    content: str
+
+class ReportOut(BaseModel):
+    id: int
+    content: str
+    created_at: datetime
+
+def require_donor(current_user: User = Depends(get_current_user)) -> User:
+    if not (current_user.is_donor or current_user.is_admin):
+        raise HTTPException(status_code=403, detail="Donor access required")
+    return current_user
+
 @app.get("/api/health")
 async def health_check():
-    try:
-        # Test database connection
-        from db import SessionLocal
-        db = SessionLocal()
-        db.execute("SELECT 1")
-        db.close()
-        db_status = "healthy"
-    except Exception as e:
-        db_status = f"unhealthy: {str(e)}"
-    
     return {
-        "status": "healthy" if db_status == "healthy" else "degraded",
-        "version": "2.1.0",
+        "status": "healthy", 
+        "version": "2.0", 
         "timestamp": datetime.utcnow().isoformat(),
-        "services": {
-            "database": db_status,
-            "swisseph": "healthy",  # Could add actual test here
-        },
-        "uptime": "N/A",  # Could implement uptime tracking
-        "environment": os.getenv("ENVIRONMENT", "development")
+        "python_path": sys.path[:3]  # Debug info
     }
 
-# Enhanced system info endpoint
-@app.get("/api/system-info")
-async def system_info():
-    return {
-        "python_version": sys.version,
-        "python_path": sys.path[:3],
-        "backend_dir": str(backend_dir),
-        "environment_vars": {
-            "ENVIRONMENT": os.getenv("ENVIRONMENT"),
-            "DATABASE_URL": os.getenv("DATABASE_URL", "Not set"),
-            "REDIS_URL": os.getenv("REDIS_URL", "Not set"),
-            "CACHE_ENABLED": os.getenv("CACHE_ENABLED", "true"),
-        }
-    }
+@app.post("/api/prompts", response_model=PromptOut)
+def create_prompt(
+    prompt: PromptCreate,
+    current_user: User = Depends(require_donor),
+    db: Session = Depends(get_session),
+):
+    db_prompt = Prompt(text=prompt.text, user=current_user)
+    db.add(db_prompt)
+    db.commit()
+    db.refresh(db_prompt)
+    return PromptOut(id=db_prompt.id, text=db_prompt.text, created_at=db_prompt.created_at)
 
-# Root endpoint with API info
+@app.get("/api/prompts", response_model=list[PromptOut])
+def get_prompts(
+    current_user: User = Depends(require_donor),
+    db: Session = Depends(get_session),
+):
+    prompts = (
+        db.query(Prompt)
+        .filter(Prompt.user_id == current_user.id)
+        .order_by(Prompt.created_at.desc())
+        .all()
+    )
+    return [PromptOut(id=p.id, text=p.text, created_at=p.created_at) for p in prompts]
+
+@app.post("/api/reports", response_model=ReportOut)
+def create_report(
+    report: ReportCreate,
+    current_user: User = Depends(require_donor),
+    db: Session = Depends(get_session),
+):
+    db_report = Report(content=report.content, user=current_user)
+    db.add(db_report)
+    db.commit()
+    db.refresh(db_report)
+    return ReportOut(id=db_report.id, content=db_report.content, created_at=db_report.created_at)
+
+@app.get("/api/reports", response_model=list[ReportOut])
+def get_reports(
+    current_user: User = Depends(require_donor),
+    db: Session = Depends(get_session),
+):
+    reports = (
+        db.query(Report)
+        .filter(Report.user_id == current_user.id)
+        .order_by(Report.created_at.desc())
+        .all()
+    )
+    return [ReportOut(id=r.id, content=r.content, created_at=r.created_at) for r in reports]
+
+# Root endpoint
 @app.get("/")
 async def root():
-    return {
-        "message": "🌟 Cosmic Dharma API v2.1.0",
-        "description": "Comprehensive Vedic Astrology Platform",
-        "docs": "/docs",
-        "health": "/api/health",
-        "endpoints": {
-            "auth": "/api/login, /api/register",
-            "profile": "/api/profile",
-            "blog": "/api/posts",
-            "admin": "/api/admin"
-        },
-        "features": [
-            "Birth chart analysis",
-            "Planetary positions",
-            "Dasha calculations",
-            "Yoga detection",
-            "House analysis"
-        ]
-    }
+    return {"message": "Cosmic Dharma API v2.0", "docs": "/docs"}
 
 if __name__ == "__main__":
     import uvicorn
-    port = int(os.getenv("PORT", 8000))
-    host = os.getenv("HOST", "0.0.0.0")
-    
-    logger.info(f"Starting server on {host}:{port}")
-    uvicorn.run(
-        app, 
-        host=host, 
-        port=port,
-        reload=os.getenv("ENVIRONMENT") == "development",
-        log_level="info"
-    )
+    uvicorn.run(app, host="0.0.0.0", port=8000)
