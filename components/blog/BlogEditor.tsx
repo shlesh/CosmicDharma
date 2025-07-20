@@ -3,6 +3,8 @@ import { useRouter } from 'next/router';
 import { blogApi } from '../../util/api';
 import { Button } from '../ui/Button';
 import { Card } from '../ui/Card';
+import MDEditor from '@uiw/react-md-editor';
+import '@uiw/react-md-editor/markdown-editor.css';
 
 interface BlogEditorProps {
   postId?: number;
@@ -76,7 +78,7 @@ const BlogEditor: React.FC<BlogEditorProps> = ({ postId, onSave, onCancel }) => 
   };
 
   const handleInputChange = (
-    event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+    event: React.ChangeEvent<HTMLInputElement>
   ) => {
     const { name, value, type } = event.target;
     setFormData(prev => ({
@@ -132,18 +134,15 @@ const BlogEditor: React.FC<BlogEditorProps> = ({ postId, onSave, onCancel }) => 
         </div>
 
         <div>
-          <label htmlFor="content" className="block text-sm font-medium text-gray-700 mb-2">
+          <label className="block text-sm font-medium text-gray-700 mb-2">
             Content *
           </label>
-          <textarea
-            id="content"
-            name="content"
-            required
+          <MDEditor
             value={formData.content}
-            onChange={handleInputChange}
-            rows={20}
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent font-mono"
-            placeholder="Write your post content here (HTML supported)..."
+            onChange={(val) => setFormData(prev => ({ ...prev, content: val || '' }))}
+            preview="edit"
+            hideToolbar={false}
+            height={400}
           />
         </div>
 
