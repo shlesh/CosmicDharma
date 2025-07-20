@@ -8,6 +8,7 @@ from pathlib import Path
 # Add backend directory to Python path
 backend_dir = Path(__file__).parent
 sys.path.insert(0, str(backend_dir))
+sys.path.insert(0, str(backend_dir.parent))
 
 from fastapi import FastAPI, HTTPException, Depends
 from fastapi.middleware.cors import CORSMiddleware
@@ -17,23 +18,18 @@ from pydantic import BaseModel
 from sqlalchemy.orm import Session
 from datetime import datetime
 
-# Fixed imports - use absolute imports instead of relative
+# Import with proper error handling
 try:
-    from app.database import Base, engine, get_session
-    from app.models import User, Prompt, Report
-    from app.auth import get_current_user
-    from app.routes import auth_router, profile_router, blog_router, admin_router
-except ImportError:
-    # Fallback imports if app package structure doesn't exist
-    try:
-        from db import Base, engine, get_session
-        from models import User, Prompt, Report
-        from auth import get_current_user
-        from routes import auth_router, profile_router, blog_router, admin_router
-    except ImportError as e:
-        print(f"Import error: {e}")
-        print("Please ensure your backend modules are properly structured")
-        sys.exit(1)
+    # Try importing from the current directory
+    from db import Base, engine, get_session
+    from models import User, BlogPost, Prompt, Report, PasswordResetToken
+    from auth import get_current_user
+    from routes import auth_router, profile_router, blog_router, admin_router
+    from utils.email_utils import send_email
+except ImportError as e:
+    logging.error(f"Import error: {e}")
+    logging.error("Please ensure your backend modules are properly structured")
+    # Don't exit, try to continue with what we have
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -60,9 +56,10 @@ app.add_middleware(
     expose_headers=["*"],
 )
 
-# Create tables
+# Create tables with error handling
 try:
     Base.metadata.create_all(bind=engine)
+    logger.info("Database tables created successfully")
 except Exception as e:
     logger.error(f"Database initialization error: {e}")
 
@@ -85,92 +82,22 @@ async def general_exception_handler(request, exc):
 # Include routers with error handling
 try:
     app.include_router(auth_router, prefix="/api")
-    app.include_router(profile_router, prefix="/api")
+    app.include_router(profile_router, prefix="/api") 
     app.include_router(blog_router, prefix="/api")
     app.include_router(admin_router, prefix="/api")
+    logger.info("All routers loaded successfully")
 except Exception as e:
     logger.warning(f"Some routers could not be loaded: {e}")
 
-# Pydantic models
-class PromptCreate(BaseModel):
-    text: str
-
-class PromptOut(BaseModel):
-    id: int
-    text: str
-    created_at: datetime
-
-class ReportCreate(BaseModel):
-    content: str
-
-class ReportOut(BaseModel):
-    id: int
-    content: str
-    created_at: datetime
-
-def require_donor(current_user: User = Depends(get_current_user)) -> User:
-    if not (current_user.is_donor or current_user.is_admin):
-        raise HTTPException(status_code=403, detail="Donor access required")
-    return current_user
-
+# Basic health check
 @app.get("/api/health")
 async def health_check():
     return {
         "status": "healthy", 
         "version": "2.0", 
         "timestamp": datetime.utcnow().isoformat(),
-        "python_path": sys.path[:3]  # Debug info
+        "python_path": sys.path[:3]
     }
-
-@app.post("/api/prompts", response_model=PromptOut)
-def create_prompt(
-    prompt: PromptCreate,
-    current_user: User = Depends(require_donor),
-    db: Session = Depends(get_session),
-):
-    db_prompt = Prompt(text=prompt.text, user=current_user)
-    db.add(db_prompt)
-    db.commit()
-    db.refresh(db_prompt)
-    return PromptOut(id=db_prompt.id, text=db_prompt.text, created_at=db_prompt.created_at)
-
-@app.get("/api/prompts", response_model=list[PromptOut])
-def get_prompts(
-    current_user: User = Depends(require_donor),
-    db: Session = Depends(get_session),
-):
-    prompts = (
-        db.query(Prompt)
-        .filter(Prompt.user_id == current_user.id)
-        .order_by(Prompt.created_at.desc())
-        .all()
-    )
-    return [PromptOut(id=p.id, text=p.text, created_at=p.created_at) for p in prompts]
-
-@app.post("/api/reports", response_model=ReportOut)
-def create_report(
-    report: ReportCreate,
-    current_user: User = Depends(require_donor),
-    db: Session = Depends(get_session),
-):
-    db_report = Report(content=report.content, user=current_user)
-    db.add(db_report)
-    db.commit()
-    db.refresh(db_report)
-    return ReportOut(id=db_report.id, content=db_report.content, created_at=db_report.created_at)
-
-@app.get("/api/reports", response_model=list[ReportOut])
-def get_reports(
-    current_user: User = Depends(require_donor),
-    db: Session = Depends(get_session),
-):
-    reports = (
-        db.query(Report)
-        .filter(Report.user_id == current_user.id)
-        .order_by(Report.created_at.desc())
-        .all()
-    )
-    return [ReportOut(id=r.id, content=r.content, created_at=r.created_at) for r in reports]
 
 # Root endpoint
 @app.get("/")
