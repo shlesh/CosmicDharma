@@ -2,8 +2,8 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { format } from 'date-fns';
-import { Button } from './ui/Button';
-import { Card } from './ui/Card';
+import { Button } from './ui';
+import { Card } from './ui';
 import { api } from '../util/api';
 
 interface ProfileFormProps {

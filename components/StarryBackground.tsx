@@ -1,6 +1,6 @@
 import React from 'react';
 
-export default function StarryBackground() {
+export function StarryBackground() {
   return (
     <>
       <div className="star-layer layer1" aria-hidden="true"></div>
@@ -9,3 +9,5 @@ export default function StarryBackground() {
     </>
   );
 }
+
+export default StarryBackground;

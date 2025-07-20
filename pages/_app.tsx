@@ -5,7 +5,7 @@ import Head from 'next/head';
 import Header from '../components/layout/Header';
 import Footer from '../components/layout/Footer';
 import ToastProvider from '../components/ToastProvider';
-import StarryBackground from '../components/StarryBackground';
+import { StarryBackground } from '../components/StarryBackground';
 import ThemeProvider from '../components/ThemeProvider';
 import { AnimatePresence, motion } from 'framer-motion';
 import { useRouter } from 'next/router';
