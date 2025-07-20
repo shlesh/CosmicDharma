@@ -958,44 +958,26 @@ ${GREEN}Backend:${RESET} http://localhost:${backend_port}
 ${GREEN}API Docs:${RESET} http://localhost:${backend_port}/docs
 ${GREEN}Health Check:${RESET} http://localhost:${backend_port}/api/health
 
-${YELLOW}${BOLD}Controls:${RESET}
-Stop all: Press ${BOLD}Ctrl+C${RESET}
-View logs: Check ${DIM}logs/${RESET} directory
-
 EOF
-
-    if [[ $WORKER_ENABLED -eq 1 ]]; then
-        ui::success "All systems operational - Redis worker enabled"
-    else
-        ui::warning "Limited mode - Background tasks disabled (no Redis)"
-    fi
-
-    if [[ $IS_WSL -eq 1 ]]; then
-        ui::info "WSL: Open in Windows browser at http://localhost:${frontend_port}"
-    fi
 
     ui::print "\n${BOLD}${GREEN}Launching services...${RESET}\n"
 
-    # Enhanced backend command with better error handling
-    local backend_cmd="cd '$REPO_ROOT/backend' && source '$ACTIVATE_SCRIPT' && PYTHONPATH='$REPO_ROOT/backend:$PYTHONPATH' python -m uvicorn main:app --reload --host 0.0.0.0 --port $backend_port --log-level info"
+    # WSL-compatible backend command
+    local backend_cmd="cd '$REPO_ROOT/backend' && bash -c 'source venv/bin/activate && PYTHONPATH=\"$REPO_ROOT/backend\" python run_server.py'"
     
     local services="\"npm run dev\""
     local names="Frontend"
     local colors="cyan"
 
-    services="$services \"$backend_cmd\""
-    names="$names,Backend"
-    colors="$colors,magenta"
-
     if [[ $WORKER_ENABLED -eq 1 ]]; then
-        local worker_cmd="cd '$REPO_ROOT/backend' && source '$ACTIVATE_SCRIPT' && python -m rq.cli worker profiles --url redis://localhost:6379/0"
+        local worker_cmd="cd '$REPO_ROOT/backend' && bash -c 'source venv/bin/activate && python -m rq.cli worker profiles --url redis://localhost:6379/0'"
         services="$services \"$worker_cmd\""
         names="$names,Worker"
         colors="$colors,yellow"
     fi
 
-    # Enhanced concurrently command with better error handling
-    eval "npx --yes concurrently \
+    # Use concurrently with explicit shell
+    eval "SHELL=/bin/bash npx --yes concurrently \
         --names '$names' \
         --prefix-colors '$colors' \
         --prefix '[{name}]' \

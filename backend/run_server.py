@@ -9,15 +9,15 @@ import sys
 import uvicorn
 from pathlib import Path
 
-# Add backend to Python path
-backend_dir = Path(__file__).parent
-project_root = backend_dir.parent
-sys.path.insert(0, str(project_root))
-
 def main():
     """Start the FastAPI server"""
+    # Add backend to Python path
+    backend_dir = Path(__file__).parent
+    sys.path.insert(0, str(backend_dir))
+    sys.path.insert(0, str(backend_dir.parent))
+    
     # Set environment variables
-    os.environ.setdefault("PYTHONPATH", str(project_root))
+    os.environ.setdefault("PYTHONPATH", str(backend_dir))
     
     # Configuration
     host = os.getenv("HOST", "0.0.0.0")
@@ -30,15 +30,27 @@ def main():
     print(f"🔧 Debug mode: {debug}")
     print(f"📂 Working directory: {os.getcwd()}")
     
-    # Start server - use module path notation
-    uvicorn.run(
-        "backend.main:app",
-        host=host,
-        port=port,
-        reload=debug,
-        reload_dirs=[str(backend_dir)] if debug else None,
-        log_level="info" if debug else "warning"
-    )
+    try:
+        # Import main app to check for errors
+        from main import app
+        print("✅ App imported successfully")
+        
+        # Start server
+        uvicorn.run(
+            "main:app",
+            host=host,
+            port=port,
+            reload=debug,
+            reload_dirs=[str(backend_dir)] if debug else None,
+            log_level="info" if debug else "warning"
+        )
+    except ImportError as e:
+        print(f"❌ Import error: {e}")
+        print("Please ensure your backend modules are properly structured")
+        sys.exit(1)
+    except Exception as e:
+        print(f"❌ Server error: {e}")
+        sys.exit(1)
 
 if __name__ == "__main__":
     main()

@@ -95,6 +95,11 @@ const Card = React.forwardRef<HTMLDivElement, CardProps>(({
 
 Card.displayName = 'Card';
 
+// Export Card as default and also named export
+export default Card;
+export { Card };
+
+// Also export the other card components
 export const CardHeader: React.FC<React.HTMLAttributes<HTMLDivElement>> = ({
   className,
   children,
@@ -144,5 +149,3 @@ export const CardFooter: React.FC<React.HTMLAttributes<HTMLDivElement>> = ({
     {children}
   </div>
 );
-
-export default Card;

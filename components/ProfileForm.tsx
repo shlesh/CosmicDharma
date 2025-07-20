@@ -18,6 +18,7 @@ export interface ProfileFormProps {
   loading?: boolean;
 }
 
+// Fix the InputField component with proper typing
 const InputField: React.FC<{
   label: string;
   name: string;
@@ -27,51 +28,49 @@ const InputField: React.FC<{
   placeholder?: string;
   icon: React.ReactNode;
   hint?: string;
-}> = ({ label, name, type = "text", value, onChange, placeholder, icon, hint }) => (
-  <motion.div
-    initial={{ opacity: 0, x: -20 }}
-    animate={{ opacity: 1, x: 0 }}
-    transition={{ duration: 0.3 }}
-    className="relative"
-  >
-    {(() => {
-      const id = `${name}-input`;
-      return (
-        <>
-          <label htmlFor={id} className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-            {label}
-          </label>
-          <div className="relative group">
-            <div className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-purple-600 transition-colors">
-              {icon}
-            </div>
-            <input
-              id={id}
-              name={name}
-              type={type}
-              value={value}
-              onChange={onChange}
-              placeholder={placeholder}
-              required
-              className="w-full pl-12 pr-4 py-4 rounded-xl border border-gray-300 dark:border-gray-700
-                   bg-white dark:bg-gray-900
-                   focus:border-purple-600 focus:ring-2 focus:ring-purple-600/20
-                   transition-all duration-200
-                   placeholder:text-gray-400"
-            />
-            {hint && (
-              <p className="absolute right-4 top-1/2 -translate-y-1/2 text-xs text-gray-500">
-                {hint}
-              </p>
-            )}
-          </div>
-        </>
-      );
-    })()}
-  </motion.div>
-);
+}> = ({ label, name, type = "text", value, onChange, placeholder, icon, hint }) => {
+  const id = `${name}-input`;
+  
+  return (
+    <motion.div
+      initial={{ opacity: 0, x: -20 }}
+      animate={{ opacity: 1, x: 0 }}
+      transition={{ duration: 0.3 }}
+      className="relative"
+    >
+      <label htmlFor={id} className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+        {label}
+      </label>
+      <div className="relative group">
+        <div className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-purple-600 transition-colors">
+          {icon}
+        </div>
+        <input
+          id={id}
+          name={name}
+          type={type}
+          value={value}
+          onChange={onChange}
+          placeholder={placeholder}
+          required
+          className="w-full pl-12 pr-4 py-4 rounded-xl border border-gray-300 dark:border-gray-700
+               bg-white dark:bg-gray-900
+               focus:border-purple-600 focus:ring-2 focus:ring-purple-600/20
+               transition-all duration-200
+               placeholder:text-gray-400"
+        />
+        {hint && (
+          <p className="absolute right-4 top-1/2 -translate-y-1/2 text-xs text-gray-500">
+            {hint}
+          </p>
+        )}
+      </div>
+    </motion.div>
+  );
+};
 
 export default function ProfileForm({ form, onChange, onSubmit, loading }: ProfileFormProps) {
+  
   const [currentStep, setCurrentStep] = useState(0);
 
   const steps = [

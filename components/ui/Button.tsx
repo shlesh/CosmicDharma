@@ -71,6 +71,8 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(({
     `
   };
 
+  Button.displayName = 'Button';
+
   const sizes = {
     sm: 'px-3 py-1.5 text-sm rounded-lg gap-1.5 min-h-[2rem]',
     md: 'px-4 py-2 text-base rounded-xl gap-2 min-h-[2.5rem] sm:px-5 sm:py-2.5',
