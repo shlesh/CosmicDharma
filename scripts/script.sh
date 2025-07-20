@@ -962,39 +962,50 @@ EOF
 
     ui::print "\n${BOLD}${GREEN}Launching services...${RESET}\n"
 
-    # WSL-compatible backend command
-    local backend_cmd="cd '$REPO_ROOT/backend' && bash -c 'source venv/bin/activate && PYTHONPATH=\"$REPO_ROOT/backend\" python run_server.py'"
-    
-    local services="\"npm run dev\""
-    local names="Frontend"
-    local colors="cyan"
+    # Start backend in background
+    ui::info "Starting backend server..."
+    cd "$REPO_ROOT/backend"
+    source venv/bin/activate
+    PYTHONPATH="$REPO_ROOT/backend" python -m uvicorn main:app --reload --host 0.0.0.0 --port $backend_port &
+    BACKEND_PID=$!
+    cd "$REPO_ROOT"
 
+    # Wait for backend to start
+    sleep 5
+
+    # Start frontend in background
+    ui::info "Starting frontend server..."
+    PORT=$frontend_port npm run dev:frontend &
+    FRONTEND_PID=$!
+
+    # Start worker if Redis is available
     if [[ $WORKER_ENABLED -eq 1 ]]; then
-        local worker_cmd="cd '$REPO_ROOT/backend' && bash -c 'source venv/bin/activate && python -m rq.cli worker profiles --url redis://localhost:6379/0'"
-        services="$services \"$worker_cmd\""
-        names="$names,Worker"
-        colors="$colors,yellow"
+        ui::info "Starting background worker..."
+        cd "$REPO_ROOT/backend"
+        source venv/bin/activate
+        python -m rq.cli worker profiles --url redis://localhost:6379/0 &
+        WORKER_PID=$!
+        cd "$REPO_ROOT"
     fi
 
-    # Use concurrently with explicit shell
-    eval "SHELL=/bin/bash npx --yes concurrently \
-        --names '$names' \
-        --prefix-colors '$colors' \
-        --prefix '[{name}]' \
-        --kill-others-on-fail \
-        --restart-tries 2 \
-        --restart-after 3000 \
-        $services" &
-
     # Wait and run health checks
-    sleep 15
+    sleep 10
     health::check_services || ui::warning "Some services may not be ready yet"
     
     ui::print "\n${GREEN}${BOLD}Services are running! Press Ctrl+C to stop.${RESET}\n"
+    ui::print "${CYAN}Frontend PID: $FRONTEND_PID${RESET}"
+    ui::print "${CYAN}Backend PID: $BACKEND_PID${RESET}"
+    [[ -n "$WORKER_PID" ]] && ui::print "${CYAN}Worker PID: $WORKER_PID${RESET}"
     
-    # Keep script running
+    # Store PIDs for cleanup
+    echo "$FRONTEND_PID" > "$REPO_ROOT/.frontend.pid"
+    echo "$BACKEND_PID" > "$REPO_ROOT/.backend.pid"
+    [[ -n "$WORKER_PID" ]] && echo "$WORKER_PID" > "$REPO_ROOT/.worker.pid"
+    
+    # Keep script running and wait for any process to exit
     wait
 }
+
 
 # ==========================================
 # MAIN EXECUTION
@@ -1171,7 +1182,31 @@ EOF
 # ==========================================
 
 cleanup() {
-    ui::print "\n${YELLOW}Shutting down...${RESET}"
+    ui::print "\n${YELLOW}Shutting down services...${RESET}"
+    
+    # Kill frontend
+    if [[ -f "$REPO_ROOT/.frontend.pid" ]]; then
+        local frontend_pid=$(cat "$REPO_ROOT/.frontend.pid")
+        kill $frontend_pid 2>/dev/null || true
+        rm -f "$REPO_ROOT/.frontend.pid"
+        ui::info "Frontend stopped"
+    fi
+    
+    # Kill backend
+    if [[ -f "$REPO_ROOT/.backend.pid" ]]; then
+        local backend_pid=$(cat "$REPO_ROOT/.backend.pid")
+        kill $backend_pid 2>/dev/null || true
+        rm -f "$REPO_ROOT/.backend.pid"
+        ui::info "Backend stopped"
+    fi
+    
+    # Kill worker
+    if [[ -f "$REPO_ROOT/.worker.pid" ]]; then
+        local worker_pid=$(cat "$REPO_ROOT/.worker.pid")
+        kill $worker_pid 2>/dev/null || true
+        rm -f "$REPO_ROOT/.worker.pid"
+        ui::info "Worker stopped"
+    fi
     
     # Kill child processes
     pkill -P $$ 2>/dev/null || true
@@ -1181,6 +1216,7 @@ cleanup() {
         local redis_pid=$(cat "$REDIS_PID_FILE")
         kill $redis_pid 2>/dev/null || true
         rm -f "$REDIS_PID_FILE"
+        ui::info "Redis stopped"
     fi
     
     local runtime=$(($(date +%s) - START_TIME))
@@ -1195,6 +1231,7 @@ cleanup() {
     
     ui::print "\n${CYAN}${BOLD}Thank you for using Cosmic Dharma!${RESET}\n"
 }
+
 
 trap cleanup EXIT INT TERM
 

@@ -33,17 +33,18 @@
   "scripts": {
     "start": "next start",
     "build": "next build",
-    "test": "vitest run",
+    "test": "vitest",
     "test:frontend": "vitest run",
     "test:backend": "cd backend && bash -c 'source venv/bin/activate && PYTHONPATH=. pytest -q'",
     "test:all": "npm run test:frontend && npm run test:backend",
-    "dev": "concurrently --kill-others-on-fail \"npm run dev:frontend\" \"npm run dev:backend\"",
-    "dev:frontend": "next dev",
-    "dev:backend": "cd backend && bash -c 'source venv/bin/activate && python run_server.py'",
+    "dev": "concurrently \"npm run dev:frontend\" \"npm run dev:backend\"",
+    "dev:frontend": "next dev -p ${PORT:-3000}",
+    "dev:backend": "cd backend && source venv/bin/activate && PYTHONPATH=. python -m uvicorn main:app --reload --host 0.0.0.0 --port ${BACKEND_PORT:-8000}",
     "backend": "cd backend && bash -c 'source venv/bin/activate && python run_server.py'",
     "worker": "cd backend && bash -c 'source venv/bin/activate && python -m rq.cli worker profiles --url redis://localhost:6379/0'",
     "setup": "./scripts/script.sh",
-    "quick": "./scripts/quick-run.sh"
+    "quick": "./scripts/quick-run.sh",
+    "lint": "next lint"
   },
   "eslintConfig": {
     "extends": [

@@ -17,23 +17,16 @@ from pydantic import BaseModel
 from sqlalchemy.orm import Session
 from datetime import datetime
 
-# Fixed imports - use absolute imports instead of relative
+# Import with fallback
 try:
-    from app.database import Base, engine, get_session
-    from app.models import User, Prompt, Report
-    from app.auth import get_current_user
-    from app.routes import auth_router, profile_router, blog_router, admin_router
-except ImportError:
-    # Fallback imports if app package structure doesn't exist
-    try:
-        from db import Base, engine, get_session
-        from models import User, Prompt, Report
-        from auth import get_current_user
-        from routes import auth_router, profile_router, blog_router, admin_router
-    except ImportError as e:
-        print(f"Import error: {e}")
-        print("Please ensure your backend modules are properly structured")
-        sys.exit(1)
+    from db import Base, engine, get_session
+    from models import User, Prompt, Report
+    from auth import get_current_user
+    from routes import auth_router, profile_router, blog_router, admin_router
+except ImportError as e:
+    print(f"Import error: {e}")
+    print("Please ensure your backend modules are properly structured")
+    sys.exit(1)
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -44,7 +37,7 @@ app = FastAPI(
     version="2.0",
 )
 
-# Update CORS configuration
+# CORS configuration
 frontend_url = os.getenv("FRONTEND_URL", "http://localhost:3000")
 app.add_middleware(
     CORSMiddleware,
@@ -63,6 +56,7 @@ app.add_middleware(
 # Create tables
 try:
     Base.metadata.create_all(bind=engine)
+    logger.info("Database tables created successfully")
 except Exception as e:
     logger.error(f"Database initialization error: {e}")
 
@@ -88,6 +82,7 @@ try:
     app.include_router(profile_router, prefix="/api")
     app.include_router(blog_router, prefix="/api")
     app.include_router(admin_router, prefix="/api")
+    logger.info("All routers loaded successfully")
 except Exception as e:
     logger.warning(f"Some routers could not be loaded: {e}")
 
@@ -119,7 +114,7 @@ async def health_check():
         "status": "healthy", 
         "version": "2.0", 
         "timestamp": datetime.utcnow().isoformat(),
-        "python_path": sys.path[:3]  # Debug info
+        "python_path": sys.path[:3]
     }
 
 @app.post("/api/prompts", response_model=PromptOut)
