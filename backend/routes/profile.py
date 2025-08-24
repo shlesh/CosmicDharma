@@ -1,11 +1,12 @@
 # backend/routes/profile.py - ENHANCED VERSION
+# at the very top of backend/routes/profile.py
 import logging
-from datetime import date, time
+from datetime import date, time as dt_time
 from typing import Optional, Dict, Any
+import time as pytime  # <-- use module as pytime
 
 from fastapi import APIRouter, BackgroundTasks, HTTPException, Query
-from pydantic import BaseModel, Field, field_validator
-from fastapi.responses import JSONResponse
+from pydantic import BaseModel, Field, field_validator, ConfigDict
 
 from ..services.astro import (
     ProfileRequest,
@@ -34,11 +35,14 @@ class JobStatusResponse(BaseModel):
     estimated_completion: Optional[str] = None
 
 class QuickProfileRequest(BaseModel):
-    date: date = Field(..., description="Birth date in YYYY-MM-DD format")
-    time: time = Field(..., description="Birth time in HH:MM format")
-    location: str = Field(..., min_length=2, description="Birth location")
+    # allow "date"/"time" keys from the client to populate these fields
+    model_config = ConfigDict(populate_by_name=True)
 
-    @field_validator('date')
+    birth_date: date   = Field(..., alias="date",  description="Birth date in YYYY-MM-DD")
+    birth_time: dt_time = Field(..., alias="time",  description="Birth time in HH:MM")
+    location: str      = Field(..., min_length=2,  description="Birth location")
+
+    @field_validator('birth_date')
     @classmethod
     def validate_date(cls, v: date):
         if v > date.today():
@@ -46,6 +50,7 @@ class QuickProfileRequest(BaseModel):
         if v.year < 1800:
             raise ValueError("Birth date must be after 1800")
         return v
+
 
 
 # Enhanced profile endpoint with better error handling
@@ -60,14 +65,14 @@ async def get_profile(request: ProfileRequest):
             raise HTTPException(status_code=400, detail="Location cannot be empty")
             
         # Log computation start
-        start_time = time.time() if 'time' in locals() else None
+        start_time = pytime.time()
         
         result = compute_vedic_profile(request)
         
         # Add metadata to response
         if isinstance(result, dict):
             result['metadata'] = {
-                'computation_time': f"{time.time() - start_time:.2f}s" if start_time else None,
+                'computation_time': f"{pytime.time() - start_time:.2f}s",
                 'request_timestamp': request.birth_date.isoformat(),
                 'api_version': '2.1.0'
             }
@@ -96,8 +101,8 @@ async def get_quick_profile(request: QuickProfileRequest):
     try:
         # Convert to full ProfileRequest
         full_request = ProfileRequest(
-            birth_date=request.date,
-            birth_time=request.time,
+            birth_date=request.birth_date,
+            birth_time=request.birth_time,
             location=request.location
         )
         
@@ -111,8 +116,8 @@ async def get_quick_profile(request: QuickProfileRequest):
             'nakshatra': result.get('nakshatra', {}),
             'current_dasha': result.get('vimshottariDasha', [{}])[0].get('lord') if result.get('vimshottariDasha') else None,
             'birth_info': {
-                'date': request.date.isoformat(),
-                'time': request.time.isoformat(),
+                'date': request.birth_date.isoformat(),
+                'time': request.birth_time.isoformat(),
                 'location': request.location
             }
         }
@@ -167,11 +172,13 @@ async def get_job_result(job_id: str):
     
     # Add progress estimation based on status
     progress_map = {
-        'queued': 0,
+        'queued': 0,    # client-facing synonym, not used internally
+        'pending': 0,   # actual initial status used by the runner
         'running': 50,
         'complete': 100,
         'error': 0
     }
+
     response.progress = progress_map.get(job['status'], 0)
     
     return response
@@ -272,8 +279,8 @@ async def process_batch_profiles(
     for profile in profiles:
         try:
             full_request = ProfileRequest(
-                birth_date=profile.date,
-                birth_time=profile.time,
+                birth_date=profile.birth_date,
+                birth_time=profile.birth_time,
                 location=profile.location
             )
             job_id = enqueue_profile_job(full_request, background_tasks)

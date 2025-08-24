@@ -1,14 +1,6 @@
-# backend/main.py - Fixed imports
+# backend/main.py
 import logging
 import os
-import sys
-from pathlib import Path
-
-# Add backend directory to Python path
-backend_dir = Path(__file__).parent
-sys.path.insert(0, str(backend_dir))
-sys.path.insert(0, str(backend_dir.parent))
-
 from fastapi import FastAPI, HTTPException, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.exceptions import RequestValidationError
@@ -17,19 +9,14 @@ from pydantic import BaseModel
 from sqlalchemy.orm import Session
 from datetime import datetime
 
-# Use absolute imports instead of relative
-try:
-    from db import Base, engine, get_session
-    from models import User, BlogPost, Prompt, Report, PasswordResetToken
-    from auth import get_current_user
-    from routes.auth import router as auth_router
-    from routes.profile import router as profile_router
-    from routes.blog import router as blog_router
-    from routes.admin import router as admin_router
-except ImportError as e:
-    print(f"Import error: {e}")
-    print("Backend modules not properly configured")
-    sys.exit(1)
+# ✅ use package-relative imports
+from .db import Base, engine, get_session
+from .models import User, BlogPost, Prompt, Report, PasswordResetToken
+from .auth import get_current_user
+from .routes.auth import router as auth_router
+from .routes.profile import router as profile_router
+from .routes.blog import router as blog_router
+from .routes.admin import router as admin_router
 
 
 logging.basicConfig(level=logging.INFO)

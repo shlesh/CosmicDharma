@@ -9,9 +9,10 @@ from datetime import date as dt_date, time as dt_time, datetime
 from fastapi import BackgroundTasks, HTTPException
 from pydantic import BaseModel, Field, ConfigDict, field_validator
 import swisseph as swe
-import redis
-from rq import Queue
-from rq.job import Job
+import time
+import uuid
+import threading
+import traceback
 
 from backend.config import load_config
 from backend.geocoder import geocode_location
@@ -34,17 +35,98 @@ from backend import panchanga
 from backend.utils.signs import get_sign_name
 
 CONFIG = load_config()
+# --- Simple in-process TTL cache (drop-in for redis we used before) ---
+class _TTLCache:
+    def __init__(self, default_ttl: int = 3600, maxsize: int = 2048):
+        self.default_ttl = int(default_ttl)
+        self.maxsize = int(maxsize)
+        self._data: dict[str, tuple[float | None, str]] = {}
+        self._lock = threading.Lock()
+
+    def get(self, key: str) -> str | None:
+        with self._lock:
+            item = self._data.get(key)
+            if not item:
+                return None
+            expires, value = item
+            if expires and expires < time.time():
+                self._data.pop(key, None)
+                return None
+            return value
+
+    def setex(self, key: str, ttl: int, value: str) -> None:
+        with self._lock:
+            # naive eviction: drop the oldest expired first
+            if len(self._data) >= self.maxsize:
+                now = time.time()
+                expired = [k for k, (exp, _) in self._data.items() if exp and exp < now]
+                for k in expired:
+                    self._data.pop(k, None)
+                if len(self._data) >= self.maxsize and self._data:
+                    # still full -> drop an arbitrary item
+                    self._data.pop(next(iter(self._data)))
+            self._data[key] = (time.time() + int(ttl) if ttl else None, value)
+
+    def scan_iter(self, prefix: str):
+        with self._lock:
+            now = time.time()
+            to_delete = [k for k, (exp, _) in self._data.items() if exp and exp < now]
+            for k in to_delete:
+                self._data.pop(k, None)
+            return [k for k in self._data.keys() if k.startswith(prefix)]
+
+    def delete(self, key: str) -> None:
+        with self._lock:
+            self._data.pop(key, None)
+
 logger = logging.getLogger(__name__)
 
-# Redis-backed cache for computed profiles
-CACHE_URL = CONFIG.get("cache_url", CONFIG.get("redis_url", "redis://localhost:6379/1"))
+# Cache config
 CACHE_TTL = int(CONFIG.get("cache_ttl", "3600"))
-_CACHE = redis.from_url(CACHE_URL)
+_CACHE = _TTLCache(default_ttl=CACHE_TTL, maxsize=2048)
 
-# Redis connection for background jobs
-REDIS_URL = CONFIG.get("redis_url", "redis://localhost:6379/0")
-_REDIS = redis.from_url(REDIS_URL)
-_JOB_QUEUE = Queue("profiles", connection=_REDIS)
+# --- In-process job runner (instead of Redis/RQ) ---
+_JOBS: dict[str, dict] = {}
+_JOBS_LOCK = threading.Lock()
+
+def _run_profile_job(payload: dict):
+    req = ProfileRequest.model_validate(payload)
+    return compute_vedic_profile(req)
+
+def enqueue_profile_job(request: ProfileRequest, background_tasks: BackgroundTasks) -> str:
+    job_id = uuid.uuid4().hex
+    with _JOBS_LOCK:
+        _JOBS[job_id] = {"status": "pending", "result": None, "error": None, "ts": time.time()}
+
+    def runner():
+        with _JOBS_LOCK:
+            _JOBS[job_id]["status"] = "running"
+        try:
+            result = compute_vedic_profile(request)
+            with _JOBS_LOCK:
+                _JOBS[job_id]["status"] = "complete"
+                _JOBS[job_id]["result"] = result
+        except Exception:
+            err = traceback.format_exc()
+            with _JOBS_LOCK:
+                _JOBS[job_id]["status"] = "error"
+                _JOBS[job_id]["error"] = err
+
+    background_tasks.add_task(runner)
+    return job_id
+
+def get_job(job_id: str) -> dict | None:
+    with _JOBS_LOCK:
+        data = _JOBS.get(job_id)
+        if not data:
+            return None
+        # keep legacy shape
+        return {"status": data["status"], "result": data["result"], "error": data["error"]}
+
+def clear_profile_cache():
+    for key in list(_CACHE.scan_iter("profile:")):
+        _CACHE.delete(key)
+
 
 
 def clear_profile_cache() -> None:
