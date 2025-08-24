@@ -317,10 +317,16 @@ def compute_panchanga(request: ProfileRequest) -> dict:
     return data
 
 
+def _run_profile_job(payload: dict):
+    # Reconstruct request and compute inside the worker
+    req = ProfileRequest.model_validate(payload)
+    return compute_vedic_profile(req)
+
+
 def enqueue_profile_job(request: ProfileRequest, background_tasks: BackgroundTasks) -> str:
-    """Enqueue profile computation and return a job ID."""
-    job = _JOB_QUEUE.enqueue(compute_vedic_profile, request)
+    job = _JOB_QUEUE.enqueue(_run_profile_job, request.model_dump(by_alias=True))
     return job.id
+
 
 
 def get_job(job_id: str) -> Optional[dict]:

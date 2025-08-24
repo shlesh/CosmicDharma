@@ -1,5 +1,4 @@
 from sqlalchemy import Column, Integer, String, Text, DateTime, ForeignKey, Boolean, func
-from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship
 from datetime import datetime
 
@@ -20,7 +19,6 @@ class User(Base):
         DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
     )
 
-    posts = relationship("BlogPost", back_populates="owner")
     prompts = relationship("Prompt", back_populates="user")
     reports = relationship("Report", back_populates="user")
 

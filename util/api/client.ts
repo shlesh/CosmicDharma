@@ -69,11 +69,12 @@ class ApiClient {
   }
 
   async logout() {
-    this.token = null;
-    if (typeof window !== 'undefined') {
-      localStorage.removeItem('token');
-    }
+  this.token = null;
+  if (typeof window !== 'undefined') {
+    localStorage.removeItem('token');
   }
+}
+
 
   setToken(token: string) {
     this.token = token;

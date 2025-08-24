@@ -4,7 +4,7 @@ from datetime import date, time
 from typing import Optional, Dict, Any
 
 from fastapi import APIRouter, BackgroundTasks, HTTPException, Query
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, Field, field_validator
 from fastapi.responses import JSONResponse
 
 from ..services.astro import (
@@ -34,18 +34,19 @@ class JobStatusResponse(BaseModel):
     estimated_completion: Optional[str] = None
 
 class QuickProfileRequest(BaseModel):
-    """Simplified request for quick calculations"""
     date: date = Field(..., description="Birth date in YYYY-MM-DD format")
-    time: time = Field(..., description="Birth time in HH:MM format")  
+    time: time = Field(..., description="Birth time in HH:MM format")
     location: str = Field(..., min_length=2, description="Birth location")
-    
-    @validator('date')
-    def validate_date(cls, v):
+
+    @field_validator('date')
+    @classmethod
+    def validate_date(cls, v: date):
         if v > date.today():
             raise ValueError("Birth date cannot be in the future")
         if v.year < 1800:
             raise ValueError("Birth date must be after 1800")
         return v
+
 
 # Enhanced profile endpoint with better error handling
 @router.post("/profile", response_model=ProfileResponse)

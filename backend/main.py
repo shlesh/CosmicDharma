@@ -119,6 +119,10 @@ async def health_check():
         "python_path": sys.path[:3]  # Debug info
     }
 
+@app.get("/health")
+async def health_check_alias():
+    return {"status": "healthy"}
+
 @app.post("/api/prompts", response_model=PromptOut)
 def create_prompt(
     prompt: PromptCreate,
