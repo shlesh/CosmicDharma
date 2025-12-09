@@ -10,44 +10,52 @@ import ThemeProvider from '../components/ThemeProvider';
 import { AnimatePresence, motion } from 'framer-motion';
 import { useRouter } from 'next/router';
 import { useEffect } from 'react';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      refetchOnWindowFocus: false,
+      staleTime: 30_000,
+      retry: 1,
+    },
+  },
+});
 
 export default function MyApp({ Component, pageProps }: AppProps) {
   const router = useRouter();
 
-  // Add padding to account for fixed header
   useEffect(() => {
-    document.body.style.paddingTop = '120px';
-    return () => {
-      document.body.style.paddingTop = '0';
-    };
-  }, []);
+    // Close any open toasts on route change, etc. (Optional)
+  }, [router.pathname]);
 
   return (
     <>
       <Head>
         <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <title>Cosmic Dharma</title>
       </Head>
       <ThemeProvider>
         <ToastProvider>
-          <div className="min-h-screen relative">
-            <StarryBackground />
-            <Header />
-          
-          <AnimatePresence mode="wait" initial={false}>
-            <motion.main
-              key={router.asPath}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -20 }}
-              transition={{ duration: 0.3 }}
-              className="relative z-10"
-            >
-              <Component {...pageProps} />
-            </motion.main>
-          </AnimatePresence>
-          
+          <StarryBackground />
+          <Header />
+
+          <QueryClientProvider client={queryClient}>
+            <AnimatePresence mode="wait" initial={false}>
+              <motion.main
+                key={router.route}
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -8 }}
+                transition={{ duration: 0.3 }}
+                className="relative z-10"
+              >
+                <Component {...pageProps} />
+              </motion.main>
+            </AnimatePresence>
+          </QueryClientProvider>
+
           <Footer />
-          </div>
         </ToastProvider>
       </ThemeProvider>
     </>

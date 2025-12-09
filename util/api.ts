@@ -1,104 +1,99 @@
-// util/api.ts
-const rawBase =
-  process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000';
-// Normalize: strip trailing slashes, then append /api once
-const API_BASE_URL = rawBase.replace(/\/+$/, '') + '/api';
+// util/api.ts (compat wrapper around util/http)
+import { get, post, del, http } from './http';
 
-export default function apiFetch(path: string, options: RequestInit = {}): Promise<Response> {
-  const cleanPath = path.startsWith('/') ? path : `/${path}`;
-  const url = `${API_BASE_URL}${cleanPath}`;
-  return fetch(url, {
-    ...options,
-    headers: {
-      'Content-Type': 'application/json',
-      ...options.headers,
-    },
-    mode: 'cors',
-  });
+export const fetchJson = async <T>(path: string, init?: RequestInit) => http<T>(path, init);
+
+// ---- Typed endpoints used across the app ----
+export type JobStatus = 'queued' | 'pending' | 'running' | 'complete' | 'error';
+
+export interface StartProfileJobRequest {
+  name?: string;
+  birthDate: string;   // UI value, e.g., "2000-06-23"
+  birthTime: string;   // UI value, e.g., "04:26"
+  location: string;
+  lat?: number;
+  lon?: number;
 }
 
-export async function fetchJson<T = unknown>(path: string, options: RequestInit = {}): Promise<T> {
-  try {
-    const res = await apiFetch(path, options);
-    const ct = res.headers.get('content-type');
-    let data: any = null;
-
-    if (ct && ct.includes('application/json')) {
-      try { data = await res.json(); } catch { throw new Error('Invalid JSON response from server'); }
-    } else {
-      const text = await res.text();
-      throw new Error(`Expected JSON response but got: ${text.substring(0, 100)}...`);
-    }
-
-    if (!res.ok) {
-      const msg = data?.detail || data?.message || `HTTP ${res.status}: ${res.statusText}`;
-      throw new Error(msg);
-    }
-    return data as T;
-  } catch (error) {
-    console.error('❌ API Error:', error);
-    throw error;
-  }
-}
-
-// --- Blog helpers (unchanged) ---
-export const blogApi = {
-  getPosts: async (params: {
-    skip?: number; limit?: number; search?: string; tags?: string;
-    published_only?: boolean; featured_only?: boolean;
-  } = {}) => {
-    const qs = new URLSearchParams();
-    Object.entries(params).forEach(([k, v]) => v !== undefined && qs.append(k, String(v)));
-    const res = await fetch(`${API_BASE_URL}/posts?${qs}`);
-    if (!res.ok) throw new Error('Failed to fetch posts');
-    return res.json();
-  },
-  getPostBySlug: async (slug: string) => {
-    const res = await fetch(`${API_BASE_URL}/posts/${slug}`);
-    if (!res.ok) throw new Error('Failed to fetch post');
-    return res.json();
-  },
-  createPost: async (postData: Partial<{
-    title: string; content: string; excerpt: string; published: boolean; featured: boolean; tags: string;
-  }>) => {
-    const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
-    const res = await fetch(`${API_BASE_URL}/posts`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
-      body: JSON.stringify(postData),
-    });
-    if (!res.ok) throw new Error('Failed to create post');
-    return res.json();
-  },
-  updatePost: async (id: number, postData: Partial<{
-    title: string; content: string; excerpt: string; published: boolean; featured: boolean; tags: string;
-  }>) => {
-    const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
-    const res = await fetch(`${API_BASE_URL}/posts/${id}`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
-      body: JSON.stringify(postData),
-    });
-    if (!res.ok) throw new Error('Failed to update post');
-    return res.json();
-  },
-  deletePost: async (id: number) => {
-    const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
-    const res = await fetch(`${API_BASE_URL}/posts/${id}`, {
-      method: 'DELETE',
-      headers: { ...(token ? { Authorization: `Bearer ${token}` } : {}) },
-    });
-    if (!res.ok) throw new Error('Failed to delete post');
-    return true;
-  },
-  getFeaturedPosts: async (limit = 5) => {
-    const res = await fetch(`${API_BASE_URL}/featured?limit=${limit}`);
-    if (!res.ok) throw new Error('Failed to fetch featured posts');
-    return res.json();
-  },
-  getTags: async () => {
-    const res = await fetch(`${API_BASE_URL}/tags`);
-    if (!res.ok) throw new Error('Failed to fetch tags');
-    return res.json();
-  },
+type BackendProfilePayload = {
+  name?: string;
+  date: string;
+  time: string;
+  location: string;
+  lat?: number;
+  lon?: number;
 };
+
+export interface StartProfileJobResponse { job_id: string; status?: JobStatus; message?: string; }
+
+export interface ProfileResult {
+  birthInfo: Record<string, any>;
+  analysis?: Record<string, any>;
+  coreElements?: Record<string, any>;
+  planetaryPositions?: any[];
+  houses?: Record<string, any>;
+  vimshottariDasha?: any[];
+  nakshatra?: Record<string, any>;
+  divisionalCharts?: Record<string, any>;
+  yogas?: Record<string, any>;
+  shadbala?: Record<string, any>;
+  bhavaBala?: Record<string, any>;
+}
+
+export interface JobStatusResponse {
+  job_id: string;
+  status: JobStatus;
+  progress?: number;
+  result?: ProfileResult;
+  error?: string;
+}
+
+export interface PanchangaRequest { date: string; time: string; location: string; }
+export interface PanchangaResponse {
+  vaara?: string;
+  tithi?: { name: string };
+  nakshatra?: { nakshatra: string };
+  yoga?: { name: string };
+  karana?: { name: string };
+}
+
+export const profileApi = {
+  startJob: (body: StartProfileJobRequest) =>
+    post<StartProfileJobResponse>('/profile/job', {
+      name: body.name,
+      date: body.birthDate,     // <-- mapped
+      time: body.birthTime,     // <-- mapped
+      location: body.location,
+      lat: body.lat,
+      lon: body.lon,
+    } as BackendProfilePayload),
+
+  jobStatus: (jobId: string) => get<JobStatusResponse>(`/jobs/${jobId}`),
+};
+
+export const panchangaApi = {
+  compute: (body: PanchangaRequest) => post<PanchangaResponse>('/panchanga', body),
+};
+
+// blog endpoints kept for compatibility if you use them elsewhere
+export const blogApi = {
+// Public
+  getPosts: (qs: string = '') => get<BlogPostMeta[]>(`/posts${qs ? `?${qs}` : ''}`),
+  getPostBySlug: (slug: string) => get<BlogPost>(`/posts/${slug}`),
+  getFeaturedPosts: (limit = 5) => get<BlogPostMeta[]>(`/featured?limit=${limit}`),
+  getTags: () => get<BlogTag[]>(`/tags`),
+  // Admin
+  createPost: (data: PostInput) => post<BlogPostMeta>('/posts', data),
+  updatePost: (id: number, data: PostInput) => http<BlogPostMeta>(`/posts/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+  deletePost: (id: number) => del<boolean>(`/posts/${id}`),
+  publishPost: (id: number) => post<BlogPostMeta>(`/posts/${id}/publish`, {}),
+  unpublishPost: (id: number) => post<BlogPostMeta>(`/posts/${id}/unpublish`, {}),
+};
+
+// util/api.ts (additions)
+export interface BlogTag { id: number; name: string; slug: string }
+export interface BlogPostMeta { id: number; slug: string; title: string; summary?: string; published: boolean; tags?: BlogTag[]; created_at?: string; updated_at?: string }
+export interface BlogPost extends BlogPostMeta { content: string }
+export interface PostInput { title: string; slug?: string; summary?: string; content: string; tag_ids?: number[]; published?: boolean }
+
+

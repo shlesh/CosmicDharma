@@ -10,8 +10,10 @@ from fastapi import BackgroundTasks, HTTPException
 from pydantic import BaseModel, Field, ConfigDict, field_validator
 import swisseph as swe
 import time
-import uuid
 import threading
+from threading import Lock, Thread
+from typing import Dict, Any
+import uuid
 import traceback
 
 from backend.config import load_config
@@ -355,6 +357,46 @@ def compute_vedic_profile(request: ProfileRequest) -> dict:
         _CACHE.setex(cache_key, CACHE_TTL, json.dumps(result))
     return result
 
+_JOB_QUEUE: Dict[str, Dict[str, Any]] = {}
+_JOB_LOCK = Lock()
+
+def _job_set(job_id: str, **fields):
+    with _JOB_LOCK:
+        _JOB_QUEUE[job_id].update(fields)
+
+def enqueue_profile_job(req: "ProfileRequest") -> str:
+    """Create a job, start a worker thread, and return job_id."""
+    job_id = str(uuid.uuid4())
+    with _JOB_LOCK:
+        _JOB_QUEUE[job_id] = {
+            "job_id": job_id,
+            "status": "queued",     # queued | running | complete | error
+            "progress": 0,
+            "result": None,
+            "error": None,
+        }
+
+    def _worker():
+        try:
+            _job_set(job_id, status="running", progress=5)
+            # Run your computation (keep req as-is; your API layer already maps birthDate→date, etc.)
+            result = compute_vedic_profile(req)
+            # If it's a Pydantic model, make it JSON-serializable:
+            if hasattr(result, "model_dump"):
+                result = result.model_dump()
+            _job_set(job_id, status="complete", progress=100, result=result)
+        except Exception as e:
+            _job_set(job_id, status="error", error=str(e))
+
+    Thread(target=_worker, daemon=True).start()
+    return job_id
+
+def get_job(job_id: str) -> Dict[str, Any]:
+    with _JOB_LOCK:
+        job = _JOB_QUEUE.get(job_id)
+    if not job:
+        return {"job_id": job_id, "status": "error", "error": "Job not found"}
+    return job
 
 def compute_panchanga(request: ProfileRequest) -> dict:
     """Compute daily panchanga for the given request."""

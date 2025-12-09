@@ -1,57 +1,38 @@
 import { useState } from 'react';
-import { fetchJson } from '../util/api';
-
-interface PanchangaData {
-  tithi?: { name: string };
-  nakshatra?: { nakshatra: string };
-  yoga?: { name: string };
-  karana?: { name: string };
-  vaara?: string;
-}
+import { panchangaApi, PanchangaResponse } from '@/util/api';
 
 export default function PanchangaPage() {
   const [date, setDate] = useState('');
   const [time, setTime] = useState('');
   const [location, setLocation] = useState('');
-  const [data, setData] = useState<PanchangaData | null>(null);
-  const [error, setError] = useState('');
+  const [data, setData] = useState<PanchangaResponse | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError('');
+    setError(null); setLoading(true); setData(null);
     try {
-      const res = await fetchJson<{ panchanga: PanchangaData }>('/panchanga', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ date, time, location })
-      });
-      setData(res.panchanga);
+      const res = await panchangaApi.compute({ date, time, location });
+      setData(res);
     } catch (err: any) {
-      setError(err.message);
-    }
+      setError(err.message || 'Failed to fetch Panchanga');
+    } finally { setLoading(false); }
   };
 
   return (
-    <main className="page-wrapper">
-      <h1>Daily Panchanga</h1>
-      <form onSubmit={handleSubmit} className="space-y-4 mb-4">
-        <label>
-          Date:
-          <input type="date" value={date} onChange={e => setDate(e.target.value)} required className="glass-input" />
-        </label>
-        <label>
-          Time:
-          <input type="time" value={time} onChange={e => setTime(e.target.value)} required className="glass-input" />
-        </label>
-        <label>
-          Location:
-          <input value={location} onChange={e => setLocation(e.target.value)} required className="glass-input" />
-        </label>
-        <button type="submit" className="glass-button">Fetch</button>
+    <main className="container mx-auto px-4 py-8">
+      <h1 className="text-3xl font-bold mb-6">Daily Panchanga</h1>
+      <form className="grid gap-3 max-w-xl" onSubmit={onSubmit}>
+        <input className="border rounded p-2" placeholder="YYYY-MM-DD" value={date} onChange={e=>setDate(e.target.value)} />
+        <input className="border rounded p-2" placeholder="HH:MM" value={time} onChange={e=>setTime(e.target.value)} />
+        <input className="border rounded p-2" placeholder="City, Country" value={location} onChange={e=>setLocation(e.target.value)} />
+        <button className="bg-indigo-600 text-white rounded px-4 py-2" disabled={loading}>{loading? 'Loading…':'Get Panchanga'}</button>
       </form>
-      {error && <p className="text-red-500">{error}</p>}
+
+      {error && <p className="text-red-600 mt-4">{error}</p>}
       {data && (
-        <section className="space-y-1">
+        <section className="space-y-1 mt-6">
           <p><strong>Vaara:</strong> {data.vaara}</p>
           <p><strong>Tithi:</strong> {data.tithi?.name}</p>
           <p><strong>Nakshatra:</strong> {data.nakshatra?.nakshatra}</p>
