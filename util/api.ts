@@ -91,7 +91,7 @@ export const blogApi = {
   getPosts: (qs: string = '') => get<BlogPostMeta[]>(`/posts${qs ? `?${qs}` : ''}`),
   getPostBySlug: (slug: string) => get<BlogPost>(`/posts/${slug}`),
   getFeaturedPosts: (limit = 5) => get<BlogPostMeta[]>(`/featured?limit=${limit}`),
-  getTags: () => get<BlogTag[]>(`/tags`),
+  getTags: () => get<{ tags: string[] }>(`/tags`),
   // Admin
   createPost: (data: PostInput) => post<BlogPostMeta>('/posts', data),
   updatePost: (id: number, data: PostInput) => http<BlogPostMeta>(`/posts/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
@@ -101,9 +101,9 @@ export const blogApi = {
 };
 
 // util/api.ts (additions)
-export interface BlogTag { id: number; name: string; slug: string }
-export interface BlogPostMeta { id: number; slug: string; title: string; summary?: string; published: boolean; tags?: BlogTag[]; created_at?: string; updated_at?: string }
+export type BlogTag = string;
+export interface BlogPostMeta { id: number; slug: string; title: string; summary?: string; published: boolean; tags?: string | null; created_at?: string; updated_at?: string; owner: string }
 export interface BlogPost extends BlogPostMeta { content: string }
-export interface PostInput { title: string; slug?: string; summary?: string; content: string; tag_ids?: number[]; published?: boolean }
+export interface PostInput { title: string; slug?: string; summary?: string; content: string; tag_ids?: number[]; published?: boolean; tags?: string }
 
 

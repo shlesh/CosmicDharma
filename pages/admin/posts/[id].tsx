@@ -1,14 +1,13 @@
 import { useRouter } from 'next/router';
 import { useEffect, useState } from 'react';
 import { blogApi, PostInput, BlogPost } from '../../../util/api';
-import { useUpdatePost, useTags } from '@/hooks/useBlog';
+import { useUpdatePost } from '@/hooks/useBlog';
 import AdminPostForm from '../../../components/admin/AdminPostForm';
 
 export default function EditPostPage() {
     const router = useRouter();
     const id = Number(router.query.id);
     const [post, setPost] = useState<BlogPost | null>(null);
-    const { data: tags } = useTags();
     const update = useUpdatePost(id);
 
     useEffect(() => {
@@ -22,8 +21,7 @@ export default function EditPostPage() {
         <main className="container mx-auto p-6">
             <h1 className="text-2xl font-bold mb-4">Edit Post</h1>
             <AdminPostForm
-                initial={{ title: post.title, slug: post.slug, summary: post.summary || '', content: post.content, tag_ids: post.tags?.map(t => t.id) || [], published: post.published }}
-                tags={tags || []}
+                initial={{ title: post.title, slug: post.slug, summary: post.summary || '', content: post.content, tags: post.tags || '', published: post.published }}
                 submitting={update.isPending}
                 onSubmit={(values: PostInput) => update.mutate(values)}
             />
