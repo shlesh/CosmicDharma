@@ -1,4 +1,4 @@
-from backend.aspects import calculate_vedic_aspects, calculate_sign_aspects
+from backend.app.astrology.aspects import calculate_vedic_aspects, calculate_sign_aspects
 
 
 def test_calculate_vedic_aspects_simple():

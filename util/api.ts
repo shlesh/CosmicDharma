@@ -2,6 +2,7 @@
 import { get, post, del, http } from './http';
 
 export const fetchJson = async <T>(path: string, init?: RequestInit) => http<T>(path, init);
+export const apiFetch = http;
 
 // ---- Typed endpoints used across the app ----
 export type JobStatus = 'queued' | 'pending' | 'running' | 'complete' | 'error';
@@ -26,8 +27,17 @@ type BackendProfilePayload = {
 
 export interface StartProfileJobResponse { job_id: string; status?: JobStatus; message?: string; }
 
+export interface BirthInfo {
+  date?: string;
+  time?: string;
+  location?: string;
+  latitude: number;
+  longitude: number;
+  timezone: string;
+}
+
 export interface ProfileResult {
-  birthInfo: Record<string, any>;
+  birthInfo: BirthInfo;
   analysis?: Record<string, any>;
   coreElements?: Record<string, any>;
   planetaryPositions?: any[];
@@ -77,7 +87,7 @@ export const panchangaApi = {
 
 // blog endpoints kept for compatibility if you use them elsewhere
 export const blogApi = {
-// Public
+  // Public
   getPosts: (qs: string = '') => get<BlogPostMeta[]>(`/posts${qs ? `?${qs}` : ''}`),
   getPostBySlug: (slug: string) => get<BlogPost>(`/posts/${slug}`),
   getFeaturedPosts: (limit = 5) => get<BlogPostMeta[]>(`/featured?limit=${limit}`),

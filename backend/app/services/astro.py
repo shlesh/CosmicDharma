@@ -16,25 +16,25 @@ from typing import Dict, Any
 import uuid
 import traceback
 
-from backend.config import load_config
-from backend.geocoder import geocode_location
-from backend.birth_info import get_birth_info
-from backend.planets import calculate_planets
-from backend.dasha import calculate_vimshottari_dasha
-from backend.nakshatra import get_nakshatra
-from backend.house_analysis import analyze_houses
-from backend.core_elements import calculate_core_elements
-from backend.divisional_charts import (
+from ..core.config import load_config
+from ..core.geocoder import geocode_location
+from ..astrology.birth_info import get_birth_info
+from ..astrology.planets import calculate_planets
+from ..astrology.dasha import calculate_vimshottari_dasha
+from ..astrology.nakshatra import get_nakshatra
+from ..astrology.house_analysis import analyze_houses
+from ..astrology.core_elements import calculate_core_elements
+from ..astrology.divisional_charts import (
     get_vargottama_planets,
     calculate_divisional_charts,
 )
-from backend.aspects import calculate_vedic_aspects, calculate_sign_aspects
-from backend.yogas import calculate_all_yogas
-from backend.shadbala import calculate_shadbala, calculate_bhava_bala
-from backend.ashtakavarga import calculate_ashtakavarga
-from backend.analysis import full_analysis
-from backend import panchanga
-from backend.utils.signs import get_sign_name
+from ..astrology.aspects import calculate_vedic_aspects, calculate_sign_aspects
+from ..astrology.yogas import calculate_all_yogas
+from ..astrology.shadbala import calculate_shadbala, calculate_bhava_bala
+from ..astrology.ashtakavarga import calculate_ashtakavarga
+from ..astrology.analysis import full_analysis
+from ..astrology import panchanga
+from ..utils.signs import get_sign_name
 
 CONFIG = load_config()
 # --- Simple in-process TTL cache (drop-in for redis we used before) ---

@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import { useRouter } from 'next/router';
 import Link from 'next/link';
-import apiFetch from '../util/api';
-import { useToast } from '../components/ToastProvider';
+import { apiFetch } from '../util/api';
+import { useToast } from '../components/ui/ToastProvider';
 import Card from '../components/ui/Card';
 import Button from '../components/ui/Button';
 import { motion } from 'framer-motion';
@@ -18,38 +18,38 @@ interface RegisterForm {
 export default function RegisterPage() {
   const router = useRouter();
   const toast = useToast();
-  const [form, setForm] = useState<RegisterForm>({ 
-    username: '', 
-    email: '', 
-    password: '', 
+  const [form, setForm] = useState<RegisterForm>({
+    username: '',
+    email: '',
+    password: '',
     confirmPassword: '',
-    is_donor: false 
+    is_donor: false
   });
   const [loading, setLoading] = useState(false);
-  
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value, type, checked } = e.target;
-    setForm({ 
-      ...form, 
-      [name]: type === 'checkbox' ? checked : value 
+    setForm({
+      ...form,
+      [name]: type === 'checkbox' ? checked : value
     });
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (form.password !== form.confirmPassword) {
       toast('Passwords do not match');
       return;
     }
-    
+
     if (form.password.length < 6) {
       toast('Password must be at least 6 characters');
       return;
     }
-    
+
     setLoading(true);
-    
+
     try {
       const res = await apiFetch('/register', {
         method: 'POST',
@@ -61,7 +61,7 @@ export default function RegisterPage() {
           is_donor: form.is_donor
         })
       });
-      
+
       if (res.ok) {
         const data = await res.json();
         localStorage.setItem('token', data.access_token);
@@ -87,7 +87,7 @@ export default function RegisterPage() {
       >
         <Card variant="cosmic" className="p-8">
           <h2 className="text-3xl font-bold text-center mb-6">Create Account</h2>
-          
+
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
               <label htmlFor="username" className="block text-sm font-medium mb-2">
@@ -107,7 +107,7 @@ export default function RegisterPage() {
                          focus:border-purple-600 focus:ring-2 focus:ring-purple-600/20"
               />
             </div>
-            
+
             <div>
               <label htmlFor="email" className="block text-sm font-medium mb-2">
                 Email
@@ -126,7 +126,7 @@ export default function RegisterPage() {
                          focus:border-purple-600 focus:ring-2 focus:ring-purple-600/20"
               />
             </div>
-            
+
             <div>
               <label htmlFor="password" className="block text-sm font-medium mb-2">
                 Password
@@ -145,7 +145,7 @@ export default function RegisterPage() {
                          focus:border-purple-600 focus:ring-2 focus:ring-purple-600/20"
               />
             </div>
-            
+
             <div>
               <label htmlFor="confirmPassword" className="block text-sm font-medium mb-2">
                 Confirm Password
@@ -164,7 +164,7 @@ export default function RegisterPage() {
                          focus:border-purple-600 focus:ring-2 focus:ring-purple-600/20"
               />
             </div>
-            
+
             <div className="flex items-center">
               <input
                 id="is_donor"
@@ -180,7 +180,7 @@ export default function RegisterPage() {
                 I want to support as a donor (access to premium features)
               </label>
             </div>
-            
+
             <Button
               type="submit"
               variant="cosmic"
@@ -192,7 +192,7 @@ export default function RegisterPage() {
               {loading ? 'Creating account...' : 'Create Account'}
             </Button>
           </form>
-          
+
           <div className="mt-6 text-center">
             <p className="text-gray-600 dark:text-gray-400">
               Already have an account?{' '}

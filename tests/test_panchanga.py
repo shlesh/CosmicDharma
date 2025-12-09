@@ -6,9 +6,9 @@ import pytest
 from fastapi import HTTPException
 
 from backend import main
-from backend.routes import profile
-from backend.services import astro
-from backend import panchanga
+from backend.app.routes import profile
+from backend.app.services import astro
+from backend.app.astrology import panchanga
 
 client = TestClient(main.app)
 

@@ -1,4 +1,6 @@
-from backend import main, models, auth
+from backend import main
+from backend.app import models
+from backend.app.core import auth
 from datetime import datetime, timedelta
 
 def test_request_reset_stores_token_and_sends_email(test_app, monkeypatch):

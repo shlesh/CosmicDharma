@@ -1,4 +1,4 @@
-from backend.analysis import (
+from backend.app.astrology.analysis import (
     interpret_nakshatra,
     interpret_houses,
     interpret_core_elements,
@@ -63,7 +63,7 @@ def test_full_analysis_cache():
     houses = {}
     core = {}
     dcharts = {}
-    from backend import analysis
+    from backend.app.astrology import analysis
     analysis._CACHE.clear()
     first = full_analysis(planets, dashas, nak, houses, core, dcharts, jd=123)
     second = full_analysis(planets, dashas, nak, houses, core, dcharts, jd=123)

@@ -1,7 +1,7 @@
 import pytest
 from types import SimpleNamespace
 
-from backend import geocoder
+from backend.app.core import geocoder
 
 
 def test_geocode_exact(monkeypatch):

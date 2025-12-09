@@ -1,13 +1,13 @@
 // components/DashboardPage.tsx
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Card } from './ui/Card';
-import { Button } from './ui/Button';
-import { BasicInfo } from './BasicInfo';
-import { PlanetTable } from './PlanetTable';
-import { HouseAnalysis } from './HouseAnalysis';
-import { DashaChart } from './DashaChart';
-import { CoreElements } from './CoreElements';
+import { Card } from '../ui/Card';
+import { Button } from '../ui/Button';
+import { BasicInfo } from '../astrology/BasicInfo';
+import { PlanetTable } from '../astrology/PlanetTable';
+import { HouseAnalysis } from '../astrology/HouseAnalysis';
+import { DashaChart } from '../astrology/DashaChart';
+import { CoreElements } from '../astrology/CoreElements';
 
 interface DashboardPageProps {
   profileData: any;
@@ -53,11 +53,11 @@ export function DashboardPage({ profileData, onNewChart }: DashboardPageProps) {
       generated_at: new Date().toISOString(),
       generated_by: 'Cosmic Dharma',
     };
-    
+
     const blob = new Blob([JSON.stringify(data, null, 2)], {
       type: 'application/json',
     });
-    
+
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
@@ -78,17 +78,17 @@ export function DashboardPage({ profileData, onNewChart }: DashboardPageProps) {
               animate={{ opacity: 1, x: 0 }}
               transition={{ delay: 0.1 }}
             >
-              <BasicInfo data={profileData} />
+              <BasicInfo birth={profileData.birthInfo} />
             </motion.div>
-            
+
             <motion.div
               initial={{ opacity: 0, x: 20 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ delay: 0.2 }}
             >
-              <CoreElements data={profileData.coreElements} />
+              <CoreElements elements={profileData.coreElements} />
             </motion.div>
-            
+
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
@@ -104,14 +104,14 @@ export function DashboardPage({ profileData, onNewChart }: DashboardPageProps) {
                       {profileData.birthInfo?.ascendant_sign || 'N/A'}
                     </div>
                   </div>
-                  
+
                   <div className="bg-gradient-to-br from-blue-50 to-blue-100 p-4 rounded-lg">
                     <div className="text-blue-600 font-semibold mb-1">Moon Sign</div>
                     <div className="text-lg font-bold text-gray-800">
                       {profileData.planetaryPositions?.find(p => p.name === 'Moon')?.sign || 'N/A'}
                     </div>
                   </div>
-                  
+
                   <div className="bg-gradient-to-br from-purple-50 to-purple-100 p-4 rounded-lg">
                     <div className="text-purple-600 font-semibold mb-1">Current Dasha</div>
                     <div className="text-lg font-bold text-gray-800">
@@ -123,7 +123,7 @@ export function DashboardPage({ profileData, onNewChart }: DashboardPageProps) {
             </motion.div>
           </div>
         );
-        
+
       case 'planets':
         return (
           <motion.div
@@ -133,7 +133,7 @@ export function DashboardPage({ profileData, onNewChart }: DashboardPageProps) {
             <PlanetTable planets={profileData.planetaryPositions} />
           </motion.div>
         );
-        
+
       case 'houses':
         return (
           <motion.div
@@ -143,7 +143,7 @@ export function DashboardPage({ profileData, onNewChart }: DashboardPageProps) {
             <HouseAnalysis houses={profileData.houses} />
           </motion.div>
         );
-        
+
       case 'dasha':
         return (
           <motion.div
@@ -153,7 +153,7 @@ export function DashboardPage({ profileData, onNewChart }: DashboardPageProps) {
             <DashaChart dasha={profileData.vimshottariDasha} />
           </motion.div>
         );
-        
+
       case 'charts':
         return (
           <motion.div
@@ -175,7 +175,7 @@ export function DashboardPage({ profileData, onNewChart }: DashboardPageProps) {
             </Card>
           </motion.div>
         );
-        
+
       case 'yogas':
         return (
           <motion.div
@@ -204,7 +204,7 @@ export function DashboardPage({ profileData, onNewChart }: DashboardPageProps) {
             </Card>
           </motion.div>
         );
-        
+
       case 'predictions':
         return (
           <motion.div
@@ -219,13 +219,13 @@ export function DashboardPage({ profileData, onNewChart }: DashboardPageProps) {
                   <div>
                     <h4 className="text-yellow-800 font-medium">Disclaimer</h4>
                     <p className="text-yellow-700 text-sm mt-1">
-                      These are general interpretations based on traditional Vedic astrology. 
+                      These are general interpretations based on traditional Vedic astrology.
                       For personalized guidance, consult a qualified astrologer.
                     </p>
                   </div>
                 </div>
               </div>
-              
+
               <div className="space-y-6">
                 {profileData.analysis && Object.entries(profileData.analysis).map(([section, content]) => (
                   <div key={section} className="border border-gray-200 rounded-lg p-4">
@@ -248,7 +248,7 @@ export function DashboardPage({ profileData, onNewChart }: DashboardPageProps) {
             </Card>
           </motion.div>
         );
-        
+
       default:
         return null;
     }
@@ -269,28 +269,28 @@ export function DashboardPage({ profileData, onNewChart }: DashboardPageProps) {
                 Your Vedic Birth Chart
               </h1>
               <p className="text-gray-600">
-                {profileData.birthInfo?.date} at {profileData.birthInfo?.time} 
+                {profileData.birthInfo?.date} at {profileData.birthInfo?.time}
                 {profileData.birthInfo?.location && ` in ${profileData.birthInfo.location}`}
               </p>
             </div>
-            
+
             <div className="flex gap-3 mt-4 lg:mt-0">
               <Button
                 onClick={handleShare}
-                variant="outline"
+                variant="secondary"
                 className="flex items-center gap-2"
               >
                 📤 Share
               </Button>
-              
+
               <Button
                 onClick={handleDownload}
-                variant="outline"
+                variant="secondary"
                 className="flex items-center gap-2"
               >
                 💾 Download
               </Button>
-              
+
               <Button
                 onClick={onNewChart}
                 className="bg-gradient-to-r from-orange-500 to-pink-500 hover:from-orange-600 hover:to-pink-600 text-white flex items-center gap-2"
@@ -314,11 +314,10 @@ export function DashboardPage({ profileData, onNewChart }: DashboardPageProps) {
                 <button
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id)}
-                  className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all whitespace-nowrap ${
-                    activeTab === tab.id
-                      ? 'bg-gradient-to-r from-orange-500 to-pink-500 text-white shadow-md'
-                      : 'text-gray-600 hover:bg-gray-50 hover:text-gray-800'
-                  }`}
+                  className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all whitespace-nowrap ${activeTab === tab.id
+                    ? 'bg-gradient-to-r from-orange-500 to-pink-500 text-white shadow-md'
+                    : 'text-gray-600 hover:bg-gray-50 hover:text-gray-800'
+                    }`}
                 >
                   <span>{tab.icon}</span>
                   {tab.label}

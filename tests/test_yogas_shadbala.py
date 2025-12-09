@@ -1,9 +1,9 @@
 from datetime import time
 import math
-from backend.yogas import calculate_all_yogas
-from backend.shadbala import calculate_shadbala
-from backend.divisional_charts import calculate_all_vargas
-from backend.utils.signs import get_sign_lord
+from backend.app.astrology.yogas import calculate_all_yogas
+from backend.app.astrology.shadbala import calculate_shadbala
+from backend.app.astrology.divisional_charts import calculate_all_vargas
+from backend.app.utils.signs import get_sign_lord
 
 
 def test_calculate_all_yogas_empty():

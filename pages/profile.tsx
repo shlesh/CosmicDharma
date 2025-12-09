@@ -1,15 +1,15 @@
 import { useState } from 'react';
 import { useProfileJob } from '@/hooks/useProfileJob';
 import { profileApi, ProfileResult, StartProfileJobRequest } from '@/util/api';
-import ProfileForm from '@/components/ProfileForm';
-import ProfileSkeleton from '@/components/ProfileSkeleton';
-import BasicInfo from '@/components/BasicInfo';
-import ProfileSummary from '@/components/ProfileSummary';
-import CoreElements from '@/components/CoreElements';
-import PlanetTable from '@/components/PlanetTable';
-import HouseAnalysis from '@/components/HouseAnalysis';
-import DashaTable from '@/components/DashaTable';
-import DashaChart from '@/components/DashaChart';
+import ProfileForm from '@/components/astrology/ProfileForm';
+import ProfileSkeleton from '@/components/ui/ProfileSkeleton';
+import BasicInfo from '@/components/astrology/BasicInfo';
+import ProfileSummary from '@/components/astrology/ProfileSummary';
+import CoreElements from '@/components/astrology/CoreElements';
+import PlanetTable from '@/components/astrology/PlanetTable';
+import HouseAnalysis from '@/components/astrology/HouseAnalysis';
+import DashaTable from '@/components/astrology/DashaTable';
+import DashaChart from '@/components/astrology/DashaChart';
 import { motion } from 'framer-motion';
 
 export default function ProfilePage() {
@@ -72,11 +72,11 @@ export default function ProfilePage() {
           transition={{ duration: 0.4 }}
           className="space-y-8 mt-8"
         >
-          <BasicInfo data={job!.result!} />
+          <BasicInfo birth={job!.result!.birthInfo} />
           <ProfileSummary analysis={job!.result!.analysis} />
-          <CoreElements data={job!.result!.coreElements} />
-          <PlanetTable data={job!.result!.planetaryPositions} />
-          <HouseAnalysis data={job!.result!.houses} />
+          <CoreElements elements={job!.result!.coreElements} />
+          <PlanetTable planets={job!.result!.planetaryPositions} />
+          <HouseAnalysis houses={job!.result!.houses} />
           {job!.result!.vimshottariDasha && (
             <>
               <DashaTable dasha={job!.result!.vimshottariDasha} />

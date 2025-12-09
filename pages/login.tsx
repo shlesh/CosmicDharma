@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import { useRouter } from 'next/router';
 import Link from 'next/link';
-import apiFetch from '../util/api';
-import { useToast } from '../components/ToastProvider';
+import { apiFetch } from '../util/api';
+import { useToast } from '../components/ui/ToastProvider';
 import Card from '../components/ui/Card';
 import Button from '../components/ui/Button';
 import { motion } from 'framer-motion';
@@ -17,21 +17,21 @@ export default function LoginPage() {
   const toast = useToast();
   const [form, setForm] = useState<LoginForm>({ username: '', password: '' });
   const [loading, setLoading] = useState(false);
-  
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) =>
     setForm({ ...form, [e.target.name]: e.target.value });
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    
+
     try {
       const res = await apiFetch('/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
         body: new URLSearchParams(form)
       });
-      
+
       if (res.ok) {
         const data = await res.json();
         localStorage.setItem('token', data.access_token);
@@ -57,7 +57,7 @@ export default function LoginPage() {
       >
         <Card variant="cosmic" className="p-8">
           <h2 className="text-3xl font-bold text-center mb-6">Welcome Back</h2>
-          
+
           <form onSubmit={handleSubmit} className="space-y-6">
             <div>
               <label htmlFor="username" className="block text-sm font-medium mb-2">
@@ -77,7 +77,7 @@ export default function LoginPage() {
                          focus:border-purple-600 focus:ring-2 focus:ring-purple-600/20"
               />
             </div>
-            
+
             <div>
               <label htmlFor="password" className="block text-sm font-medium mb-2">
                 Password
@@ -96,7 +96,7 @@ export default function LoginPage() {
                          focus:border-purple-600 focus:ring-2 focus:ring-purple-600/20"
               />
             </div>
-            
+
             <Button
               type="submit"
               variant="cosmic"
@@ -108,7 +108,7 @@ export default function LoginPage() {
               {loading ? 'Signing in...' : 'Sign In'}
             </Button>
           </form>
-          
+
           <div className="mt-6 text-center space-y-2">
             <p className="text-gray-600 dark:text-gray-400">
               Don't have an account?{' '}

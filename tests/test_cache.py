@@ -1,6 +1,6 @@
 from datetime import date, time
 import fakeredis
-from backend.services import astro
+from backend.app.services import astro
 
 
 def test_profile_cache(monkeypatch):

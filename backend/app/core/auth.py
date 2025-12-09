@@ -9,7 +9,7 @@ from passlib.context import CryptContext
 from sqlalchemy.orm import Session
 
 from .db import get_session
-from .models import User
+from ..models import User
 
 import secrets
 import logging

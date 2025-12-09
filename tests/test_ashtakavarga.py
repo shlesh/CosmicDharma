@@ -1,4 +1,4 @@
-from backend.ashtakavarga import calculate_ashtakavarga
+from backend.app.astrology.ashtakavarga import calculate_ashtakavarga
 
 
 def test_example_chart_one():

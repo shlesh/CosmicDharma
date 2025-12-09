@@ -1,5 +1,6 @@
-from backend import models, auth
-from backend.routes import auth as auth_routes
+from backend.app import models
+from backend.app.core import auth
+from backend.app.routes import auth as auth_routes
 
 def test_password_reset_flow(test_app, monkeypatch):
     client, Session = test_app

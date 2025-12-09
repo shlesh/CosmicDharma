@@ -1,5 +1,5 @@
 import math
-from backend.core_elements import calculate_core_elements
+from backend.app.astrology.core_elements import calculate_core_elements
 
 
 def test_sign_mapping():

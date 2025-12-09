@@ -1,9 +1,9 @@
 from fastapi import APIRouter, Depends, HTTPException, Response
 from sqlalchemy.orm import Session
 
-from backend.db import get_session
-from backend.models import BlogPost, User
-from backend.auth import get_current_user
+from ..core.db import get_session
+from ..models import BlogPost, User
+from ..core.auth import get_current_user
 from .blog import BlogPostCreate, BlogPostOut
 from .auth import UserOut
 

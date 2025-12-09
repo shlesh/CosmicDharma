@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/router';
-import apiFetch from '../util/api';
-import { useToast } from '../components/ToastProvider';
+import { apiFetch } from '../util/api';
+import { useToast } from '../components/ui/ToastProvider';
 
 export default function ResetPasswordPage() {
   const router = useRouter();
@@ -13,14 +13,14 @@ export default function ResetPasswordPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const res = await apiFetch('/reset-password', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(form)
-    });
-    if (res.ok) {
+    try {
+      await apiFetch('/reset-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(form)
+      });
       router.push('/login');
-    } else {
+    } catch (e) {
       toast('Reset failed');
     }
   };

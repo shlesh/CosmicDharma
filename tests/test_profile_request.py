@@ -1,7 +1,7 @@
 from datetime import date, time, timedelta
 import pytest
 
-from backend.services.astro import ProfileRequest
+from backend.app.services.astro import ProfileRequest
 
 
 def test_profile_request_future_date():

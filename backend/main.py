@@ -10,13 +10,14 @@ from sqlalchemy.orm import Session
 from datetime import datetime
 
 # ✅ use package-relative imports
-from .db import Base, engine, get_session
-from .models import User, BlogPost, Prompt, Report, PasswordResetToken
-from .auth import get_current_user
-from .routes.auth import router as auth_router
-from .routes.profile import router as profile_router
-from .routes.blog import router as blog_router
-from .routes.admin import router as admin_router
+# ✅ use package-relative imports
+from app.core.db import Base, engine, get_session
+from app.models import User, BlogPost, Prompt, Report, PasswordResetToken
+from app.core.auth import get_current_user
+from app.routes.auth import router as auth_router
+from app.routes.profile import router as profile_router
+from app.routes.blog import router as blog_router
+from app.routes.admin import router as admin_router
 
 
 logging.basicConfig(level=logging.INFO)
@@ -29,17 +30,23 @@ app = FastAPI(
 )
 
 # Update CORS configuration
+# Update CORS configuration
 frontend_url = os.getenv("FRONTEND_URL", "http://localhost:3000")
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=[
+origins_str = os.getenv("CORS_ORIGINS", "")
+if origins_str:
+    origins = [origin.strip() for origin in origins_str.split(",")]
+else:
+    origins = [
         frontend_url,
         "http://localhost:3000",
-        'http://127.0.0.1:3000',
+        "http://127.0.0.1:3000",
         "http://localhost:3001",
         "http://localhost:3002",
-        # add your production site origin
-    ],
+    ]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

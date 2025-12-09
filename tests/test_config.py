@@ -1,5 +1,5 @@
 import os
-from backend import config
+from backend.app.core import config
 from pathlib import Path
 
 

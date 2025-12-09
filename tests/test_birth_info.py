@@ -2,8 +2,8 @@ import datetime
 import pytest
 import swisseph as swe
 
-from backend.birth_info import get_birth_info, get_lagna, AYANAMSHA_MAP
-from backend.astro_constants import RASHI_METADATA
+from backend.app.astrology.birth_info import get_birth_info, get_lagna, AYANAMSHA_MAP
+from backend.app.astrology.constants import RASHI_METADATA
 
 
 def test_ayanamsha_and_house(monkeypatch):

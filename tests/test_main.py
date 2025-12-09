@@ -1,9 +1,10 @@
 from fastapi.testclient import TestClient
 from backend import main
-from backend.routes import profile
-from backend.services import astro
+from backend.app.routes import profile
+from backend.app.services import astro
 import fakeredis
-from backend import models, auth
+from backend.app import models
+from backend.app.core import auth
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 import sqlalchemy

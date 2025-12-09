@@ -1,6 +1,6 @@
 import { useState } from 'react';
-import apiFetch from '../util/api';
-import { useToast } from '../components/ToastProvider';
+import { apiFetch } from '../util/api';
+import { useToast } from '../components/ui/ToastProvider';
 
 export default function RequestResetPage() {
   const [email, setEmail] = useState('');
@@ -9,14 +9,14 @@ export default function RequestResetPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const res = await apiFetch('/request-reset', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email })
-    });
-    if (res.ok) {
+    try {
+      await apiFetch('/request-reset', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email })
+      });
       setDone(true);
-    } else {
+    } catch (e) {
       toast('Request failed');
     }
   };

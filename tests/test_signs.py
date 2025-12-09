@@ -1,5 +1,5 @@
 import pytest
-from backend.utils.signs import get_sign_name
+from backend.app.utils.signs import get_sign_name
 
 
 def test_get_sign_name_all():

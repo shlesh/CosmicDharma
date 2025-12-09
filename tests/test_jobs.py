@@ -2,7 +2,7 @@ import datetime
 from fastapi import BackgroundTasks
 import fakeredis
 from rq import Queue, SimpleWorker
-from backend.services import astro
+from backend.app.services import astro
 
 
 def fake_compute(req):

@@ -5,7 +5,7 @@ from datetime import datetime
 import pytz
 from typing import Dict
 
-from .astro_constants import NAKSHATRA_METADATA
+from .constants import NAKSHATRA_METADATA
 
 # Names of the 30 tithis
 TITHI_NAMES = [

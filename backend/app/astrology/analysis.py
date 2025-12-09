@@ -3,8 +3,8 @@
 Comprehensive Vedic analysis module with proper interpretations.
 """
 from datetime import date
-from .astro_constants import NAKSHATRA_METADATA
-from .utils.signs import get_sign_name
+from .constants import NAKSHATRA_METADATA
+from ..utils.signs import get_sign_name
 
 # Cache for analyses
 _CACHE = {}
