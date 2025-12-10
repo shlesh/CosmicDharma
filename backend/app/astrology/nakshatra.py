@@ -1,6 +1,6 @@
 """Nakshatra utilities."""
 
-from .astro_constants import NAKSHATRA_METADATA
+from .constants import NAKSHATRA_METADATA
 from .dasha import ORDER
 
 def get_nakshatra(planets):

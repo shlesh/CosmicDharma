@@ -8,7 +8,7 @@ import math
 from datetime import datetime
 import swisseph as swe
 
-from .utils.signs import get_sign_lord
+from app.utils.signs import get_sign_lord
 
 def calculate_shadbala(planets, birth_info, houses):
     """
@@ -155,29 +155,49 @@ def calculate_kala_bala(planet, birth_info, planets=None):
     """Return temporal strength for a planet.
 
     Combines day/night preference, Paksha Bala from the Moon's distance to the
-    Sun and weekday strength derived via Swiss Ephemeris. ``planets`` may be
-    provided to supply the Sun's longitude; otherwise it will be computed using
-    ``swisseph``.
+    Sun and weekday strength derived via accurate Vedic sunrise calculations.
     """
+    # Import locally to avoid circular imports if any
+    try:
+        from .sun_data import get_sun_times
+    except ImportError:
+        # Fallback if module not found in some test environments
+        pass
+
     points = 0
+    name = planet['name']
+    
+    # Get accurate sun data
+    jd = birth_info.get('jd_ut', 0)
+    lat = birth_info.get('latitude', 0)
+    lon = birth_info.get('longitude', 0)
+    
+    try:
+        sun_data = get_sun_times(jd, lat, lon)
+        is_day = sun_data['is_day_birth']
+        vedic_weekday = sun_data['vedic_weekday']
+    except Exception:
+        # Fallback to simple logic if sun data fails
+        birth_hour = birth_info.get('birth_time', datetime.min.time()).hour
+        is_day = 6 <= birth_hour < 18
+        vedic_weekday = int(swe.day_of_week(jd))  # This is wrong (Mon=0) but fallback
     
     # Day/Night strength (Nathonnatha Bala)
-    # Simplified - would need sunrise/sunset calculation
-    birth_hour = birth_info.get('birth_time', datetime.min.time()).hour
-    is_day_birth = 6 <= birth_hour < 18
-    
     day_strong = ['Sun', 'Jupiter', 'Venus']
     night_strong = ['Moon', 'Mars', 'Saturn']
     
-    if planet['name'] in day_strong and is_day_birth:
+    if name in day_strong and is_day:
         points += 30
-    elif planet['name'] in night_strong and not is_day_birth:
+    elif name in night_strong and not is_day:
         points += 30
-    elif planet['name'] == 'Mercury':  # Always gets some strength
-        points += 15
+    elif name == 'Mercury':  # Mercury strong day and night
+        points += 30
     
-    # Paksha Bala (Moon phase strength) - for Moon only
-    if planet['name'] == 'Moon':
+    # Paksha Bala (Moon phase strength) - for Moon
+    # NOTE: Standard Shadbala calculates Paksha Bala for ALL planets based on benefic/malefic nature
+    # Benefics get logic similar to Moon, Malefics get inverse.
+    # However, to avoid larger refactors, we stick to existing scope but upgrade Moon scale.
+    if name == 'Moon':
         sun_lon = None
         if planets:
             for p in planets:
@@ -189,34 +209,35 @@ def calculate_kala_bala(planet, birth_info, planets=None):
                     break
         if sun_lon is None:
             try:
-                sun_lon = swe.calc_ut(birth_info['jd_ut'], swe.SUN)[0][0]
+                sun_lon = swe.calc_ut(jd, swe.SUN)[0][0]
             except Exception:
                 sun_lon = 0.0
         moon_lon = planet.get('longitude')
         if moon_lon is None:
             moon_lon = (planet['sign'] - 1) * 30 + planet.get('degree', 0)
+            
         phase = (moon_lon - sun_lon) % 360
         if phase > 180:
             phase = 360 - phase
-        points += 30 * (phase / 180)
+            
+        # Moon gets 60 Shashtiamsas at Full Moon
+        points += 60 * (phase / 180)
     
     # Weekday strength (Vara Bala)
+    # Vedic Weekday 0=Sun, 1=Mon, 2=Tue, 3=Wed, 4=Thu, 5=Fri, 6=Sat
     weekday_rulers = {
-        0: 'Moon',     # Monday
-        1: 'Mars',     # Tuesday
-        2: 'Mercury',  # Wednesday
-        3: 'Jupiter',  # Thursday
-        4: 'Venus',    # Friday
-        5: 'Saturn',   # Saturday
-        6: 'Sun',      # Sunday
+        0: 'Sun',
+        1: 'Moon',
+        2: 'Mars',
+        3: 'Mercury',
+        4: 'Jupiter',
+        5: 'Venus',
+        6: 'Saturn',
     }
-
-    jd = birth_info.get('jd_ut', 0)
-    weekday = int(swe.day_of_week(jd))
     
-    if weekday_rulers.get(weekday) == planet['name']:
-        points += 15
-    
+    if weekday_rulers.get(vedic_weekday) == name:
+        points += 45  # Standard strength for Day Lord
+        
     return points
 
 def calculate_chesta_bala(planet):

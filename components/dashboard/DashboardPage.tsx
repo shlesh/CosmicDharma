@@ -3,11 +3,11 @@ import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Card } from '../ui/Card';
 import { Button } from '../ui/Button';
-import { BasicInfo } from '../astrology/BasicInfo';
-import { PlanetTable } from '../astrology/PlanetTable';
-import { HouseAnalysis } from '../astrology/HouseAnalysis';
-import { DashaChart } from '../astrology/DashaChart';
-import { CoreElements } from '../astrology/CoreElements';
+import BasicInfo from '../astrology/BasicInfo';
+import PlanetTable from '../astrology/PlanetTable';
+import HouseAnalysis from '../astrology/HouseAnalysis';
+import DashaChart from '../astrology/DashaChart';
+import CoreElements from '../astrology/CoreElements';
 
 interface DashboardPageProps {
   profileData: any;
@@ -108,7 +108,7 @@ export function DashboardPage({ profileData, onNewChart }: DashboardPageProps) {
                   <div className="bg-gradient-to-br from-blue-50 to-blue-100 p-4 rounded-lg">
                     <div className="text-blue-600 font-semibold mb-1">Moon Sign</div>
                     <div className="text-lg font-bold text-gray-800">
-                      {profileData.planetaryPositions?.find(p => p.name === 'Moon')?.sign || 'N/A'}
+                      {profileData.planetaryPositions?.find((p: any) => p.name === 'Moon')?.sign || 'N/A'}
                     </div>
                   </div>
 
@@ -167,7 +167,7 @@ export function DashboardPage({ profileData, onNewChart }: DashboardPageProps) {
                   <div key={chart} className="border border-gray-200 rounded-lg p-4">
                     <h4 className="font-semibold mb-2">{chart}</h4>
                     <div className="text-sm text-gray-600">
-                      {typeof data === 'object' ? Object.keys(data).length : 0} planets
+                      {data && typeof data === 'object' ? Object.keys(data).length : 0} planets
                     </div>
                   </div>
                 ))}
@@ -231,7 +231,7 @@ export function DashboardPage({ profileData, onNewChart }: DashboardPageProps) {
                   <div key={section} className="border border-gray-200 rounded-lg p-4">
                     <h4 className="font-semibold mb-3 capitalize">{section.replace(/([A-Z])/g, ' $1')}</h4>
                     <div className="prose prose-sm max-w-none">
-                      {typeof content === 'object' ? (
+                      {content && typeof content === 'object' ? (
                         Object.entries(content).map(([key, value]) => (
                           <div key={key} className="mb-3">
                             <div className="font-medium">{key}:</div>

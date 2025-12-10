@@ -90,6 +90,7 @@ export const blogApi = {
   // Public
   getPosts: (qs: string = '') => get<BlogPostMeta[]>(`/posts${qs ? `?${qs}` : ''}`),
   getPostBySlug: (slug: string) => get<BlogPost>(`/posts/${slug}`),
+  getPostById: (id: number) => get<BlogPost>(`/posts/${id}`),
   getFeaturedPosts: (limit = 5) => get<BlogPostMeta[]>(`/featured?limit=${limit}`),
   getTags: () => get<{ tags: string[] }>(`/tags`),
   // Admin
@@ -102,8 +103,8 @@ export const blogApi = {
 
 // util/api.ts (additions)
 export type BlogTag = string;
-export interface BlogPostMeta { id: number; slug: string; title: string; summary?: string; published: boolean; tags?: string | null; created_at?: string; updated_at?: string; owner: string }
+export interface BlogPostMeta { id: number; slug: string; title: string; summary?: string; published: boolean; featured?: boolean; tags?: string | null; created_at?: string; updated_at?: string; owner: string }
 export interface BlogPost extends BlogPostMeta { content: string }
-export interface PostInput { title: string; slug?: string; summary?: string; content: string; tag_ids?: number[]; published?: boolean; tags?: string }
+export interface PostInput { title: string; slug?: string; summary?: string; content: string; tag_ids?: number[]; published?: boolean; featured?: boolean; tags?: string }
 
 

@@ -85,9 +85,17 @@ def _is_retrograde(planet_name, jd, planet_id):
         return planet_name in ['Rahu', 'Ketu']  # Nodes always retrograde
     
     # Check speed to determine retrograde motion
-    tomorrow = jd + 1
-    pos_today, _ = swe.calc_ut(jd, planet_id)
-    pos_tomorrow, _ = swe.calc_ut(tomorrow, planet_id)
-    
-    # If longitude decreases, planet is retrograde
-    return pos_tomorrow[0] < pos_today[0]
+    # Use FLG_SPEED to get instantaneous speed
+    try:
+        flags = swe.FLG_SWIEPH | swe.FLG_SPEED
+        results, _ = swe.calc_ut(jd, planet_id, flags)
+        # results is (lon, lat, dist, speed_lon, speed_lat, speed_dist)
+        # speed_lon is at index 3
+        speed_lon = results[3]
+        return speed_lon < 0
+    except (swe.Error, IndexError):
+        # Fallback to next day method
+        tomorrow = jd + 1
+        pos_today, _ = swe.calc_ut(jd, planet_id)
+        pos_tomorrow, _ = swe.calc_ut(tomorrow, planet_id)
+        return pos_tomorrow[0] < pos_today[0]

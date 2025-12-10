@@ -1,6 +1,6 @@
 // src/components/DashaTable.jsx
 import React from 'react';
-import Card from './ui/Card';
+import Card from '../ui/Card';
 
 export interface DashaPeriod {
   lord: string;

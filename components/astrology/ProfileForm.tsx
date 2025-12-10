@@ -3,12 +3,12 @@ import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useMemo, useState } from 'react';
 
-import { Button } from './ui/Button';
-import { Card } from './ui/Card';
-import { Input } from './ui/Input';
+import { Button } from '../ui/Button';
+import { Card } from '../ui/Card';
+import { Input } from '../ui/Input';
 
 import { StartProfileJobRequest } from '@/util/api';
-import LocationAutocomplete from '@/components/LocationAutocomplete';
+import LocationAutocomplete from './LocationAutocomplete';
 import type { PlaceSuggestion } from '@/util/geocode';
 
 const Schema = z.object({

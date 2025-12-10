@@ -1,5 +1,5 @@
 import React from 'react';
-import Card from './ui/Card';
+import Card from '../ui/Card';
 
 export interface CoreElementsProps {
   analysis?: Record<string, unknown> | null;
@@ -18,7 +18,7 @@ export default function CoreElements({ analysis, elements }: CoreElementsProps) 
   const entries = Object.entries(data);
   if (entries.length === 0) return null;
 
-  const formatPercent = val => {
+  const formatPercent = (val: any) => {
     if (typeof val === 'number') return val.toString();
     const m = String(val).match(/([0-9]+(?:\.[0-9]+)?)/);
     return m ? m[1] : String(val);

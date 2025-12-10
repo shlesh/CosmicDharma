@@ -1,5 +1,5 @@
 import React from 'react';
-import { Card } from './ui';
+import { Card } from '../ui';
 
 export interface BirthInfo {
   date?: string;
@@ -19,7 +19,7 @@ export interface BasicInfoProps {
 
 export default function BasicInfo({ birth }: BasicInfoProps) {
   if (!birth) return null;
-  
+
   return (
     <Card variant="glass" className="mb-6">
       <h2 title="Your basic birth information used for all further analysis">Birth Details</h2>

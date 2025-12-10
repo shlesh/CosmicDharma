@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Menu, X, Star, User, Settings, LogOut } from 'lucide-react';
-import { Button } from './ui/Button';
+import { Button } from '../ui/Button';
 
 interface NavbarProps {
   user?: {
@@ -28,7 +28,7 @@ export const Navbar: React.FC<NavbarProps> = ({ user, onLogout }) => {
       <div className="container mx-auto px-4">
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
-          <motion.div 
+          <motion.div
             className="flex items-center space-x-2"
             whileHover={{ scale: 1.05 }}
           >
@@ -94,11 +94,11 @@ export const Navbar: React.FC<NavbarProps> = ({ user, onLogout }) => {
               </div>
             ) : (
               <div className="flex items-center space-x-2">
-                <Button variant="outline" size="small">
-                  <a href="/login">Login</a>
+                <Button variant="secondary" size="sm" onClick={() => router.push('/login')}>
+                  Login
                 </Button>
-                <Button variant="primary" size="small">
-                  <a href="/register">Sign Up</a>
+                <Button variant="primary" size="sm" onClick={() => router.push('/register')}>
+                  Sign Up
                 </Button>
               </div>
             )}

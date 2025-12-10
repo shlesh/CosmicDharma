@@ -1,9 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import useSWR from 'swr';
 import { fetchJson } from '../../util/api';
-import PostList, { BlogPost } from '../../components/PostList';
-import AdminDashboard from '../../components/AdminDashboard';
-import { useToast } from '../../components/ToastProvider';
+import BlogList from '../../components/blog/BlogList';
+import AdminDashboard from '../../components/admin/AdminDashboard';
+import { useToast } from '../../components/ui/ToastProvider';
 
 interface DashboardUser {
   is_admin?: boolean;
@@ -24,21 +24,13 @@ export default function DashboardPage() {
     ([url, t]) => fetchJson(url, { headers: { Authorization: `Bearer ${t}` } })
   );
 
-  const {
-    data: posts,
-    error: postsError
-  } = useSWR<BlogPost[]>(
-    token && user?.is_donor ? ['posts', token] : null,
-    ([url, t]) => fetchJson(url, { headers: { Authorization: `Bearer ${t}` } })
-  );
+
 
   useEffect(() => {
     if (userError) toast('Failed to load user');
   }, [userError]);
 
-  useEffect(() => {
-    if (postsError) toast('Failed to load posts');
-  }, [postsError]);
+
 
   if (!token) return <p>Please login.</p>;
   if (!user) return <p>Loading...</p>;
@@ -52,7 +44,7 @@ export default function DashboardPage() {
       case 'Profile':
         return <p>Your profile details will appear here.</p>;
       case 'Posts':
-        return <PostList posts={posts ?? []} />;
+        return <BlogList />;
       case 'Admin':
         return <AdminDashboard />;
       default:

@@ -4,19 +4,7 @@ import { blogApi } from '../../util/api';
 import { Card } from '../ui/Card';
 import { Button } from '../ui/Button';
 
-interface BlogPost {
-  id: number;
-  title: string;
-  content: string;
-  excerpt: string | null;
-  slug: string;
-  published: boolean;
-  featured: boolean;
-  tags: string | null;
-  created_at: string;
-  updated_at: string;
-  owner: string;
-}
+import { BlogPost } from '../../util/api';
 
 interface BlogPostDetailProps {
   slug: string;
@@ -91,8 +79,8 @@ const BlogPostDetail: React.FC<BlogPostDetailProps> = ({ slug }) => {
     <article>
       <Card className="p-8">
         <div className="mb-6">
-          <Button 
-            variant="outline" 
+          <Button
+            variant="secondary"
             onClick={() => router.push('/posts')}
             className="mb-4"
           >
@@ -103,12 +91,12 @@ const BlogPostDetail: React.FC<BlogPostDetailProps> = ({ slug }) => {
             <h1 className="text-3xl font-bold text-gray-900 mb-3">
               {post.title}
             </h1>
-            
+
             <div className="flex flex-wrap items-center gap-4 text-sm text-gray-600 mb-4">
               <span>By {post.owner}</span>
-              <span>Published {formatDate(post.created_at)}</span>
+              <span>Published {post.created_at ? formatDate(post.created_at) : 'Date unknown'}</span>
               {post.updated_at !== post.created_at && (
-                <span>Updated {formatDate(post.updated_at)}</span>
+                <span>Updated {post.updated_at ? formatDate(post.updated_at) : ''}</span>
               )}
               {post.featured && (
                 <span className="px-2 py-1 bg-yellow-100 text-yellow-800 rounded-full text-xs">
@@ -132,7 +120,7 @@ const BlogPostDetail: React.FC<BlogPostDetailProps> = ({ slug }) => {
           </header>
         </div>
 
-        <div 
+        <div
           className="prose prose-lg max-w-none"
           dangerouslySetInnerHTML={{ __html: post.content }}
         />

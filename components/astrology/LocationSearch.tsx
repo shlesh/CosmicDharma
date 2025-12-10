@@ -1,7 +1,7 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
 import { MapPin, Loader2, Search } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Input } from './ui/Input';
+import { Input } from '../ui/Input';
 import { cn } from '@/util/cn';
 import { useDebounce } from '@/hooks/useDebounce';
 
@@ -96,14 +96,14 @@ export function LocationSearch({
     const lat = parseFloat(location.lat);
     const lng = parseFloat(location.lon);
     const timezone = await getTimezone(lat, lng);
-    
+
     onChange({
       address: location.display_name,
       lat,
       lng,
       timezone,
     });
-    
+
     setQuery(location.display_name);
     setShowSuggestions(false);
     setSuggestions([]);

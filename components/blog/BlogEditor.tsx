@@ -16,7 +16,7 @@ const BlogEditor: React.FC<BlogEditorProps> = ({ postId, onSave, onCancel }) => 
   const [formData, setFormData] = useState({
     title: '',
     content: '',
-    excerpt: '',
+    summary: '',
     published: true,
     featured: false,
     tags: '',
@@ -39,9 +39,9 @@ const BlogEditor: React.FC<BlogEditorProps> = ({ postId, onSave, onCancel }) => 
       setFormData({
         title: post.title,
         content: post.content,
-        excerpt: post.excerpt || '',
+        summary: post.summary || '',
         published: post.published,
-        featured: post.featured,
+        featured: post.featured || false,
         tags: post.tags || '',
       });
     } catch (err) {
@@ -53,18 +53,18 @@ const BlogEditor: React.FC<BlogEditorProps> = ({ postId, onSave, onCancel }) => 
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
-    
+
     try {
       setSaving(true);
       setError(null);
-      
+
       let result;
       if (postId) {
         result = await blogApi.updatePost(postId, formData);
       } else {
         result = await blogApi.createPost(formData);
       }
-      
+
       if (onSave) {
         onSave(result);
       } else {
@@ -78,7 +78,7 @@ const BlogEditor: React.FC<BlogEditorProps> = ({ postId, onSave, onCancel }) => 
   };
 
   const handleInputChange = (
-    event: React.ChangeEvent<HTMLInputElement>
+    event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
   ) => {
     const { name, value, type } = event.target;
     setFormData(prev => ({
@@ -120,12 +120,12 @@ const BlogEditor: React.FC<BlogEditorProps> = ({ postId, onSave, onCancel }) => 
 
         <div>
           <label htmlFor="excerpt" className="block text-sm font-medium text-gray-700 mb-2">
-            Excerpt
+            Summary
           </label>
           <textarea
-            id="excerpt"
-            name="excerpt"
-            value={formData.excerpt}
+            id="summary"
+            name="summary"
+            value={formData.summary}
             onChange={handleInputChange}
             rows={3}
             className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent"
@@ -198,10 +198,10 @@ const BlogEditor: React.FC<BlogEditorProps> = ({ postId, onSave, onCancel }) => 
           >
             {saving ? 'Saving...' : (postId ? 'Update Post' : 'Create Post')}
           </Button>
-          
+
           <Button
             type="button"
-            variant="outline"
+            variant="secondary"
             onClick={onCancel || (() => router.push('/posts'))}
           >
             Cancel

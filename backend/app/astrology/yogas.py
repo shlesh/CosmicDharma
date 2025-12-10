@@ -4,8 +4,8 @@ Calculate important Vedic astrological yogas (planetary combinations).
 These are crucial for prediction in Vedic astrology.
 """
 
-from .astro_constants import RASHI_METADATA
-from .utils.signs import get_sign_lord
+from .constants import RASHI_METADATA
+from app.utils.signs import get_sign_lord
 
 def calculate_pancha_mahapurusha_yogas(planets, houses):
     """
@@ -84,10 +84,14 @@ def get_mahapurusha_effects(yoga_name):
     }
     return effects.get(yoga_name, '')
 
-def calculate_raj_yogas(planets, houses):
+def calculate_raj_yogas(planets, houses, aspects=None):
     """
     Calculate Raja Yogas (combinations for power and success).
-    Formed by connections between kendra (1,4,7,10) and trikona (1,5,9) lords.
+    Formed by connections (Sambandha) between kendra (1,4,7,10) and trikona (1,5,9) lords.
+    Connection types accepted:
+    1. Conjunction
+    2. Parivartana (Exchange of Signs)
+    3. Mutual Aspect
     """
     yogas = []
     kendra_houses = [1, 4, 7, 10]
@@ -113,6 +117,22 @@ def calculate_raj_yogas(planets, houses):
         for planet_name in occupants:
             if planet_name in planet_positions:
                 planet_positions[planet_name]['house'] = house_num
+
+    # Helper to check aspects
+    def check_aspect(p_from, p_to):
+        if not aspects: return False
+        
+        # Find house of p_to
+        to_house = planet_positions.get(p_to, {}).get('house')
+        if not to_house: return False
+        
+        # Check if p_from aspects that house
+        for aspect_data in aspects:
+            if aspect_data['planet'] == p_from:
+                for target in aspect_data['aspects_to']:
+                    if target['house'] == to_house:
+                        return True
+        return False
     
     # Check for Raja Yoga combinations
     for kendra in kendra_houses:
@@ -120,24 +140,52 @@ def calculate_raj_yogas(planets, houses):
             if kendra == trikona:  # Skip 1st house (both kendra and trikona)
                 continue
                 
-            kendra_lord = house_lords[kendra]
-            trikona_lord = house_lords[trikona]
+            kendra_lord = house_lords.get(kendra)
+            trikona_lord = house_lords.get(trikona)
             
-            if kendra_lord and trikona_lord:
-                # Check if they are conjunct
-                kendra_lord_house = planet_positions.get(kendra_lord, {}).get('house')
-                trikona_lord_house = planet_positions.get(trikona_lord, {}).get('house')
+            if kendra_lord and trikona_lord and kendra_lord != trikona_lord:
                 
-                if kendra_lord_house and trikona_lord_house:
-                    if kendra_lord_house == trikona_lord_house:
-                        yogas.append({
-                            'name': 'Raja Yoga',
-                            'type': 'Conjunction',
-                            'planets': [kendra_lord, trikona_lord],
-                            'houses': [kendra, trikona],
-                            'strength': 'Very Strong',
-                            'effects': 'Power, authority, success, high position in life'
-                        })
+                h1 = planet_positions.get(kendra_lord, {}).get('house')
+                h2 = planet_positions.get(trikona_lord, {}).get('house')
+                
+                # 1. Conjunction
+                if h1 and h2 and h1 == h2:
+                    yogas.append({
+                        'name': 'Raja Yoga',
+                        'type': 'Conjunction',
+                        'planets': [kendra_lord, trikona_lord],
+                        'houses': [kendra, trikona],
+                        'strength': 'Very Strong',
+                        'effects': 'Power, authority, success, high position in life'
+                    })
+                    continue
+                
+                # 2. Parivartana (Exchange of Signs)
+                # Kendra Lord in Trikona House AND Trikona Lord in Kendra House
+                # (Assuming Whole Sign: House N == Sign N roughly, but strict logic is Lord A in Sign B...)
+                # Actually we have house positions. If h1 (Kendra Lord's house) == trikona 
+                # AND h2 (Trikona Lord's house) == kendra
+                if h1 == trikona and h2 == kendra:
+                     yogas.append({
+                        'name': 'Raja Yoga',
+                        'type': 'Parivartana',
+                        'planets': [kendra_lord, trikona_lord],
+                        'houses': [kendra, trikona],
+                        'strength': 'Very Strong',
+                        'effects': 'Mutual strengthening, power, destiny connection'
+                    })
+                     continue
+
+                # 3. Mutual Aspect
+                if check_aspect(kendra_lord, trikona_lord) and check_aspect(trikona_lord, kendra_lord):
+                    yogas.append({
+                        'name': 'Raja Yoga',
+                        'type': 'Mutual Aspect',
+                        'planets': [kendra_lord, trikona_lord],
+                        'houses': [kendra, trikona],
+                        'strength': 'Strong',
+                        'effects': 'Public success, partnership strength'
+                    })
     
     return yogas
 
@@ -294,7 +342,7 @@ def calculate_all_yogas(planets, houses, aspects=None):
     """Calculate all major yogas in the chart."""
     all_yogas = {
         'pancha_mahapurusha': calculate_pancha_mahapurusha_yogas(planets, houses),
-        'raj_yogas': calculate_raj_yogas(planets, houses),
+        'raj_yogas': calculate_raj_yogas(planets, houses, aspects=aspects),
         'dhana_yogas': calculate_dhana_yogas(planets, houses),
         'chandra_yogas': calculate_chandra_yogas(planets),
         'nabhasa_yogas': calculate_nabhasa_yogas(planets)

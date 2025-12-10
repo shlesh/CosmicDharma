@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import Card from './ui/Card';
+import Card from '../ui/Card';
 
 export interface DashaChartPeriod {
   lord: string;
@@ -46,7 +46,7 @@ export default function DashaChart({ dasha, analysis }: DashaChartProps) {
       return analysis.map(d => d.description || '');
     }
     if (Array.isArray(dasha)) {
-      return dasha.map(d => FALLBACK_DESCRIPTIONS[d.lord] || '');
+      return dasha.map(d => (FALLBACK_DESCRIPTIONS as Record<string, string>)[d.lord] || '');
     }
     return [];
   }, [analysis, dasha]);
@@ -72,23 +72,23 @@ export default function DashaChart({ dasha, analysis }: DashaChartProps) {
     scales: {
       y: {
         ticks: {
-          callback: (_, i) => (dasha && dasha[i] ? dasha[i].lord : i),
+          callback: (_: any, i: number) => (dasha && dasha[i] ? dasha[i].lord : i),
         },
         beginAtZero: false,
       },
-      x: { type: 'time' },
+      x: { type: 'time' as const },
     },
     plugins: {
       legend: { display: false },
       tooltip: {
         callbacks: {
-          label: ctx => {
+          label: (ctx: any) => {
             const idx = ctx.datasetIndex;
             const d = dasha && dasha[idx];
             if (!d) return '';
             return `${d.lord}: ${d.start} – ${d.end}`;
           },
-          afterLabel: ctx => {
+          afterLabel: (ctx: any) => {
             const idx = ctx.datasetIndex;
             const desc = descriptions[idx];
             return desc ? `Meaning: ${desc}` : '';

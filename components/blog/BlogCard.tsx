@@ -2,20 +2,10 @@ import React from 'react';
 import Link from 'next/link';
 import { Card } from '../ui/Card';
 
-interface BlogPost {
-  id: number;
-  title: string;
-  excerpt: string | null;
-  slug: string;
-  published: boolean;
-  featured: boolean;
-  tags: string | null;
-  created_at: string;
-  owner: string;
-}
+import { BlogPostMeta } from '../../util/api';
 
 interface BlogCardProps {
-  post: BlogPost;
+  post: BlogPostMeta;
 }
 
 const BlogCard: React.FC<BlogCardProps> = ({ post }) => {
@@ -49,16 +39,16 @@ const BlogCard: React.FC<BlogCardProps> = ({ post }) => {
         </div>
       </div>
 
-      {post.excerpt && (
+      {post.summary && (
         <p className="text-gray-600 mb-4 line-clamp-3">
-          {post.excerpt}
+          {post.summary}
         </p>
       )}
 
       <div className="flex flex-wrap items-center justify-between text-sm text-gray-500 mb-3">
         <div className="flex items-center space-x-4">
           <span>By {post.owner}</span>
-          <span>{formatDate(post.created_at)}</span>
+          <span>{post.created_at ? formatDate(post.created_at) : 'Date unknown'}</span>
         </div>
       </div>
 

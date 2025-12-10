@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from backend.astro_constants import RASHI_METADATA
+from app.astrology.constants import RASHI_METADATA
 
 
 def get_sign_lord(sign_num: int) -> str | None:

@@ -4,17 +4,7 @@ import BlogCard from './BlogCard';
 import { Button } from '../ui/Button';
 import { Card } from '../ui/Card';
 
-interface BlogPost {
-  id: number;
-  title: string;
-  excerpt: string | null;
-  slug: string;
-  published: boolean;
-  featured: boolean;
-  tags: string | null;
-  created_at: string;
-  owner: string;
-}
+import { BlogPostMeta } from '../../util/api';
 
 interface BlogListProps {
   featuredOnly?: boolean;
@@ -22,12 +12,12 @@ interface BlogListProps {
   showPagination?: boolean;
 }
 
-const BlogList: React.FC<BlogListProps> = ({ 
-  featuredOnly = false, 
-  limit = 10, 
-  showPagination = true 
+const BlogList: React.FC<BlogListProps> = ({
+  featuredOnly = false,
+  limit = 10,
+  showPagination = true
 }) => {
-  const [posts, setPosts] = useState<BlogPost[]>([]);
+  const [posts, setPosts] = useState<BlogPostMeta[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [page, setPage] = useState(0);
@@ -53,14 +43,22 @@ const BlogList: React.FC<BlogListProps> = ({
         featured_only: featuredOnly,
       };
 
-      const data = await blogApi.getPosts(params);
-      
+      // Convert params to query string manually for getPosts
+      const qs = new URLSearchParams(
+        Object.entries(params).reduce((acc, [key, val]) => {
+          if (val !== undefined) acc[key] = String(val);
+          return acc;
+        }, {} as Record<string, string>)
+      ).toString();
+
+      const data = await blogApi.getPosts(qs);
+
       if (page === 0) {
         setPosts(data);
       } else {
         setPosts(prev => [...prev, ...data]);
       }
-      
+
       setHasMore(data.length === limit);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load posts');
@@ -85,8 +83,8 @@ const BlogList: React.FC<BlogListProps> = ({
   };
 
   const toggleTag = (tag: string) => {
-    setSelectedTags(prev => 
-      prev.includes(tag) 
+    setSelectedTags(prev =>
+      prev.includes(tag)
         ? prev.filter(t => t !== tag)
         : [...prev, tag]
     );
@@ -149,11 +147,10 @@ const BlogList: React.FC<BlogListProps> = ({
                   <button
                     key={tag}
                     onClick={() => toggleTag(tag)}
-                    className={`px-3 py-1 text-xs rounded-full border transition-colors ${
-                      selectedTags.includes(tag)
-                        ? 'bg-purple-100 border-purple-300 text-purple-800'
-                        : 'bg-gray-100 border-gray-300 text-gray-700 hover:bg-gray-200'
-                    }`}
+                    className={`px-3 py-1 text-xs rounded-full border transition-colors ${selectedTags.includes(tag)
+                      ? 'bg-purple-100 border-purple-300 text-purple-800'
+                      : 'bg-gray-100 border-gray-300 text-gray-700 hover:bg-gray-200'
+                      }`}
                   >
                     {tag}
                   </button>
@@ -180,10 +177,10 @@ const BlogList: React.FC<BlogListProps> = ({
       {/* Load More */}
       {showPagination && hasMore && posts.length > 0 && (
         <div className="text-center">
-          <Button 
-            onClick={loadMore} 
+          <Button
+            onClick={loadMore}
             disabled={loading}
-            variant="outline"
+            variant="secondary"
           >
             {loading ? 'Loading...' : 'Load More Posts'}
           </Button>

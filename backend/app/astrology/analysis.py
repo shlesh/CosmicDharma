@@ -4,7 +4,7 @@ Comprehensive Vedic analysis module with proper interpretations.
 """
 from datetime import date
 from .constants import NAKSHATRA_METADATA
-from ..utils.signs import get_sign_name
+from app.utils.signs import get_sign_name
 
 # Cache for analyses
 _CACHE = {}
