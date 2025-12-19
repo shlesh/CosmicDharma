@@ -32,9 +32,9 @@ const socialLinks = [
 export default function Footer() {
   return (
     <footer className="relative mt-32 border-t border-gray-200 dark:border-gray-800">
-      <div className="container py-16">
+      <div className="container mx-auto px-4 py-20">
         {/* Top Section */}
-        <div className="grid lg:grid-cols-5 gap-8 mb-12">
+        <div className="grid lg:grid-cols-5 gap-12 mb-16">
           {/* Brand Section */}
           <div className="lg:col-span-2">
             <Link href="/" className="inline-flex items-center gap-3 mb-4">
@@ -52,10 +52,10 @@ export default function Footer() {
               <span className="text-2xl font-bold gradient-text">Cosmic Dharma</span>
             </Link>
             <p className="text-gray-600 dark:text-gray-400 mb-6 max-w-md">
-              Discover your cosmic blueprint through authentic Vedic astrology. 
+              Discover your cosmic blueprint through authentic Vedic astrology.
               Join thousands on their journey of self-discovery and spiritual growth.
             </p>
-            
+
             {/* Social Links */}
             <div className="flex gap-4">
               {socialLinks.map((social) => (
@@ -81,7 +81,7 @@ export default function Footer() {
               <ul className="space-y-2">
                 {links.map((link) => (
                   <li key={link.name}>
-                    <Link 
+                    <Link
                       href={link.href}
                       className="text-gray-600 dark:text-gray-400 hover:text-purple-600 
                                dark:hover:text-purple-400 transition-colors"

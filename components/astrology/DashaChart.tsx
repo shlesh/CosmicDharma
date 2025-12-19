@@ -40,6 +40,8 @@ const FALLBACK_DESCRIPTIONS = {
   Ketu: 'Detachment, spirituality, liberation.',
 };
 
+import { parseISO, format } from 'date-fns';
+
 export default function DashaChart({ dasha, analysis }: DashaChartProps) {
   const descriptions = useMemo(() => {
     if (analysis && Array.isArray(analysis)) {
@@ -53,34 +55,76 @@ export default function DashaChart({ dasha, analysis }: DashaChartProps) {
 
   const data = useMemo(() => {
     if (!Array.isArray(dasha) || dasha.length === 0) return null;
-    return {
-      datasets: dasha.map((d, idx) => ({
-        label: d.lord,
-        data: [
-          { x: new Date(d.start), y: idx },
-          { x: new Date(d.end), y: idx },
-        ],
-        borderWidth: 4,
-        fill: false,
-      })),
-    };
+
+    try {
+      return {
+        datasets: dasha.map((d, idx) => {
+          // Robust date parsing
+          const startDate = d.start instanceof Date ? d.start : parseISO(d.start);
+          const endDate = d.end instanceof Date ? d.end : parseISO(d.end);
+
+          return {
+            label: d.lord,
+            data: [
+              { x: startDate.getTime(), y: idx },
+              { x: endDate.getTime(), y: idx },
+            ],
+            borderColor: getDashaColor(d.lord),
+            backgroundColor: getDashaColor(d.lord), // Point color
+            borderWidth: 6, // Thicker lines for visibility
+            pointRadius: 4,
+            fill: false,
+          };
+        }),
+      };
+    } catch (e) {
+      console.error("Dasha chart data error", e);
+      return null;
+    }
   }, [dasha]);
 
   if (!data) return null;
 
   const options = {
+    responsive: true,
+    maintainAspectRatio: false,
+    layout: {
+      padding: {
+        left: 10,
+        right: 20
+      }
+    },
     scales: {
       y: {
         ticks: {
-          callback: (_: any, i: number) => (dasha && dasha[i] ? dasha[i].lord : i),
+          callback: (_: any, i: number) => (dasha && dasha[i] ? dasha[i].lord : ''),
+          autoSkip: false,
+          color: 'rgba(255, 255, 255, 0.8)',
         },
-        beginAtZero: false,
+        grid: {
+          color: 'rgba(255, 255, 255, 0.1)',
+        },
+        beginAtZero: true,
       },
-      x: { type: 'time' as const },
+      x: {
+        type: 'time' as const,
+        time: {
+          unit: 'year' as const,
+        },
+        grid: {
+          color: 'rgba(255, 255, 255, 0.1)',
+        },
+        ticks: {
+          color: 'rgba(255, 255, 255, 0.8)',
+        }
+      },
     },
     plugins: {
       legend: { display: false },
       tooltip: {
+        backgroundColor: 'rgba(0,0,0,0.8)',
+        titleColor: '#fff',
+        bodyColor: '#fff',
         callbacks: {
           label: (ctx: any) => {
             const idx = ctx.datasetIndex;
@@ -99,10 +143,28 @@ export default function DashaChart({ dasha, analysis }: DashaChartProps) {
   };
 
   return (
-    <Card variant="glass" className="mb-6">
+    <Card variant="glass" className="mb-6 h-[400px]">
       <h3 title="Graphical view of each major period">Dasha Timeline</h3>
-      <p className="help-text">Hover over each segment to read what it signifies.</p>
-      <Line data={data} options={options} />
+      <p className="help-text mb-4">Hover over each segment to read what it signifies.</p>
+      <div className="relative h-[300px] w-full">
+        <Line data={data} options={options} />
+      </div>
     </Card>
   );
+}
+
+// Helper for vibrant chart colors
+function getDashaColor(lord: string) {
+  const colors: Record<string, string> = {
+    Sun: '#F59E0B',    // Amber
+    Moon: '#E2E8F0',   // Slate-200 (White-ish)
+    Mars: '#EF4444',   // Red
+    Rahu: '#8B5CF6',   // Violet
+    Jupiter: '#FBBF24', // Yellow
+    Saturn: '#3B82F6',  // Blue
+    Mercury: '#10B981', // Emerald
+    Ketu: '#6366F1',    // Indigo
+    Venus: '#EC4899',   // Pink
+  };
+  return colors[lord] || '#9CA3AF';
 }

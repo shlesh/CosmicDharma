@@ -71,16 +71,70 @@ def _calculate_aspects(placements):
     return {"planet_aspects": aspects, "mutual_aspects": mutual}
 
 
+from ..utils.signs import get_sign_name, get_sign_lord
+
 def analyze_houses(binfo, planets, *, house_system=None):
-    """Return house occupancy, individual placements and aspect info."""
+    """Return comprehensive house analysis including sign, lord, and occupants."""
     cusps = _get_cusps(binfo, house_system)
-    houses = {i: [] for i in range(1, 13)}
+    
+    # Initialize basic structure
+    houses_data = {}  # Will store rich data for each house
+    occupants = {i: [] for i in range(1, 13)}
     placements = {}
+    
+    # First pass: map planets to houses
     for p in planets:
         lon = p["longitude"]
         house = _planet_house(lon, cusps)
-        houses[house].append(p["name"])
+        occupants[house].append(p["name"])
         placements[p["name"]] = {"sign": p.get("sign") or int(lon // 30) + 1, "house": house}
 
+    # Second pass: compute rich details for each house
+    # Note: cusps from swisseph are 0-indexed (0=House 1)
+    for i in range(1, 13):
+        # House 1 cusp is at index 0, but sometimes length varies slightly with ayanamsa
+        # Safe access for 12 houses standard
+        cusp_degree = cusps[i-1] 
+        sign_num = int(cusp_degree // 30) + 1
+        sign_name = get_sign_name(sign_num)
+        lord = get_sign_lord(sign_num)
+        house_occupants = occupants[i]
+        
+        # specific degree within sign
+        degree_in_sign = cusp_degree % 30
+
+        summary = f"{sign_name}"
+        if lord:
+            summary += f" (ruled by {lord})"
+        
+        if house_occupants:
+            planet_list = ", ".join(house_occupants)
+            summary += f". Contains: {planet_list}."
+            
+            # --- NEW INTERPRETATION LOGIC ---
+            from .interpretations import PLANETS_IN_HOUSES
+            interp_text = []
+            for p in house_occupants:
+                # p is planet name string, e.g. "Sun"
+                # Lookup planet p in house i
+                if p in PLANETS_IN_HOUSES and i in PLANETS_IN_HOUSES[p]:
+                    interp_text.append(PLANETS_IN_HOUSES[p][i])
+            
+            if interp_text:
+                summary += " " + " ".join(interp_text)
+            # --------------------------------
+        else:
+            summary += ". Empty."
+
+        houses_data[i] = {
+            "house_num": i,
+            "sign": sign_name,
+            "sign_id": sign_num,
+            "degree": degree_in_sign,
+            "lord": lord,
+            "occupants": house_occupants,
+            "summary": summary
+        }
+
     aspects = _calculate_aspects(placements)
-    return {"houses": houses, "placements": placements, "aspects": aspects}
+    return {"houses": houses_data, "placements": placements, "aspects": aspects}

@@ -290,6 +290,23 @@ def calculate_all_divisional_charts(planets):
             charts[key] = {p['name']: int(p['longitude'] // 30) + 1 for p in planets}
     return charts
 
+def interpret_planetary_positions(planets):
+    """Interpret planets in signs."""
+    from .interpretations import PLANETS_IN_SIGNS
+    from app.utils.signs import get_sign_name
+    
+    result = {}
+    for p in planets:
+        name = p['name']
+        # longitude to sign
+        sign_num = int(p['longitude'] // 30) + 1
+        sign_name = get_sign_name(sign_num)
+        
+        if name in PLANETS_IN_SIGNS and sign_name in PLANETS_IN_SIGNS[name]:
+           result[f"{name}In{sign_name}"] = PLANETS_IN_SIGNS[name][sign_name]
+    
+    return result
+
 def full_analysis(
     planets,
     dashas,
@@ -335,6 +352,9 @@ def full_analysis(
     
     if include_divisional_charts:
         result['divisionalCharts'] = interpret_divisional_charts(dcharts, planets)
+        
+    # Always include planetary interpretations
+    result['planetaryInterpretations'] = interpret_planetary_positions(planets)
 
     if key is not None:
         _CACHE[key] = result
