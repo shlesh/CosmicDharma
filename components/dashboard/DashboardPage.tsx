@@ -155,191 +155,253 @@ export function DashboardPage({ profileData, onNewChart }: DashboardPageProps) {
         );
 
       case 'charts':
-        return (
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-          >
-            <Card className="p-6">
-              <h3 className="text-xl font-bold mb-4 text-gray-800">Divisional Charts</h3>
-              <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {Object.entries(profileData.divisionalCharts || {}).map(([chart, data]) => (
-                  <div key={chart} className="border border-gray-200 rounded-lg p-4">
-                    <h4 className="font-semibold mb-2">{chart}</h4>
-                    <div className="text-sm text-gray-600">
-                      {data && typeof data === 'object' ? Object.keys(data).length : 0} planets
+        <div className="space-y-6">
+          {/* 1. Planetary Interpretations (New Rich Content) */}
+          {profileData.analysis?.planetaryInterpretations && (
+            <div className="border border-purple-200 bg-purple-50/50 rounded-lg p-6">
+              <h4 className="font-bold text-lg mb-4 text-purple-900">Planetary Interpretations</h4>
+              <div className="grid gap-4 md:grid-cols-2">
+                {Object.entries(profileData.analysis.planetaryInterpretations).map(([key, text]) => {
+                  // key is like "SunInAries", meaningful text is in value
+                  const planetName = key.replace(/In.+/, '');
+                  return (
+                    <div key={key} className="bg-white p-4 rounded shadow-sm">
+                      <span className="block font-bold text-purple-700 mb-1">{planetName}</span>
+                      <p className="text-gray-700 text-sm leading-relaxed">{String(text)}</p>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
-            </Card>
-          </motion.div>
-        );
+            </div>
+          )}
 
-      case 'yogas':
-        return (
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-          >
-            <Card className="p-6">
-              <h3 className="text-xl font-bold mb-4 text-gray-800">Yoga Combinations</h3>
-              <div className="space-y-4">
-                {profileData.yogas && Object.entries(profileData.yogas).map(([category, yogas]) => (
-                  <div key={category} className="border border-gray-200 rounded-lg p-4">
-                    <h4 className="font-semibold mb-2 capitalize">{category}</h4>
-                    <div className="grid gap-2">
-                      {Array.isArray(yogas) ? yogas.map((yoga, index) => (
-                        <div key={index} className="bg-gray-50 p-3 rounded">
-                          <div className="font-medium">{yoga.name}</div>
-                          <div className="text-sm text-gray-600">{yoga.description}</div>
-                        </div>
-                      )) : (
-                        <div className="text-gray-500">No yogas found in this category</div>
-                      )}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </Card>
-          </motion.div>
-        );
+          {/* 2. General Analysis */}
+          {profileData.analysis && Object.entries(profileData.analysis).map(([section, content]) => {
+            if (section === 'planetaryInterpretations' || section === 'divisionalCharts') return null; // Handled separately
 
-      case 'predictions':
-        return (
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-          >
-            <Card className="p-6">
-              <h3 className="text-xl font-bold mb-4 text-gray-800">Predictions & Analysis</h3>
-              <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-6">
-                <div className="flex">
-                  <div className="text-yellow-600 mr-3">⚠️</div>
-                  <div>
-                    <h4 className="text-yellow-800 font-medium">Disclaimer</h4>
-                    <p className="text-yellow-700 text-sm mt-1">
-                      These are general interpretations based on traditional Vedic astrology.
-                      For personalized guidance, consult a qualified astrologer.
-                    </p>
-                  </div>
+            return (
+              <div key={section} className="border border-gray-200 rounded-lg p-4">
+                <h4 className="font-semibold mb-3 capitalize">{section.replace(/([A-Z])/g, ' $1')}</h4>
+                <div className="prose prose-sm max-w-none">
+                  {content && typeof content === 'object' ? (
+                    Object.entries(content).map(([key, value]) => (
+                      <div key={key} className="mb-3">
+                        <div className="font-medium capitalize">{key.replace(/([A-Z])/g, ' $1')}:</div>
+                        <div className="text-gray-700">{String(value)}</div>
+                      </div>
+                    ))
+                  ) : (
+                    <p className="text-gray-700">{String(content)}</p>
+                  )}
                 </div>
               </div>
-
-              <div className="space-y-6">
-                {profileData.analysis && Object.entries(profileData.analysis).map(([section, content]) => (
-                  <div key={section} className="border border-gray-200 rounded-lg p-4">
-                    <h4 className="font-semibold mb-3 capitalize">{section.replace(/([A-Z])/g, ' $1')}</h4>
-                    <div className="prose prose-sm max-w-none">
-                      {content && typeof content === 'object' ? (
-                        Object.entries(content).map(([key, value]) => (
-                          <div key={key} className="mb-3">
-                            <div className="font-medium">{key}:</div>
-                            <div className="text-gray-700">{String(value)}</div>
-                          </div>
-                        ))
-                      ) : (
-                        <p className="text-gray-700">{String(content)}</p>
-                      )}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </Card>
-          </motion.div>
+            )
+          })}
+        </div>
+            </Card >
+          </motion.div >
         );
 
-      default:
-        return null;
-    }
-  };
+      case 'charts':
+  // Prefer rich analysis from backend if available, else fallback to raw data
+  const richCharts = profileData.analysis?.divisionalCharts;
+  const rawCharts = profileData.divisionalCharts || {};
+
+  // Merge keys from both
+  const allChartKeys = Array.from(new Set([...Object.keys(richCharts || {}), ...Object.keys(rawCharts)]));
+  allChartKeys.sort((a, b) => {
+    // Sort D1, D2, D3... numerically
+    const numA = parseInt(a.replace('D', '')) || 0;
+    const numB = parseInt(b.replace('D', '')) || 0;
+    return numA - numB;
+  });
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-purple-50">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Header */}
-        <motion.div
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="mb-8"
-        >
-          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between bg-white rounded-xl shadow-sm p-6">
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900 mb-2">
-                Your Vedic Birth Chart
-              </h1>
-              <p className="text-gray-600">
-                {profileData.birthInfo?.date} at {profileData.birthInfo?.time}
-                {profileData.birthInfo?.location && ` in ${profileData.birthInfo.location}`}
-              </p>
-            </div>
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+    >
+      <Card className="p-6">
+        <h3 className="text-xl font-bold mb-4 text-gray-800">Divisional Charts (Vargas)</h3>
+        <p className="mb-6 text-gray-600">Detailed breakdown of planetary positions in all 16 major divisional charts (Shodasavarga) + others.</p>
 
-            <div className="flex gap-3 mt-4 lg:mt-0">
-              <Button
-                onClick={handleShare}
-                variant="secondary"
-                className="flex items-center gap-2"
-              >
-                📤 Share
-              </Button>
+        <div className="space-y-8">
+          {allChartKeys.map((chart) => {
+            const richData = richCharts?.[chart];
+            const rawData = rawCharts[chart];
 
-              <Button
-                onClick={handleDownload}
-                variant="secondary"
-                className="flex items-center gap-2"
-              >
-                💾 Download
-              </Button>
+            if (!richData && !rawData) return null;
 
-              <Button
-                onClick={onNewChart}
-                className="bg-gradient-to-r from-orange-500 to-pink-500 hover:from-orange-600 hover:to-pink-600 text-white flex items-center gap-2"
-              >
-                ✨ New Chart
-              </Button>
-            </div>
+            return (
+              <div key={chart} className="border border-gray-200 rounded-xl overflow-hidden">
+                <div className="bg-gray-50 px-4 py-3 border-b border-gray-200 flex justify-between items-center">
+                  <h4 className="font-bold text-gray-800 text-lg">{chart}</h4>
+                  {richData?.interpretation && (
+                    <span className="text-xs text-gray-500 italic max-w-md text-right hidden md:inline-block">
+                      {richData.interpretation}
+                    </span>
+                  )}
+                </div>
+
+                <div className="p-4">
+                  {/* Interpretation / Special Note */}
+                  {richData?.interpretation && (
+                    <p className="text-sm text-gray-600 mb-4 md:hidden italic">{richData.interpretation}</p>
+                  )}
+
+                  {/* Placements Grid */}
+                  <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+                    {/* Use rich data if available (contains sign names), mostly. Or map raw data. */}
+                      Object.entries(richData.placements).map(([planet, sign]) => (
+                    <div key={planet} className="flex justify-between items-center bg-white border border-gray-100 p-2 rounded">
+                      <span className="font-medium text-gray-700 text-sm">{planet}</span>
+                      <span className="text-sm text-purple-600 font-semibold">{String(sign)}</span>
+                    </div>
+                    ))
+                    ) : rawData ? (
+                        Object.entries(rawData).map(([planet, signVal]) => (
+                    <div key={planet} className="flex justify-between items-center bg-white border border-gray-100 p-2 rounded">
+                      <span className="font-medium text-gray-700 text-sm">{planet}</span>
+                      <span className="text-sm text-gray-500">Sign {String(signVal)}</span>
+                    </div>
+                    )) 
+                    ) : null}
+                  </div>
+
+                  {/* Vargottama or Special Analysis */}
+                  {richData?.special_note && (
+                    <div className="mt-3 text-sm font-medium text-green-700 bg-green-50 p-2 rounded inline-block">
+                      💡 {richData.special_note}
+                    </div>
+                  )}
+                </div>
+              </div>
+            )
+          })}
+        </div>
+      </Card>
+    </motion.div>
+  );
+                      ))
+                    ) : rawData ? (
+    Object.entries(rawData).map(([planet, signVal]) => (
+      <div key={planet} className="flex justify-between items-center bg-white border border-gray-100 p-2 rounded">
+        <span className="font-medium text-gray-700 text-sm">{planet}</span>
+        <span className="text-sm text-gray-500">Sign {String(signVal)}</span>
+      </div>
+    ))
+  ) : null
+}
+                  </div >
+
+  {/* Vargottama or Special Analysis */ }
+{
+  richData?.special_note && (
+    <div className="mt-3 text-sm font-medium text-green-700 bg-green-50 p-2 rounded inline-block">
+      💡 {richData.special_note}
+    </div>
+  )
+}
+                </div >
+              </div >
+            )
+          })}
+        </div >
+      </Card >
+    </motion.div >
+  );
+
+      default:
+return null;
+}
+  };
+
+return (
+  <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-purple-50">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      {/* Header */}
+      <motion.div
+        initial={{ opacity: 0, y: -20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="mb-8"
+      >
+        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between bg-white rounded-xl shadow-sm p-6">
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900 mb-2">
+              Your Vedic Birth Chart
+            </h1>
+            <p className="text-gray-600">
+              {profileData.birthInfo?.date} at {profileData.birthInfo?.time}
+              {profileData.birthInfo?.location && ` in ${profileData.birthInfo.location}`}
+            </p>
           </div>
-        </motion.div>
 
-        {/* Tab Navigation */}
+          <div className="flex gap-3 mt-4 lg:mt-0">
+            <Button
+              onClick={handleShare}
+              variant="secondary"
+              className="flex items-center gap-2"
+            >
+              📤 Share
+            </Button>
+
+            <Button
+              onClick={handleDownload}
+              variant="secondary"
+              className="flex items-center gap-2"
+            >
+              💾 Download
+            </Button>
+
+            <Button
+              onClick={onNewChart}
+              className="bg-gradient-to-r from-orange-500 to-pink-500 hover:from-orange-600 hover:to-pink-600 text-white flex items-center gap-2"
+            >
+              ✨ New Chart
+            </Button>
+          </div>
+        </div>
+      </motion.div>
+
+      {/* Tab Navigation */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.1 }}
+        className="mb-8"
+      >
+        <div className="bg-white rounded-xl shadow-sm p-2 overflow-x-auto">
+          <div className="flex gap-1 min-w-max">
+            {tabConfig.map((tab) => (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id)}
+                className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all whitespace-nowrap ${activeTab === tab.id
+                  ? 'bg-gradient-to-r from-orange-500 to-pink-500 text-white shadow-md'
+                  : 'text-gray-600 hover:bg-gray-50 hover:text-gray-800'
+                  }`}
+              >
+                <span>{tab.icon}</span>
+                {tab.label}
+              </button>
+            ))}
+          </div>
+        </div>
+      </motion.div>
+
+      {/* Tab Content */}
+      <AnimatePresence mode="wait">
         <motion.div
+          key={activeTab}
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1 }}
-          className="mb-8"
+          exit={{ opacity: 0, y: -20 }}
+          transition={{ duration: 0.2 }}
         >
-          <div className="bg-white rounded-xl shadow-sm p-2 overflow-x-auto">
-            <div className="flex gap-1 min-w-max">
-              {tabConfig.map((tab) => (
-                <button
-                  key={tab.id}
-                  onClick={() => setActiveTab(tab.id)}
-                  className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all whitespace-nowrap ${activeTab === tab.id
-                    ? 'bg-gradient-to-r from-orange-500 to-pink-500 text-white shadow-md'
-                    : 'text-gray-600 hover:bg-gray-50 hover:text-gray-800'
-                    }`}
-                >
-                  <span>{tab.icon}</span>
-                  {tab.label}
-                </button>
-              ))}
-            </div>
-          </div>
+          {renderTabContent()}
         </motion.div>
-
-        {/* Tab Content */}
-        <AnimatePresence mode="wait">
-          <motion.div
-            key={activeTab}
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -20 }}
-            transition={{ duration: 0.2 }}
-          >
-            {renderTabContent()}
-          </motion.div>
-        </AnimatePresence>
-      </div>
+      </AnimatePresence>
     </div>
-  );
+  </div>
+);
 }
