@@ -351,7 +351,10 @@ def full_analysis(
         result['vimshottariDasha'] = interpret_dasha_sequence(dashas)
     
     if include_divisional_charts:
-        result['divisionalCharts'] = interpret_divisional_charts(dcharts, planets)
+        # OLD: result['divisionalCharts'] = interpret_divisional_charts(dcharts, planets)
+        # NEW: Use the comprehensive interpretation engine
+        from .d_charts_interpretations import augment_divisional_charts
+        result['divisionalCharts'] = augment_divisional_charts(dcharts)
         
     # Always include planetary interpretations
     result['planetaryInterpretations'] = interpret_planetary_positions(planets)
