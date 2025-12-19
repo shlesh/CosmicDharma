@@ -354,49 +354,10 @@ def compute_vedic_profile(request: ProfileRequest) -> dict:
         "analysis": analysis_results,
     }
     if CONFIG.get("cache_enabled", "true") == "true":
-        _CACHE.setex(cache_key, CACHE_TTL, json.dumps(result))
+        _CACHE.setex(cache_key, CACHE_TTL, json.dumps(result, default=str))
     return result
 
-_JOB_QUEUE: Dict[str, Dict[str, Any]] = {}
-_JOB_LOCK = Lock()
 
-def _job_set(job_id: str, **fields):
-    with _JOB_LOCK:
-        _JOB_QUEUE[job_id].update(fields)
-
-def enqueue_profile_job(req: "ProfileRequest") -> str:
-    """Create a job, start a worker thread, and return job_id."""
-    job_id = str(uuid.uuid4())
-    with _JOB_LOCK:
-        _JOB_QUEUE[job_id] = {
-            "job_id": job_id,
-            "status": "queued",     # queued | running | complete | error
-            "progress": 0,
-            "result": None,
-            "error": None,
-        }
-
-    def _worker():
-        try:
-            _job_set(job_id, status="running", progress=5)
-            # Run your computation (keep req as-is; your API layer already maps birthDate→date, etc.)
-            result = compute_vedic_profile(req)
-            # If it's a Pydantic model, make it JSON-serializable:
-            if hasattr(result, "model_dump"):
-                result = result.model_dump()
-            _job_set(job_id, status="complete", progress=100, result=result)
-        except Exception as e:
-            _job_set(job_id, status="error", error=str(e))
-
-    Thread(target=_worker, daemon=True).start()
-    return job_id
-
-def get_job(job_id: str) -> Dict[str, Any]:
-    with _JOB_LOCK:
-        job = _JOB_QUEUE.get(job_id)
-    if not job:
-        return {"job_id": job_id, "status": "error", "error": "Job not found"}
-    return job
 
 def compute_panchanga(request: ProfileRequest) -> dict:
     """Compute daily panchanga for the given request."""
@@ -441,32 +402,4 @@ def compute_panchanga(request: ProfileRequest) -> dict:
     return data
 
 
-def _run_profile_job(payload: dict):
-    # Reconstruct request and compute inside the worker
-    req = ProfileRequest.model_validate(payload)
-    return compute_vedic_profile(req)
 
-
-def enqueue_profile_job(request: ProfileRequest, background_tasks: BackgroundTasks) -> str:
-    job = _JOB_QUEUE.enqueue(_run_profile_job, request.model_dump(by_alias=True))
-    return job.id
-
-
-
-def get_job(job_id: str) -> Optional[dict]:
-    """Retrieve job status and result from Redis."""
-    try:
-        job = Job.fetch(job_id, connection=_REDIS)
-    except Exception:
-        return None
-
-    status_map = {
-        "queued": "pending",
-        "started": "running",
-        "finished": "complete",
-        "failed": "error",
-    }
-    status = status_map.get(job.get_status(), job.get_status())
-    result = job.result if status == "complete" else None
-    error = str(job.exc_info) if status == "error" and job.exc_info else None
-    return {"status": status, "result": result, "error": error}
