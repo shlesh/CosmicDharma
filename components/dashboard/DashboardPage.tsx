@@ -154,7 +154,7 @@ export function DashboardPage({ profileData, onNewChart }: DashboardPageProps) {
           </motion.div>
         );
 
-      case 'charts':
+      case 'predictions':
         <div className="space-y-6">
           {/* 1. Planetary Interpretations (New Rich Content) */}
           {profileData.analysis?.planetaryInterpretations && (
@@ -252,19 +252,20 @@ export function DashboardPage({ profileData, onNewChart }: DashboardPageProps) {
                   {/* Placements Grid */}
                   <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
                     {/* Use rich data if available (contains sign names), mostly. Or map raw data. */}
+                    {richData?.placements ? (
                       Object.entries(richData.placements).map(([planet, sign]) => (
-                    <div key={planet} className="flex justify-between items-center bg-white border border-gray-100 p-2 rounded">
-                      <span className="font-medium text-gray-700 text-sm">{planet}</span>
-                      <span className="text-sm text-purple-600 font-semibold">{String(sign)}</span>
-                    </div>
-                    ))
+                        <div key={planet} className="flex justify-between items-center bg-white border border-gray-100 p-2 rounded">
+                          <span className="font-medium text-gray-700 text-sm">{planet}</span>
+                          <span className="text-sm text-purple-600 font-semibold">{String(sign)}</span>
+                        </div>
+                      ))
                     ) : rawData ? (
-                        Object.entries(rawData).map(([planet, signVal]) => (
-                    <div key={planet} className="flex justify-between items-center bg-white border border-gray-100 p-2 rounded">
-                      <span className="font-medium text-gray-700 text-sm">{planet}</span>
-                      <span className="text-sm text-gray-500">Sign {String(signVal)}</span>
-                    </div>
-                    )) 
+                      Object.entries(rawData).map(([planet, signVal]) => (
+                        <div key={planet} className="flex justify-between items-center bg-white border border-gray-100 p-2 rounded">
+                          <span className="font-medium text-gray-700 text-sm">{planet}</span>
+                          <span className="text-sm text-gray-500">Sign {String(signVal)}</span>
+                        </div>
+                      ))
                     ) : null}
                   </div>
 
@@ -282,126 +283,75 @@ export function DashboardPage({ profileData, onNewChart }: DashboardPageProps) {
       </Card>
     </motion.div>
   );
-                      ))
-                    ) : rawData ? (
-    Object.entries(rawData).map(([planet, signVal]) => (
-      <div key={planet} className="flex justify-between items-center bg-white border border-gray-100 p-2 rounded">
-        <span className="font-medium text-gray-700 text-sm">{planet}</span>
-        <span className="text-sm text-gray-500">Sign {String(signVal)}</span>
-      </div>
-    ))
-  ) : null
-}
-                  </div >
-
-  {/* Vargottama or Special Analysis */ }
-{
-  richData?.special_note && (
-    <div className="mt-3 text-sm font-medium text-green-700 bg-green-50 p-2 rounded inline-block">
-      💡 {richData.special_note}
-    </div>
-  )
-}
-                </div >
-              </div >
-            )
-          })}
-        </div >
-      </Card >
-    </motion.div >
-  );
 
       default:
-return null;
+  return null;
 }
   };
 
 return (
   <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-purple-50">
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      {/* Header */}
+      {/* Header content already exists above, this was duplicate */}
       <motion.div
-        initial={{ opacity: 0, y: -20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="mb-8"
-      >
-        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between bg-white rounded-xl shadow-sm p-6">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900 mb-2">
-              Your Vedic Birth Chart
-            </h1>
-            <p className="text-gray-600">
-              {profileData.birthInfo?.date} at {profileData.birthInfo?.time}
-              {profileData.birthInfo?.location && ` in ${profileData.birthInfo.location}`}
-            </p>
-          </div>
 
-          <div className="flex gap-3 mt-4 lg:mt-0">
-            <Button
-              onClick={handleShare}
-              variant="secondary"
-              className="flex items-center gap-2"
-            >
-              📤 Share
-            </Button>
-
-            <Button
+        <Button
               onClick={handleDownload}
-              variant="secondary"
-              className="flex items-center gap-2"
-            >
-              💾 Download
-            </Button>
-
-            <Button
-              onClick={onNewChart}
-              className="bg-gradient-to-r from-orange-500 to-pink-500 hover:from-orange-600 hover:to-pink-600 text-white flex items-center gap-2"
-            >
-              ✨ New Chart
-            </Button>
-          </div>
-        </div>
-      </motion.div>
-
-      {/* Tab Navigation */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.1 }}
-        className="mb-8"
+        variant="secondary"
+        className="flex items-center gap-2"
       >
-        <div className="bg-white rounded-xl shadow-sm p-2 overflow-x-auto">
-          <div className="flex gap-1 min-w-max">
-            {tabConfig.map((tab) => (
-              <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
-                className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all whitespace-nowrap ${activeTab === tab.id
-                  ? 'bg-gradient-to-r from-orange-500 to-pink-500 text-white shadow-md'
-                  : 'text-gray-600 hover:bg-gray-50 hover:text-gray-800'
-                  }`}
-              >
-                <span>{tab.icon}</span>
-                {tab.label}
-              </button>
-            ))}
-          </div>
-        </div>
-      </motion.div>
+        💾 Download
+      </Button>
 
-      {/* Tab Content */}
-      <AnimatePresence mode="wait">
-        <motion.div
-          key={activeTab}
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: -20 }}
-          transition={{ duration: 0.2 }}
-        >
-          {renderTabContent()}
-        </motion.div>
-      </AnimatePresence>
+      <Button
+        onClick={onNewChart}
+        className="bg-gradient-to-r from-orange-500 to-pink-500 hover:from-orange-600 hover:to-pink-600 text-white flex items-center gap-2"
+      >
+        ✨ New Chart
+      </Button>
     </div>
   </div>
+      </motion.div >
+
+  {/* Tab Navigation */ }
+  < motion.div
+initial = {{ opacity: 0, y: 20 }}
+animate = {{ opacity: 1, y: 0 }}
+transition = {{ delay: 0.1 }}
+className = "mb-8"
+  >
+  <div className="bg-white rounded-xl shadow-sm p-2 overflow-x-auto">
+    <div className="flex gap-1 min-w-max">
+      {tabConfig.map((tab) => (
+        <button
+          key={tab.id}
+          onClick={() => setActiveTab(tab.id)}
+          className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all whitespace-nowrap ${activeTab === tab.id
+            ? 'bg-gradient-to-r from-orange-500 to-pink-500 text-white shadow-md'
+            : 'text-gray-600 hover:bg-gray-50 hover:text-gray-800'
+            }`}
+        >
+          <span>{tab.icon}</span>
+          {tab.label}
+        </button>
+      ))}
+    </div>
+  </div>
+      </motion.div >
+
+  {/* Tab Content */ }
+  < AnimatePresence mode = "wait" >
+    <motion.div
+      key={activeTab}
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: -20 }}
+      transition={{ duration: 0.2 }}
+    >
+      {renderTabContent()}
+    </motion.div>
+      </AnimatePresence >
+    </div >
+  </div >
 );
 }
