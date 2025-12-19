@@ -196,7 +196,7 @@ def compute_vedic_profile(request: ProfileRequest) -> dict:
         request.node_type,
     )
 
-    cache_key = "profile:" + "|".join(key)
+    cache_key = "profile:v2:" + "|".join(key)
     if CONFIG.get("cache_enabled", "true") == "true":
         cached = _CACHE.get(cache_key)
         if cached:
@@ -348,10 +348,11 @@ def compute_vedic_profile(request: ProfileRequest) -> dict:
             "rasiDrishti": rasi_drishti
         },
         "yogas": yogas,
+        "ashtakavarga": ashtakavarga,
         "shadbala": shadbala,
         "bhavaBala": bhava_bala,
-        "ashtakavarga": ashtakavarga,
-        "analysis": analysis_results,
+        "vargottamaPlanets": vargottama,
+        "analysis": analysis_results
     }
     if CONFIG.get("cache_enabled", "true") == "true":
         _CACHE.setex(cache_key, CACHE_TTL, json.dumps(result, default=str))
