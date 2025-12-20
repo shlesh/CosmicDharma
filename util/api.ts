@@ -103,8 +103,8 @@ export const blogApi = {
 
 // util/api.ts (additions)
 export type BlogTag = string;
-export interface BlogPostMeta { id: number; slug: string; title: string; summary?: string; published: boolean; featured?: boolean; tags?: string | null; created_at?: string; updated_at?: string; owner: string }
+export interface BlogPostMeta { id: number; slug: string; title: string; excerpt?: string; published: boolean; featured?: boolean; tags?: string | null; created_at?: string; updated_at?: string; owner: string }
 export interface BlogPost extends BlogPostMeta { content: string }
-export interface PostInput { title: string; slug?: string; summary?: string; content: string; tag_ids?: number[]; published?: boolean; featured?: boolean; tags?: string }
+export interface PostInput { title: string; slug?: string; excerpt?: string; content: string; tag_ids?: number[]; published?: boolean; featured?: boolean; tags?: string }
 
 

@@ -16,6 +16,9 @@ export async function http<T>(path: string, init: RequestInit = {}): Promise<T> 
       headers: {
         Accept: 'application/json',
         'Content-Type': 'application/json',
+        ...(typeof window !== 'undefined' && localStorage.getItem('token')
+          ? { Authorization: `Bearer ${localStorage.getItem('token')}` }
+          : {}),
         ...(init.headers || {}),
       },
       credentials: 'include',
