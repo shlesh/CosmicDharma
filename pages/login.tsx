@@ -26,23 +26,18 @@ export default function LoginPage() {
     setLoading(true);
 
     try {
-      const res = await apiFetch('/login', {
+      const data = await apiFetch<{ access_token: string }>('/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-        body: new URLSearchParams(form)
+        body: new URLSearchParams({ ...form })
       });
 
-      if (res.ok) {
-        const data = await res.json();
-        localStorage.setItem('token', data.access_token);
-        toast('Login successful!');
-        router.push('/dashboard');
-      } else {
-        const error = await res.json();
-        toast(error.detail || 'Login failed');
-      }
-    } catch (err) {
-      toast('Network error. Please try again.');
+      localStorage.setItem('token', data.access_token);
+      toast('Login successful!');
+      router.push('/dashboard');
+    } catch (err: any) {
+      console.error('Login error:', err);
+      toast(err.message || 'Network error. Please try again.');
     } finally {
       setLoading(false);
     }

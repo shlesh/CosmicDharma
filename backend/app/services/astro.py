@@ -196,7 +196,7 @@ def compute_vedic_profile(request: ProfileRequest) -> dict:
         request.node_type,
     )
 
-    cache_key = "profile:v2:" + "|".join(key)
+    cache_key = "profile:v3:" + "|".join(key)
     if CONFIG.get("cache_enabled", "true") == "true":
         cached = _CACHE.get(cache_key)
         if cached:

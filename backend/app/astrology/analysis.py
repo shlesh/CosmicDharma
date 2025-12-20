@@ -12,6 +12,9 @@ _CACHE = {}
 # All 60 divisional chart names
 DIVISIONAL_CHARTS = {f'D{i}': f'D{i}' for i in range(1, 61)}
 
+# Cache version - bump this when logic changes
+ANALYSIS_CACHE_VERSION = "1.1"
+
 # Corrected divisional chart interpretations based on BPHS
 DIV_CHART_INTERP = {
     'D1': 'Rashi chart (physical body, overall life) - primary chart for all predictions',
@@ -332,6 +335,7 @@ def full_analysis(
             include_core,
             include_dashas,
             include_divisional_charts,
+            ANALYSIS_CACHE_VERSION,  # Include version in cache key
         )
         if key in _CACHE:
             return _CACHE[key]

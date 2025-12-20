@@ -46,6 +46,7 @@ const Card = React.forwardRef<HTMLDivElement, CardProps>(({
       before:bg-gradient-to-br before:from-purple-600/20 before:via-transparent before:to-blue-600/20
       before:opacity-0 hover:before:opacity-100
       before:transition-opacity before:duration-500
+      before:pointer-events-none
     `
   };
 

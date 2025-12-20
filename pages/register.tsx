@@ -51,7 +51,7 @@ export default function RegisterPage() {
     setLoading(true);
 
     try {
-      const res = await apiFetch('/register', {
+      const data = await apiFetch<{ access_token: string }>('/register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -62,17 +62,12 @@ export default function RegisterPage() {
         })
       });
 
-      if (res.ok) {
-        const data = await res.json();
-        localStorage.setItem('token', data.access_token);
-        toast('Registration successful!');
-        router.push('/profile');
-      } else {
-        const error = await res.json();
-        toast(error.detail || 'Registration failed');
-      }
-    } catch (err) {
-      toast('Network error. Please try again.');
+      localStorage.setItem('token', data.access_token);
+      toast('Registration successful!');
+      router.push('/profile');
+    } catch (err: any) {
+      console.error('Registration error:', err);
+      toast(err.message || 'Network error. Please try again.');
     } finally {
       setLoading(false);
     }
