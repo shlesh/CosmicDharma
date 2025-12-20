@@ -26,9 +26,9 @@ export default function CoreElements({ analysis, elements }: CoreElementsProps) 
         <h4 className="font-semibold text-sm uppercase tracking-wider mb-2 opacity-80">{title}</h4>
         <div className="grid grid-cols-2 gap-2">
           {entries.map(([key, val]) => (
-            <div key={key} className="flex justify-between items-center bg-white/5 p-2 rounded">
-              <span className="capitalize">{key}</span>
-              <span className="font-mono">{formatPercent(val)}%</span>
+            <div key={key} className="flex justify-between items-center bg-gray-50 dark:bg-white/5 p-2 rounded border border-gray-100 dark:border-transparent">
+              <span className="capitalize text-gray-700 dark:text-gray-300">{key}</span>
+              <span className="font-mono text-gray-900 dark:text-gray-100 font-medium">{formatPercent(val)}%</span>
             </div>
           ))}
         </div>

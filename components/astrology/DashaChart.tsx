@@ -42,7 +42,15 @@ const FALLBACK_DESCRIPTIONS = {
 
 import { parseISO, format } from 'date-fns';
 
+import { useTheme } from '../ui/ThemeProvider';
+
 export default function DashaChart({ dasha, analysis }: DashaChartProps) {
+  const { theme } = useTheme();
+  const isDark = theme === 'dark';
+
+  const textColor = isDark ? 'rgba(255, 255, 255, 0.8)' : 'rgba(31, 41, 55, 0.8)'; // gray-800
+  const gridColor = isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)';
+
   const descriptions = useMemo(() => {
     if (analysis && Array.isArray(analysis)) {
       return analysis.map(d => d.description || '');
@@ -99,10 +107,10 @@ export default function DashaChart({ dasha, analysis }: DashaChartProps) {
         ticks: {
           callback: (_: any, i: number) => (dasha && dasha[i] ? dasha[i].lord : ''),
           autoSkip: false,
-          color: 'rgba(255, 255, 255, 0.8)',
+          color: textColor,
         },
         grid: {
-          color: 'rgba(255, 255, 255, 0.1)',
+          color: gridColor,
         },
         beginAtZero: true,
       },
@@ -112,19 +120,21 @@ export default function DashaChart({ dasha, analysis }: DashaChartProps) {
           unit: 'year' as const,
         },
         grid: {
-          color: 'rgba(255, 255, 255, 0.1)',
+          color: gridColor,
         },
         ticks: {
-          color: 'rgba(255, 255, 255, 0.8)',
+          color: textColor,
         }
       },
     },
     plugins: {
       legend: { display: false },
       tooltip: {
-        backgroundColor: 'rgba(0,0,0,0.8)',
-        titleColor: '#fff',
-        bodyColor: '#fff',
+        backgroundColor: isDark ? 'rgba(0,0,0,0.8)' : 'rgba(255,255,255,0.9)',
+        titleColor: isDark ? '#fff' : '#1f2937',
+        bodyColor: isDark ? '#fff' : '#4b5563',
+        borderColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)',
+        borderWidth: 1,
         callbacks: {
           label: (ctx: any) => {
             const idx = ctx.datasetIndex;

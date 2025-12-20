@@ -53,15 +53,17 @@ export default function HouseAnalysis({ houses }: HouseAnalysisProps) {
           }
 
           return (
-            <div key={num} className="bg-white/5 p-3 rounded-md hover:bg-white/10 transition-colors">
+          return (
+            <div key={num} className="bg-gray-50 dark:bg-white/5 p-3 rounded-md hover:bg-gray-100 dark:hover:bg-white/10 transition-colors border border-gray-100 dark:border-transparent">
               <div className="flex justify-between items-center mb-1">
-                <span className="font-bold text-accent-light">House {num}</span>
-                <span className="text-xs uppercase tracking-wider opacity-70">{signName}</span>
+                <span className="font-bold text-purple-600 dark:text-purple-400">House {num}</span>
+                <span className="text-xs uppercase tracking-wider text-gray-500 dark:text-gray-400">{signName}</span>
               </div>
-              <div className="text-sm text-white/90">
+              <div className="text-sm text-gray-700 dark:text-gray-300">
                 {summaryText}
               </div>
             </div>
+          );
           );
         })}
       </div>

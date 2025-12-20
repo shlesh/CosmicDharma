@@ -154,13 +154,13 @@ export default function DashboardPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="bg-white shadow">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-950">
+      <div className="bg-white dark:bg-gray-900 shadow dark:shadow-none border-b dark:border-gray-800">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between h-16">
             <div className="flex">
               <div className="flex-shrink-0 flex items-center mr-8">
-                <h1 className="text-xl font-bold text-gray-800">Dashboard</h1>
+                <h1 className="text-xl font-bold text-gray-800 dark:text-gray-100">Dashboard</h1>
               </div>
               <div className="hidden sm:-my-px sm:flex sm:space-x-8">
                 {tabs.map(t => (
@@ -169,8 +169,8 @@ export default function DashboardPage() {
                     onClick={() => setTab(t)}
                     className={`inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium transition-colors duration-200
                       ${tab === t
-                        ? 'border-purple-500 text-gray-900'
-                        : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                        ? 'border-purple-500 text-gray-900 dark:text-white'
+                        : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:border-gray-300 dark:hover:border-gray-700'
                       }`}
                   >
                     {t}
