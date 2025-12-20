@@ -123,6 +123,10 @@ export default function AdminDashboard() {
     }
   };
 
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+
+  if (!mounted) return null;
   if (!token) return <p>Please login.</p>;
 
   const data = {
