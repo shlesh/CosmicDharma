@@ -150,6 +150,8 @@ class ProfileRequest(BaseModel):
 
 
 class ProfileResponse(BaseModel):
+    model_config = ConfigDict(extra="allow")
+
     birthInfo: Optional[dict] = None
     planetaryPositions: Optional[list] = None
     vimshottariDasha: Optional[list] = None
@@ -311,9 +313,10 @@ def compute_vedic_profile(request: ProfileRequest) -> dict:
     try:
         sun = next(p for p in planets if p["name"] == "Sun")
         moon = next(p for p in planets if p["name"] == "Moon")
-        local_dt = datetime.fromisoformat(binfo["local"]) if binfo.get("local") else datetime.combine(
-            request.birth_date, request.birth_time
-        )
+        if binfo.get("local"):
+            local_dt = datetime.fromisoformat(binfo["local"])
+        else:
+            local_dt = datetime.combine(request.birth_date, request.birth_time)
         panchanga_data = panchanga.calculate_panchanga(
             local_dt, sun["longitude"], moon["longitude"], tz
         )
@@ -322,11 +325,15 @@ def compute_vedic_profile(request: ProfileRequest) -> dict:
         panchanga_data = None
 
     ay_name = str(request.ayanamsa)
+    ay_meta = binfo.get("ayanamsa") or {}
     result = {
         "birthInfo": {**binfo, "latitude": lat, "longitude": lon, "timezone": tz, "location": loc_str},
         "lineage": {
-            "frame": "Sri Yukteswar / Revati ayanamsa" if ay_name.startswith("yukte") else ay_name,
-            "source": "Swami Sri Yukteswar Giri, The Holy Science (1894)",
+            "frame": ay_meta.get("name") or (
+                "Sri Yukteswar / Revati ayanamsa" if ay_name.startswith("yukte") else ay_name
+            ),
+            "source": ay_meta.get("source") or "Swami Sri Yukteswar Giri, The Holy Science (1894)",
+            "fiducial": ay_meta.get("fiducial"),
             "note": "The chart portraits karma and its probable fruit. Will can outwit the stars.",
         },
         "yuga": binfo.get("yuga"),
@@ -378,5 +385,8 @@ def compute_panchanga(request: ProfileRequest) -> dict:
     planets = calculate_planets(binfo, node_type=request.node_type)
     sun = next(p for p in planets if p["name"] == "Sun")
     moon = next(p for p in planets if p["name"] == "Moon")
-    dt = datetime.combine(request.birth_date, request.birth_time)
+    if binfo.get("local"):
+        dt = datetime.fromisoformat(binfo["local"])
+    else:
+        dt = datetime.combine(request.birth_date, request.birth_time)
     return panchanga.calculate_panchanga(dt, sun["longitude"], moon["longitude"], tz)
