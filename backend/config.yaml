@@ -1,6 +1,6 @@
-# backend/config.yaml - CORRECTED FOR VEDIC ASTROLOGY
-ayanamsa: lahiri  # Changed from fagan_bradley to lahiri (standard for Vedic)
-node_type: mean   # This is correct for Vedic
-house_system: whole_sign  # Changed from placidus to whole_sign (traditional Vedic)
+# Cosmic Dharma calculation defaults
+ayanamsa: yukteswar  # Sri Yukteswar / Revati frame from The Holy Science (1894)
+node_type: mean
+house_system: whole_sign
 cache_enabled: true
 cache_ttl: 3600
