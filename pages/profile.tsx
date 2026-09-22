@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useProfileJob } from '@/hooks/useProfileJob';
-import { profileApi, ProfileResult, StartProfileJobRequest } from '@/util/api';
+import { ProfileResult, StartProfileJobRequest } from '@/util/api';
 import ProfileForm from '@/components/astrology/ProfileForm';
 import ProfileSkeleton from '@/components/ui/ProfileSkeleton';
 import BasicInfo from '@/components/astrology/BasicInfo';
@@ -10,16 +10,16 @@ import PlanetTable from '@/components/astrology/PlanetTable';
 import HouseAnalysis from '@/components/astrology/HouseAnalysis';
 import DashaTable from '@/components/astrology/DashaTable';
 import DashaChart from '@/components/astrology/DashaChart';
+import PanchangaPanel from '@/components/astrology/PanchangaPanel';
+import YugaPanel from '@/components/astrology/YugaPanel';
 import { motion } from 'framer-motion';
 
 export default function ProfilePage() {
-  const [profile, setProfile] = useState<ProfileResult | null>(null);
   const [announcement, setAnnouncement] = useState<string>('');
 
   const { startJob, starting, startError, job, progress } = useProfileJob();
 
   const onSubmit = (values: StartProfileJobRequest) => {
-    setProfile(null);
     setAnnouncement('Starting…');
     startJob(values, {
       onSuccess: () => setAnnouncement('Calculating your chart…'),
@@ -28,8 +28,8 @@ export default function ProfilePage() {
 
   const effectiveProgress = Math.max(progress, job?.progress || 0);
   const status = job?.status;
-
-  const done = status === 'complete' && job?.result;
+  const result: ProfileResult | undefined = job?.result;
+  const done = status === 'complete' && result;
 
   return (
     <main className="container mx-auto px-4 py-8">
@@ -65,22 +65,24 @@ export default function ProfilePage() {
         <p className="text-red-600 mt-4">{job?.error || 'Calculation failed. Please try again.'}</p>
       )}
 
-      {done && (
+      {done && result && (
         <motion.section
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.4 }}
           className="space-y-8 mt-8"
         >
-          <BasicInfo birth={job!.result!.birthInfo} />
-          <ProfileSummary analysis={job!.result!.analysis} />
-          <CoreElements elements={job!.result!.coreElements} />
-          <PlanetTable planets={job!.result!.planetaryPositions} />
-          <HouseAnalysis houses={job!.result!.houses} />
-          {job!.result!.vimshottariDasha && (
+          <BasicInfo birth={result.birthInfo} />
+          <YugaPanel yuga={result.yuga || result.birthInfo?.yuga} lineage={result.lineage} />
+          <PanchangaPanel panchanga={result.panchanga} />
+          <ProfileSummary analysis={result.analysis} />
+          <CoreElements elements={result.coreElements} />
+          <PlanetTable planets={result.planetaryPositions} />
+          <HouseAnalysis houses={result.houses} />
+          {result.vimshottariDasha && (
             <>
-              <DashaTable dasha={job!.result!.vimshottariDasha} />
-              <DashaChart dasha={job!.result!.vimshottariDasha} analysis={job!.result!.analysis?.vimshottariDasha} />
+              <DashaTable dasha={result.vimshottariDasha} />
+              <DashaChart dasha={result.vimshottariDasha} analysis={result.analysis?.vimshottariDasha} />
             </>
           )}
         </motion.section>

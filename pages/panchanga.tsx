@@ -1,6 +1,13 @@
 import { useState } from 'react';
 import { panchangaApi, PanchangaResponse } from '@/util/api';
 
+function unwrapPanchanga(res: PanchangaResponse | { panchanga?: PanchangaResponse }): PanchangaResponse {
+  if (res && typeof res === 'object' && 'panchanga' in res && res.panchanga) {
+    return res.panchanga;
+  }
+  return res as PanchangaResponse;
+}
+
 export default function PanchangaPage() {
   const [date, setDate] = useState('');
   const [time, setTime] = useState('');
@@ -14,7 +21,7 @@ export default function PanchangaPage() {
     setError(null); setLoading(true); setData(null);
     try {
       const res = await panchangaApi.compute({ date, time, location });
-      setData(res);
+      setData(unwrapPanchanga(res as PanchangaResponse));
     } catch (err: any) {
       setError(err.message || 'Failed to fetch Panchanga');
     } finally { setLoading(false); }

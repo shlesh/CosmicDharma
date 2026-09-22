@@ -9,8 +9,6 @@ from pydantic import BaseModel
 from sqlalchemy.orm import Session
 from datetime import datetime
 
-# ✅ use package-relative imports
-# ✅ use package-relative imports
 from app.core.db import Base, engine, get_session
 from app.models import User, BlogPost, Prompt, Report, PasswordResetToken
 from app.core.auth import get_current_user
@@ -24,17 +22,15 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 app = FastAPI(
-    title="Vedic Astrology Service",
-    description="Comprehensive Vedic astrology calculations following traditional principles",
-    version="2.0",
+    title="Cosmic Dharma",
+    description="Vedic astrology in the Sri Yukteswar / Holy Science frame",
+    version="2.1.0",
 )
 
-# Update CORS configuration
-# Update CORS configuration
 frontend_url = os.getenv("FRONTEND_URL", "http://localhost:3000")
 origins_str = os.getenv("CORS_ORIGINS", "")
 if origins_str:
-    origins = [origin.strip() for origin in origins_str.split(",")]
+    origins = [origin.strip() for origin in origins_str.split(",") if origin.strip()]
 else:
     origins = [
         frontend_url,
@@ -42,6 +38,8 @@ else:
         "http://127.0.0.1:3000",
         "http://localhost:3001",
         "http://localhost:3002",
+        "https://cosmicdharma.app",
+        "https://www.cosmicdharma.app",
     ]
 
 app.add_middleware(
@@ -53,7 +51,6 @@ app.add_middleware(
     expose_headers=["*"],
 )
 
-# Create tables
 try:
     Base.metadata.create_all(bind=engine)
 except Exception as e:
@@ -75,16 +72,15 @@ async def general_exception_handler(request, exc):
         content={"detail": "Internal server error"}
     )
 
-# Include routers with error handling
 try:
-    app.include_router(auth_router, prefix="/api")
-    app.include_router(profile_router, prefix="/api")
-    app.include_router(blog_router, prefix="/api")
-    app.include_router(admin_router, prefix="/api")
+    for prefix in ("/api", ""):
+        app.include_router(auth_router, prefix=prefix)
+        app.include_router(profile_router, prefix=prefix)
+        app.include_router(blog_router, prefix=prefix)
+        app.include_router(admin_router, prefix=prefix)
 except Exception as e:
     logger.warning(f"Some routers could not be loaded: {e}")
 
-# Pydantic models
 class PromptCreate(BaseModel):
     text: str
 
@@ -109,15 +105,15 @@ def require_donor(current_user: User = Depends(get_current_user)) -> User:
 @app.get("/api/health")
 async def health_check():
     return {
-        "status": "healthy", 
-        "version": "2.0", 
+        "status": "healthy",
+        "version": "2.1.0",
+        "frame": "yukteswar",
         "timestamp": datetime.utcnow().isoformat(),
-        "python_path": sys.path[:3]  # Debug info
     }
 
 @app.get("/health")
 async def health_check_alias():
-    return {"status": "healthy"}
+    return {"status": "healthy", "version": "2.1.0"}
 
 @app.post("/api/prompts", response_model=PromptOut)
 def create_prompt(
@@ -169,10 +165,9 @@ def get_reports(
     )
     return [ReportOut(id=r.id, content=r.content, created_at=r.created_at) for r in reports]
 
-# Root endpoint
 @app.get("/")
 async def root():
-    return {"message": "Cosmic Dharma API v2.0", "docs": "/docs"}
+    return {"message": "Cosmic Dharma API v2.1", "docs": "/docs", "frame": "yukteswar"}
 
 if __name__ == "__main__":
     import uvicorn

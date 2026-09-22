@@ -29,6 +29,12 @@ def test_vaara():
     assert panchanga.get_vaara(dt) == "Monday"
 
 
+def test_calculate_panchanga_accepts_naive_datetime():
+    data = panchanga.calculate_panchanga(datetime(2020, 1, 1, 12, 0), 0.0, 15.0, "UTC")
+    assert data["vaara"] == "Wednesday"
+    assert data["tithi"]["name"].startswith("Shukla")
+
+
 def test_compute_panchanga(monkeypatch):
     fake = fakeredis.FakeRedis()
     monkeypatch.setattr(astro, "_CACHE", fake)
@@ -53,7 +59,6 @@ def test_panchanga_route(monkeypatch):
 
 
 def test_compute_panchanga_geocode_error(monkeypatch):
-    """geocode_location raising ValueError should result in HTTP 400."""
     monkeypatch.setattr(astro, "geocode_location", lambda loc: (_ for _ in ()).throw(ValueError("bad location")))
     req = astro.ProfileRequest(date=date(2020, 1, 1), time=time(12, 0), location="Nowhere")
     with pytest.raises(HTTPException) as exc:
@@ -62,7 +67,6 @@ def test_compute_panchanga_geocode_error(monkeypatch):
 
 
 def test_compute_panchanga_birth_info_error(monkeypatch):
-    """get_birth_info raising ValueError should result in HTTP 400."""
     monkeypatch.setattr(astro, "geocode_location", lambda loc: (10.0, 20.0, "UTC"))
     monkeypatch.setattr(astro, "get_birth_info", lambda **k: (_ for _ in ()).throw(ValueError("bad info")))
     req = astro.ProfileRequest(date=date(2020, 1, 1), time=time(12, 0), location="Delhi")
