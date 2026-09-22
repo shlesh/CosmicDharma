@@ -1,40 +1,72 @@
-import swisseph as swe
+"""Birth instant, ayanamsa, Lagna, and house cusps."""
+
+from __future__ import annotations
+
 from datetime import datetime
+
 import pytz
+import swisseph as swe
+
+from .ayanamsa import describe_ayanamsa, get_ayanamsa, supported_ayanamsas
 from .constants import RASHI_METADATA
-
-
-# Supported ayanamśa options
-AYANAMSHA_MAP = {
-    "fagan_bradley": swe.SIDM_FAGAN_BRADLEY,
-    "lahiri": swe.SIDM_LAHIRI,
-    "raman": swe.SIDM_RAMAN,
-    "kp": swe.SIDM_KRISHNAMURTI,
-}
+from .yuga import describe_yuga
 
 HOUSE_MAP = {
     "placidus": b"P",
     "whole_sign": b"W",
     "equal": b"E",
-    "sripati": b"P",  # Approximation using Placidus or Porphyry often accepted if Sripati not explicit
+    "sripati": b"O",
+    "porphyry": b"O",
     "campanus": b"C",
     "regiomontanus": b"R",
 }
 
+AYANAMSHA_MAP = {
+    "lahiri": "lahiri",
+    "raman": "raman",
+    "kp": "kp",
+    "yukteswar": "yukteswar",
+    "yukteshwar": "yukteswar",
+    "fagan_bradley": "fagan_bradley",
+}
+
+
+def _normalize_cusps(cusps) -> list[float]:
+    values = [float(c) for c in cusps]
+    if len(values) >= 13:
+        return [(c % 360) for c in values[1:13]]
+    if len(values) >= 12:
+        return [(c % 360) for c in values[:12]]
+    raise ValueError("Swiss Eph returned an unexpected house-cusp vector")
+
+
+def _whole_sign_cusps(lagna_sign: int) -> list[float]:
+    return [((lagna_sign - 1 + i) % 12) * 30.0 for i in range(12)]
+
+
+def _equal_cusps(lagna_deg: float) -> list[float]:
+    return [(lagna_deg + 30.0 * i) % 360.0 for i in range(12)]
+
+
+def _sripati_cusps(lagna_deg: float) -> list[float]:
+    madhya = [(lagna_deg + 30.0 * i) % 360.0 for i in range(12)]
+    cusps = []
+    for i in range(12):
+        prev_m = madhya[(i - 1) % 12]
+        cur = madhya[i]
+        span = (cur - prev_m) % 360.0
+        cusps.append((prev_m + span / 2.0) % 360.0)
+    return cusps
+
+
 def get_birth_info(date, time, latitude, longitude, timezone,
-                   *, ayanamsha: str = "lahiri",
+                   *, ayanamsha: str = "yukteswar",
                    house_system: str = "whole_sign"):
-    """
-    Compute Julian Day, sidereal offset, sidereal ascendant, and sidereal house cusps.
-    Returns a dict with jd_ut, sidereal_offset, ascendant, cusps, etc.
-    """
-    # validate coordinates
     if not (-90.0 <= latitude <= 90.0):
         raise ValueError("Latitude must be between -90 and 90 degrees")
     if not (-180.0 <= longitude <= 180.0):
         raise ValueError("Longitude must be between -180 and 180 degrees")
 
-    # validate timezone
     try:
         tz = pytz.timezone(timezone)
     except pytz.UnknownTimeZoneError as exc:
@@ -42,7 +74,6 @@ def get_birth_info(date, time, latitude, longitude, timezone,
 
     local_dt = tz.localize(datetime.combine(date, time))
     utc_dt = local_dt.astimezone(pytz.utc)
-    # convert the UTC datetime to Julian Day
     jd_ut = swe.julday(
         utc_dt.year,
         utc_dt.month,
@@ -50,75 +81,74 @@ def get_birth_info(date, time, latitude, longitude, timezone,
         utc_dt.hour + utc_dt.minute / 60 + utc_dt.second / 3600,
     )
 
+    if not isinstance(ayanamsha, str):
+        raise ValueError("ayanamsha must be a string name")
+    ay_key = ayanamsha.lower().strip()
+    aliases = {"yukteshwar", "sri_yukteswar", "holy_science"}
+    if ay_key not in set(supported_ayanamsas()) | aliases:
+        raise ValueError(f"Unknown ayanamsa '{ayanamsha}'")
 
-    # determine ayanamsha constant
-    if isinstance(ayanamsha, str):
-        ay_const = AYANAMSHA_MAP.get(ayanamsha.lower(), swe.SIDM_LAHIRI)
-    else:
-        ay_const = int(ayanamsha)
+    sidereal_offset = get_ayanamsa(jd_ut, ay_key)
 
-    swe.set_sid_mode(ay_const)
-    # get ayanamsa (sidereal offset)
-    sidereal_offset = swe.get_ayanamsa(jd_ut)
-
-    # compute houses and ascendant
-    # SwissEph houses() function generally returns Tropical values even if set_sid_mode is called
-    # unless we use specific flags, but the safest standard method is to subtract ayanamsa manually.
-    
     if isinstance(house_system, bytes):
         hsys = house_system[:1]
+        hsys_key = next((k for k, v in HOUSE_MAP.items() if v == hsys), "whole_sign")
     else:
-        key = house_system.lower()
-        hsys = HOUSE_MAP.get(key)
-        if not hsys and len(house_system) == 1:
-            hsys = house_system.upper().encode()[:1]
-    if not hsys:
-        # Default to Whole Sign if unknown, which is standard for Vedic Rashi
-        hsys = b"W"
+        hsys_key = (house_system or "whole_sign").lower().strip()
+        if hsys_key in HOUSE_MAP:
+            hsys = HOUSE_MAP[hsys_key]
+        elif len(hsys_key) == 1:
+            hsys = hsys_key.upper().encode()[:1]
+            hsys_key = next((k for k, v in HOUSE_MAP.items() if v == hsys), hsys_key)
+        else:
+            raise ValueError(f"Unknown house system '{house_system}'")
 
-    cusps_tropical, ascmc_tropical = swe.houses(jd_ut, latitude, longitude, hsys)
-    
-    # Convert Tropical to Sidereal
-    # ascmc[0] is Ascendant
-    sidereal_ascendant = (ascmc_tropical[0] - sidereal_offset) % 360
-    
-    # Convert Cusps to Sidereal
-    # note: cusps is a tuple where index 0 is usually 0.0 or garbage for alignment in 1-based indexing, 
-    # but swe.houses returns a tuple of length 13 (0..12). 
-    sidereal_cusps = [(c - sidereal_offset) % 360 for c in cusps_tropical]
-    
+    tropical_cusps, ascmc = swe.houses(jd_ut, latitude, longitude, hsys or b"W")
+    tropical_asc = float(ascmc[0])
+    sidereal_ascendant = (tropical_asc - sidereal_offset) % 360
+    lagna_sign = int(sidereal_ascendant // 30) + 1
+
+    if hsys_key == "whole_sign":
+        sidereal_cusps = _whole_sign_cusps(lagna_sign)
+    elif hsys_key == "equal":
+        sidereal_cusps = _equal_cusps(sidereal_ascendant)
+    elif hsys_key == "sripati":
+        sidereal_cusps = _sripati_cusps(sidereal_ascendant)
+    else:
+        sidereal_cusps = [(c - sidereal_offset) % 360 for c in _normalize_cusps(tropical_cusps)]
+
     return {
         "jd_ut": jd_ut,
         "sidereal_offset": sidereal_offset,
         "ascendant": sidereal_ascendant,
+        "lagna_sign": lagna_sign,
+        "lagna_degree": sidereal_ascendant % 30,
         "cusps": sidereal_cusps,
         "latitude": latitude,
         "longitude": longitude,
         "timezone": timezone,
-        "tropical_ascendant": ascmc_tropical[0], # Keep for reference if needed
-        "house_system": house_system
+        "utc": utc_dt.isoformat(),
+        "local": local_dt.isoformat(),
+        "date": date.isoformat(),
+        "time": time.isoformat(timespec="minutes"),
+        "tropical_ascendant": tropical_asc,
+        "house_system": hsys_key,
+        "ayanamsa": describe_ayanamsa(ay_key, sidereal_offset),
+        "yuga": describe_yuga(date),
     }
 
 
 def get_lagna(jd_ut: float, latitude: float, longitude: float,
-              house_system: str | bytes = "W") -> dict:
-    """Return rashi metadata for the rising sign (Sidereal)."""
-    # We need the sidereal offset to get strict Sidereal Lagna
-    # This simplified function calls get_ayanamsa on the fly assuming Lahiri
-    swe.set_sid_mode(swe.SIDM_LAHIRI)
-    offset = swe.get_ayanamsa(jd_ut)
-    
+              house_system: str | bytes = "W",
+              ayanamsha: str = "yukteswar") -> dict:
+    offset = get_ayanamsa(jd_ut, ayanamsha)
     if isinstance(house_system, bytes):
         hsys = house_system[:1]
     else:
-        hsys = HOUSE_MAP.get(house_system.lower(), b"W")
+        hsys = HOUSE_MAP.get(str(house_system).lower(), b"W")
 
-    res = swe.houses(jd_ut, latitude, longitude, hsys)
-    asc_list = res[0] if isinstance(res[0], (list, tuple)) else res
-    
-    # Convert Tropical Asc to Sidereal Asc
-    asc_deg_tropical = asc_list[0]
-    asc_deg_sidereal = (asc_deg_tropical - offset) % 360
-    
-    idx = int(asc_deg_sidereal // 30)
+    _cusps, ascmc = swe.houses(jd_ut, latitude, longitude, hsys)
+    tropical_asc = float(ascmc[0])
+    asc_deg = (tropical_asc - offset) % 360
+    idx = int(asc_deg // 30)
     return RASHI_METADATA[idx]
