@@ -3,7 +3,7 @@ from __future__ import annotations
 
 import logging
 import json
-from typing import Literal, Optional, Dict
+from typing import Literal, Optional
 from datetime import date as dt_date, time as dt_time, datetime
 
 from fastapi import BackgroundTasks, HTTPException
@@ -11,8 +11,6 @@ from pydantic import BaseModel, Field, ConfigDict, field_validator
 import swisseph as swe
 import time
 import threading
-from threading import Lock, Thread
-from typing import Dict, Any
 import uuid
 import traceback
 
@@ -37,7 +35,7 @@ from ..astrology import panchanga
 from ..utils.signs import get_sign_name
 
 CONFIG = load_config()
-# --- Simple in-process TTL cache (drop-in for redis we used before) ---
+
 class _TTLCache:
     def __init__(self, default_ttl: int = 3600, maxsize: int = 2048):
         self.default_ttl = int(default_ttl)
@@ -58,14 +56,12 @@ class _TTLCache:
 
     def setex(self, key: str, ttl: int, value: str) -> None:
         with self._lock:
-            # naive eviction: drop the oldest expired first
             if len(self._data) >= self.maxsize:
                 now = time.time()
                 expired = [k for k, (exp, _) in self._data.items() if exp and exp < now]
                 for k in expired:
                     self._data.pop(k, None)
                 if len(self._data) >= self.maxsize and self._data:
-                    # still full -> drop an arbitrary item
                     self._data.pop(next(iter(self._data)))
             self._data[key] = (time.time() + int(ttl) if ttl else None, value)
 
@@ -82,20 +78,13 @@ class _TTLCache:
             self._data.pop(key, None)
 
 logger = logging.getLogger(__name__)
-
-# Cache config
 CACHE_TTL = int(CONFIG.get("cache_ttl", "3600"))
 _CACHE = _TTLCache(default_ttl=CACHE_TTL, maxsize=2048)
-
-# --- In-process job runner (instead of Redis/RQ) ---
 _JOBS: dict[str, dict] = {}
 _JOBS_LOCK = threading.Lock()
 
-def _run_profile_job(payload: dict):
-    req = ProfileRequest.model_validate(payload)
-    return compute_vedic_profile(req)
 
-def enqueue_profile_job(request: ProfileRequest, background_tasks: BackgroundTasks) -> str:
+def enqueue_profile_job(request: "ProfileRequest", background_tasks: BackgroundTasks) -> str:
     job_id = uuid.uuid4().hex
     with _JOBS_LOCK:
         _JOBS[job_id] = {"status": "pending", "result": None, "error": None, "ts": time.time()}
@@ -117,35 +106,29 @@ def enqueue_profile_job(request: ProfileRequest, background_tasks: BackgroundTas
     background_tasks.add_task(runner)
     return job_id
 
+
 def get_job(job_id: str) -> dict | None:
     with _JOBS_LOCK:
         data = _JOBS.get(job_id)
         if not data:
             return None
-        # keep legacy shape
         return {"status": data["status"], "result": data["result"], "error": data["error"]}
 
-def clear_profile_cache():
+
+def clear_profile_cache() -> None:
     for key in list(_CACHE.scan_iter("profile:")):
         _CACHE.delete(key)
 
 
-
-def clear_profile_cache() -> None:
-    """Utility for tests to clear the cache."""
-    for key in _CACHE.scan_iter("profile:*"):
-        _CACHE.delete(key)
-
-
 class ProfileRequest(BaseModel):
-    """Request payload for Vedic profile computations."""
-
     model_config = ConfigDict(populate_by_name=True)
 
     birth_date: dt_date = Field(..., alias="date")
     birth_time: dt_time = Field(..., alias="time")
     location: str
-    ayanamsa: Literal["lahiri", "raman", "kp"] = Field(default="lahiri")
+    ayanamsa: Literal[
+        "yukteswar", "yukteshwar", "lahiri", "raman", "kp", "yukteswar_swiss"
+    ] = Field(default="yukteswar")
     node_type: Literal["mean", "true"] = Field(default="mean", alias="lunar_node")
     house_system: Literal["whole_sign", "equal", "sripati"] = Field(default="whole_sign")
 
@@ -167,8 +150,6 @@ class ProfileRequest(BaseModel):
 
 
 class ProfileResponse(BaseModel):
-    """Response schema for complete profile."""
-
     birthInfo: Optional[dict] = None
     planetaryPositions: Optional[list] = None
     vimshottariDasha: Optional[list] = None
@@ -182,11 +163,13 @@ class ProfileResponse(BaseModel):
     bhavaBala: Optional[dict] = None
     ashtakavarga: Optional[dict] = None
     panchanga: Optional[dict] = None
+    yuga: Optional[dict] = None
+    lineage: Optional[dict] = None
     analysis: Optional[dict] = None
+    vargottamaPlanets: Optional[list] = None
 
 
 def compute_vedic_profile(request: ProfileRequest) -> dict:
-    """Compute complete Vedic astrological profile."""
     key = (
         request.birth_date.isoformat(),
         request.birth_time.isoformat(),
@@ -195,8 +178,7 @@ def compute_vedic_profile(request: ProfileRequest) -> dict:
         request.house_system,
         request.node_type,
     )
-
-    cache_key = "profile:v3:" + "|".join(key)
+    cache_key = "profile:v4:" + "|".join(key)
     if CONFIG.get("cache_enabled", "true") == "true":
         cached = _CACHE.get(cache_key)
         if cached:
@@ -208,13 +190,10 @@ def compute_vedic_profile(request: ProfileRequest) -> dict:
     try:
         lat, lon, tz = geocode_location(loc_str)
     except ValueError as ex:
-        logger.error(str(ex))
         raise HTTPException(status_code=400, detail=str(ex))
-    except Exception as ex:  # pragma: no cover - unexpected
+    except Exception as ex:
         logger.exception("Geocoding failed")
         raise HTTPException(status_code=500, detail="Geocoding failed") from ex
-
-    logger.info("Computed coordinates %s, %s timezone %s", lat, lon, tz)
 
     try:
         binfo = get_birth_info(
@@ -227,88 +206,84 @@ def compute_vedic_profile(request: ProfileRequest) -> dict:
             house_system=request.house_system,
         )
     except ValueError as ex:
-        logger.error("Invalid birth data: %s", ex)
         raise HTTPException(status_code=400, detail=str(ex))
     except swe.Error as ex:
-        logger.error("SwissEph error: %s", ex)
         raise HTTPException(status_code=500, detail=f"SwissEph error: {ex}")
-    except Exception as ex:  # pragma: no cover - unexpected
+    except Exception as ex:
         logger.exception("Failed to compute birth info")
         raise HTTPException(status_code=500, detail="Failed to compute birth information") from ex
 
     try:
         planets = calculate_planets(binfo, node_type=request.node_type)
     except swe.Error as ex:
-        logger.error("SwissEph error: %s", ex)
         raise HTTPException(status_code=500, detail=f"SwissEph error: {ex}")
-    except Exception as ex:  # pragma: no cover - unexpected
+    except Exception as ex:
         logger.exception("Failed to compute planetary positions")
         raise HTTPException(status_code=500, detail="Failed to compute planetary positions") from ex
 
     try:
         dashas = calculate_vimshottari_dasha(binfo, planets, depth=3)
-    except Exception as ex:  # pragma: no cover - unexpected
+    except Exception as ex:
         logger.exception("Failed to compute dasha")
         raise HTTPException(status_code=500, detail="Failed to compute vimshottari dasha") from ex
 
     try:
         nak = get_nakshatra(planets)
-    except Exception as ex:  # pragma: no cover - unexpected
+    except Exception as ex:
         logger.exception("Failed to compute nakshatra")
         raise HTTPException(status_code=500, detail="Failed to compute nakshatra") from ex
 
     try:
         houses = analyze_houses(binfo, planets)
-    except Exception as ex:  # pragma: no cover - unexpected
+    except Exception as ex:
         logger.exception("Failed to compute houses")
         raise HTTPException(status_code=500, detail="Failed to compute houses") from ex
-    if isinstance(houses, dict) and 'houses' not in houses:
-        houses = {'houses': houses, 'placements': {}, 'aspects': {}}
+    if isinstance(houses, dict) and "houses" not in houses:
+        houses = {"houses": houses, "placements": {}, "aspects": {}}
 
     try:
         core = calculate_core_elements(planets, include_modalities=True)
-    except Exception as ex:  # pragma: no cover - unexpected
+    except Exception as ex:
         logger.exception("Failed to compute core elements")
         raise HTTPException(status_code=500, detail="Failed to compute core elements") from ex
 
     try:
         dcharts = calculate_divisional_charts(planets)
-    except Exception as ex:  # pragma: no cover - unexpected
+    except Exception as ex:
         logger.exception("Failed to compute divisional charts")
         raise HTTPException(status_code=500, detail="Failed to compute divisional charts") from ex
 
     try:
-        vargottama = get_vargottama_planets(
-            dcharts.get('D1', {}),
-            dcharts.get('D9', {})
-        )
-    except Exception as ex:  # pragma: no cover - unexpected
+        vargottama = get_vargottama_planets(dcharts.get("D1", {}), dcharts.get("D9", {}))
+    except Exception as ex:
         logger.exception("Failed to compute vargottama planets")
         raise HTTPException(status_code=500, detail="Failed to compute vargottama planets") from ex
 
     try:
         graha_drishti = calculate_vedic_aspects(planets, houses)
         rasi_drishti = calculate_sign_aspects(planets)
-    except Exception as ex:  # pragma: no cover - unexpected
+    except Exception as ex:
         logger.exception("Failed to compute aspects")
         raise HTTPException(status_code=500, detail="Failed to compute aspects") from ex
 
     try:
         yogas = calculate_all_yogas(planets, houses, graha_drishti)
-    except Exception as ex:  # pragma: no cover - unexpected
+    except Exception as ex:
         logger.exception("Failed to compute yogas")
         raise HTTPException(status_code=500, detail="Failed to compute yogas") from ex
 
     try:
         shadbala = calculate_shadbala(planets, binfo, houses)
         bhava_bala = calculate_bhava_bala(houses, planets, binfo)
-    except Exception as ex:  # pragma: no cover - unexpected
+    except Exception as ex:
         logger.exception("Failed to compute strengths")
         raise HTTPException(status_code=500, detail="Failed to compute strengths") from ex
 
     try:
-        ashtakavarga = calculate_ashtakavarga(planets)
-    except Exception as ex:  # pragma: no cover - unexpected
+        ashtakavarga = calculate_ashtakavarga(
+            planets, lagna_sign=binfo.get("lagna_sign"), binfo=binfo
+        )
+    except Exception as ex:
         logger.exception("Failed to compute ashtakavarga")
         raise HTTPException(status_code=500, detail="Failed to compute ashtakavarga") from ex
 
@@ -322,54 +297,66 @@ def compute_vedic_profile(request: ProfileRequest) -> dict:
             include_dashas=True,
             include_divisional_charts=True,
         )
-    except Exception as ex:  # pragma: no cover - unexpected
+    except Exception as ex:
         logger.exception("Failed to compute analysis")
         raise HTTPException(status_code=500, detail="Failed to compute analysis") from ex
 
-    analysis_results['yogas'] = yogas
-    analysis_results['shadbala'] = shadbala
-    analysis_results['bhavaBala'] = bhava_bala
-    analysis_results['vargottamaPlanets'] = vargottama
+    analysis_results["yogas"] = yogas
+    analysis_results["shadbala"] = shadbala
+    analysis_results["bhavaBala"] = bhava_bala
+    analysis_results["vargottamaPlanets"] = vargottama
 
-    named_planets = [
-        {**p, "sign": get_sign_name(p["sign"])} for p in planets
-    ]
+    named_planets = [{**p, "sign": get_sign_name(p["sign"])} for p in planets]
 
+    try:
+        sun = next(p for p in planets if p["name"] == "Sun")
+        moon = next(p for p in planets if p["name"] == "Moon")
+        local_dt = datetime.fromisoformat(binfo["local"]) if binfo.get("local") else datetime.combine(
+            request.birth_date, request.birth_time
+        )
+        panchanga_data = panchanga.calculate_panchanga(
+            local_dt, sun["longitude"], moon["longitude"], tz
+        )
+    except Exception:
+        logger.exception("Failed to compute panchanga")
+        panchanga_data = None
+
+    ay_name = str(request.ayanamsa)
     result = {
-        "birthInfo": {**binfo, "latitude": lat, "longitude": lon, "timezone": tz},
+        "birthInfo": {**binfo, "latitude": lat, "longitude": lon, "timezone": tz, "location": loc_str},
+        "lineage": {
+            "frame": "Sri Yukteswar / Revati ayanamsa" if ay_name.startswith("yukte") else ay_name,
+            "source": "Swami Sri Yukteswar Giri, The Holy Science (1894)",
+            "note": "The chart portraits karma and its probable fruit. Will can outwit the stars.",
+        },
+        "yuga": binfo.get("yuga"),
+        "panchanga": panchanga_data,
         "planetaryPositions": named_planets,
         "vimshottariDasha": dashas,
         "nakshatra": nak,
         "houses": houses,
         "coreElements": core,
         "divisionalCharts": dcharts,
-        "vedicAspects": {
-            "grahaDrishti": graha_drishti,
-            "rasiDrishti": rasi_drishti
-        },
+        "vedicAspects": {"grahaDrishti": graha_drishti, "rasiDrishti": rasi_drishti},
         "yogas": yogas,
         "ashtakavarga": ashtakavarga,
         "shadbala": shadbala,
         "bhavaBala": bhava_bala,
         "vargottamaPlanets": vargottama,
-        "analysis": analysis_results
+        "analysis": analysis_results,
     }
     if CONFIG.get("cache_enabled", "true") == "true":
         _CACHE.setex(cache_key, CACHE_TTL, json.dumps(result, default=str))
     return result
 
 
-
 def compute_panchanga(request: ProfileRequest) -> dict:
-    """Compute daily panchanga for the given request."""
     loc_str = request.location.strip()
-    logger.info("Geocoding '%s'", loc_str)
     try:
         lat, lon, tz = geocode_location(loc_str)
     except ValueError as ex:
-        logger.error(str(ex))
         raise HTTPException(status_code=400, detail=str(ex))
-    except Exception as ex:  # pragma: no cover - unexpected
+    except Exception as ex:
         logger.exception("Geocoding failed")
         raise HTTPException(status_code=500, detail="Geocoding failed") from ex
 
@@ -391,16 +378,5 @@ def compute_panchanga(request: ProfileRequest) -> dict:
     planets = calculate_planets(binfo, node_type=request.node_type)
     sun = next(p for p in planets if p["name"] == "Sun")
     moon = next(p for p in planets if p["name"] == "Moon")
-
     dt = datetime.combine(request.birth_date, request.birth_time)
-    data = panchanga.calculate_panchanga(
-        dt,
-        sun["longitude"],
-        moon["longitude"],
-        tz,
-    )
-
-    return data
-
-
-
+    return panchanga.calculate_panchanga(dt, sun["longitude"], moon["longitude"], tz)
