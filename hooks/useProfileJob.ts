@@ -1,45 +1,40 @@
-import { useEffect, useMemo, useRef } from 'react';
+import { useMemo, useState } from 'react';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { profileApi, StartProfileJobRequest, JobStatusResponse } from '@/util/api';
 
 export function useProfileJob() {
-  const jobIdRef = useRef<string | null>(null);
-  const jobStartRef = useRef<number>(0);
+  const [jobId, setJobId] = useState<string | null>(null);
+  const [startedAt, setStartedAt] = useState<number>(0);
 
   const start = useMutation({
     mutationFn: (payload: StartProfileJobRequest) => profileApi.startJob(payload),
     onSuccess: (data) => {
-      jobIdRef.current = data.job_id;
-      jobStartRef.current = Date.now();
+      setJobId(data.job_id);
+      setStartedAt(Date.now());
     },
   });
 
   const polling = useQuery<JobStatusResponse | null>({
-    queryKey: ['job-status', jobIdRef.current],
+    queryKey: ['job-status', jobId],
     queryFn: async () => {
-      if (!jobIdRef.current) return null;
-      return profileApi.jobStatus(jobIdRef.current);
+      if (!jobId) return null;
+      return profileApi.jobStatus(jobId);
     },
-    enabled: !!jobIdRef.current,
+    enabled: !!jobId,
     refetchInterval: (q) => {
       const status = q.state.data?.status;
       if (!status || status === 'queued' || status === 'pending' || status === 'running') return 1000;
-      return false; // stop on complete/error
+      return false;
     },
   });
 
   const progress = useMemo(() => {
-    if (!jobIdRef.current || !jobStartRef.current) return 0;
-    const elapsed = Date.now() - jobStartRef.current;
-    // optimistic progress capped until server marks complete
-    return Math.min(95, (elapsed / 10_000) * 100); // ~10s to 95%
-  }, [polling.data?.status]);
-
-  useEffect(() => {
-    if (polling.data?.status === 'complete' || polling.data?.status === 'error') {
-      jobIdRef.current = null;
-    }
-  }, [polling.data?.status]);
+    const status = polling.data?.status;
+    if (status === 'complete') return 100;
+    if (!jobId || !startedAt) return 0;
+    const elapsed = Date.now() - startedAt;
+    return Math.min(95, (elapsed / 10_000) * 100);
+  }, [polling.data?.status, jobId, startedAt]);
 
   return {
     startJob: start.mutate,

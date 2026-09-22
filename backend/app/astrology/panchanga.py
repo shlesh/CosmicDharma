@@ -2,12 +2,12 @@
 from __future__ import annotations
 
 from datetime import datetime
-import pytz
 from typing import Dict
+
+import pytz
 
 from .constants import NAKSHATRA_METADATA
 
-# Names of the 30 tithis
 TITHI_NAMES = [
     "Shukla Pratipada",
     "Shukla Dvitiya",
@@ -41,7 +41,6 @@ TITHI_NAMES = [
     "Amavasya",
 ]
 
-# Names of the 27 yogas
 YOGA_NAMES = [
     "Vishkambha",
     "Priti",
@@ -72,7 +71,6 @@ YOGA_NAMES = [
     "Vaidhriti",
 ]
 
-# Sequence of 60 karanas within a lunar month
 _KARANA_SEQUENCE = (
     ["Bava", "Balava", "Kaulava", "Taitila", "Garaja", "Vanija", "Vishti"] * 8
     + ["Shakuni", "Chatushpada", "Naga", "Kimstughna"]
@@ -90,7 +88,6 @@ VAARA_NAMES = [
 
 
 def get_tithi(sun_lon: float, moon_lon: float) -> Dict:
-    """Return tithi details from longitudes."""
     diff = (moon_lon - sun_lon) % 360
     index = int(diff // 12)
     frac = (diff % 12) / 12
@@ -100,7 +97,6 @@ def get_tithi(sun_lon: float, moon_lon: float) -> Dict:
 
 
 def get_nakshatra(moon_lon: float) -> Dict:
-    """Return nakshatra and pada for the Moon longitude."""
     span = 360 / 27
     index = int(moon_lon % 360 // span)
     pada = int((moon_lon % span) // (span / 4)) + 1
@@ -109,7 +105,6 @@ def get_nakshatra(moon_lon: float) -> Dict:
 
 
 def get_yoga(sun_lon: float, moon_lon: float) -> Dict:
-    """Return yoga from the sum of longitudes."""
     total = (sun_lon + moon_lon) % 360
     span = 360 / 27
     index = int(total // span)
@@ -118,7 +113,6 @@ def get_yoga(sun_lon: float, moon_lon: float) -> Dict:
 
 
 def get_karana(sun_lon: float, moon_lon: float) -> Dict:
-    """Return karana for the lunar day."""
     diff = (moon_lon - sun_lon) % 360
     index = int(diff // 6)
     frac = (diff % 6) / 6
@@ -127,8 +121,14 @@ def get_karana(sun_lon: float, moon_lon: float) -> Dict:
 
 
 def get_vaara(dt: datetime) -> str:
-    """Return weekday name for the given localized datetime."""
     return VAARA_NAMES[dt.weekday()]
+
+
+def _localize(dt: datetime, timezone: str) -> datetime:
+    tz = pytz.timezone(timezone)
+    if dt.tzinfo is None:
+        return tz.localize(dt)
+    return dt.astimezone(tz)
 
 
 def calculate_panchanga(
@@ -137,9 +137,7 @@ def calculate_panchanga(
     moon_lon: float,
     timezone: str,
 ) -> Dict:
-    """Combine all panchanga elements."""
-    tz = pytz.timezone(timezone)
-    local_dt = dt.astimezone(tz)
+    local_dt = _localize(dt, timezone)
     return {
         "tithi": get_tithi(sun_lon, moon_lon),
         "nakshatra": get_nakshatra(moon_lon),

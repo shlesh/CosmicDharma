@@ -107,6 +107,7 @@ def get_birth_info(date, time, latitude, longitude, timezone,
     tropical_asc = float(ascmc[0])
     sidereal_ascendant = (tropical_asc - sidereal_offset) % 360
     lagna_sign = int(sidereal_ascendant // 30) + 1
+    lagna_meta = RASHI_METADATA[lagna_sign - 1]
 
     if hsys_key == "whole_sign":
         sidereal_cusps = _whole_sign_cusps(lagna_sign)
@@ -121,6 +122,7 @@ def get_birth_info(date, time, latitude, longitude, timezone,
         "jd_ut": jd_ut,
         "sidereal_offset": sidereal_offset,
         "ascendant": sidereal_ascendant,
+        "ascendant_sign": lagna_meta["name"],
         "lagna_sign": lagna_sign,
         "lagna_degree": sidereal_ascendant % 30,
         "cusps": sidereal_cusps,
