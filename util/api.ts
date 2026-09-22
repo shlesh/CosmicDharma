@@ -4,13 +4,12 @@ import { get, post, del, http } from './http';
 export const fetchJson = async <T>(path: string, init?: RequestInit) => http<T>(path, init);
 export const apiFetch = http;
 
-// ---- Typed endpoints used across the app ----
 export type JobStatus = 'queued' | 'pending' | 'running' | 'complete' | 'error';
 
 export interface StartProfileJobRequest {
   name?: string;
-  birthDate: string;   // UI value, e.g., "2000-06-23"
-  birthTime: string;   // UI value, e.g., "04:26"
+  birthDate: string;
+  birthTime: string;
   location: string;
   lat?: number;
   lon?: number;
@@ -34,6 +33,8 @@ export interface BirthInfo {
   latitude: number;
   longitude: number;
   timezone: string;
+  ayanamsa?: { name?: string; value?: number };
+  yuga?: { display?: string; dharma?: string; quality?: string; note?: string };
 }
 
 export interface ProfileResult {
@@ -44,6 +45,9 @@ export interface ProfileResult {
   houses?: Record<string, any>;
   vimshottariDasha?: any[];
   nakshatra?: Record<string, any>;
+  yuga?: Record<string, any>;
+  panchanga?: Record<string, any>;
+  lineage?: Record<string, any>;
   divisionalCharts?: Record<string, any>;
   yogas?: Record<string, any>;
   shadbala?: Record<string, any>;
@@ -71,8 +75,8 @@ export const profileApi = {
   startJob: (body: StartProfileJobRequest) =>
     post<StartProfileJobResponse>('/profile/job', {
       name: body.name,
-      date: body.birthDate,     // <-- mapped
-      time: body.birthTime,     // <-- mapped
+      date: body.birthDate,
+      time: body.birthTime,
       location: body.location,
       lat: body.lat,
       lon: body.lon,
@@ -85,26 +89,20 @@ export const panchangaApi = {
   compute: (body: PanchangaRequest) => post<PanchangaResponse>('/panchanga', body),
 };
 
-// blog endpoints kept for compatibility if you use them elsewhere
+export type BlogTag = string;
+export interface BlogPostMeta { id: number; slug: string; title: string; excerpt?: string; published: boolean; featured?: boolean; tags?: string | null; created_at?: string; updated_at?: string; owner: string }
+export interface BlogPost extends BlogPostMeta { content: string }
+export interface PostInput { title: string; slug?: string; excerpt?: string; content: string; tag_ids?: number[]; published?: boolean; featured?: boolean; tags?: string }
+
 export const blogApi = {
-  // Public
   getPosts: (qs: string = '') => get<BlogPostMeta[]>(`/posts${qs ? `?${qs}` : ''}`),
   getPostBySlug: (slug: string) => get<BlogPost>(`/posts/${slug}`),
   getPostById: (id: number) => get<BlogPost>(`/posts/${id}`),
   getFeaturedPosts: (limit = 5) => get<BlogPostMeta[]>(`/featured?limit=${limit}`),
   getTags: () => get<{ tags: string[] }>(`/tags`),
-  // Admin
   createPost: (data: PostInput) => post<BlogPostMeta>('/posts', data),
   updatePost: (id: number, data: PostInput) => http<BlogPostMeta>(`/posts/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
   deletePost: (id: number) => del<boolean>(`/posts/${id}`),
   publishPost: (id: number) => post<BlogPostMeta>(`/posts/${id}/publish`, {}),
   unpublishPost: (id: number) => post<BlogPostMeta>(`/posts/${id}/unpublish`, {}),
 };
-
-// util/api.ts (additions)
-export type BlogTag = string;
-export interface BlogPostMeta { id: number; slug: string; title: string; excerpt?: string; published: boolean; featured?: boolean; tags?: string | null; created_at?: string; updated_at?: string; owner: string }
-export interface BlogPost extends BlogPostMeta { content: string }
-export interface PostInput { title: string; slug?: string; excerpt?: string; content: string; tag_ids?: number[]; published?: boolean; featured?: boolean; tags?: string }
-
-

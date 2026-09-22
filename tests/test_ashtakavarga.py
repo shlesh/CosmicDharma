@@ -1,37 +1,27 @@
 from backend.app.astrology.ashtakavarga import calculate_ashtakavarga
 
 
-def test_example_chart_one():
+def test_bav_canonical_totals():
     planets = [
         {"name": "Sun", "sign": 1},
         {"name": "Moon", "sign": 4},
         {"name": "Mars", "sign": 6},
+        {"name": "Mercury", "sign": 3},
+        {"name": "Jupiter", "sign": 9},
+        {"name": "Venus", "sign": 2},
+        {"name": "Saturn", "sign": 10},
     ]
-    res = calculate_ashtakavarga(planets)
-    expected_bav = {
-        "Sun": {1: 1, 2: 1, 3: 0, 4: 1, 5: 0, 6: 0, 7: 1, 8: 1, 9: 1, 10: 1, 11: 1, 12: 0},
-        "Moon": {1: 0, 2: 1, 3: 0, 4: 1, 5: 1, 6: 1, 7: 0, 8: 1, 9: 1, 10: 1, 11: 0, 12: 1},
-        "Mars": {1: 1, 2: 0, 3: 1, 4: 1, 5: 1, 6: 1, 7: 0, 8: 1, 9: 1, 10: 0, 11: 1, 12: 0},
+    res = calculate_ashtakavarga(planets, lagna_sign=1)
+    totals = {name: sum(points.values()) for name, points in res["bav"].items()}
+    assert totals == {
+        "Sun": 48, "Moon": 49, "Mars": 39, "Mercury": 54,
+        "Jupiter": 56, "Venus": 52, "Saturn": 39,
     }
-    expected_totals = {1: 2, 2: 2, 3: 1, 4: 3, 5: 2, 6: 2, 7: 1, 8: 3, 9: 3, 10: 2, 11: 2, 12: 1}
-    assert res["bav"] == expected_bav
-    assert res["total_points"] == expected_totals
+    assert sum(res["sav"].values()) == 337
 
 
-def test_example_chart_two():
-    planets = [
-        {"name": "Mercury", "sign": 2},
-        {"name": "Jupiter", "sign": 5},
-        {"name": "Venus", "sign": 9},
-        {"name": "Saturn", "sign": 11},
-    ]
-    res = calculate_ashtakavarga(planets)
-    expected_bav = {
-        "Mercury": {1: 1, 2: 1, 3: 1, 4: 0, 5: 1, 6: 0, 7: 1, 8: 0, 9: 1, 10: 0, 11: 1, 12: 1},
-        "Jupiter": {1: 1, 2: 1, 3: 1, 4: 0, 5: 1, 6: 1, 7: 0, 8: 1, 9: 1, 10: 0, 11: 1, 12: 0},
-        "Venus": {1: 1, 2: 0, 3: 1, 4: 0, 5: 1, 6: 1, 7: 0, 8: 0, 9: 1, 10: 1, 11: 1, 12: 1},
-        "Saturn": {1: 1, 2: 0, 3: 1, 4: 1, 5: 1, 6: 0, 7: 0, 8: 1, 9: 1, 10: 0, 11: 1, 12: 1},
-    }
-    expected_totals = {1: 4, 2: 2, 3: 4, 4: 1, 5: 4, 6: 2, 7: 1, 8: 2, 9: 4, 10: 1, 11: 4, 12: 3}
-    assert res["bav"] == expected_bav
-    assert res["total_points"] == expected_totals
+def test_ashtakavarga_structure():
+    planets = [{"name": "Sun", "sign": 1}, {"name": "Moon", "sign": 4}]
+    res = calculate_ashtakavarga(planets, lagna_sign=5)
+    assert set(res["bav"]) == {"Sun", "Moon", "Mars", "Mercury", "Jupiter", "Venus", "Saturn"}
+    assert res["lagna_sign"] == 5
