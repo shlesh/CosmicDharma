@@ -49,6 +49,7 @@
     "stop": "node scripts/dev-ctl.cjs stop",
     "restart": "node scripts/dev-ctl.cjs restart",
     "status": "node scripts/dev-ctl.cjs status",
+    "logs": "node scripts/dev-ctl.cjs logs",
     "quick": "npm run dev",
     "lint": "next lint"
   },
