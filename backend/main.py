@@ -58,10 +58,10 @@ except Exception as e:
 
 @app.exception_handler(RequestValidationError)
 async def validation_exception_handler(request, exc):
-    logger.error("Validation error: %s", exc)
+    logger.error("Validation error: %s", exc.errors())
     return JSONResponse(
         status_code=422,
-        content={"detail": str(exc).split('\n')[0] if exc.errors() else "Validation error"}
+        content={"detail": exc.errors()},
     )
 
 @app.exception_handler(Exception)
