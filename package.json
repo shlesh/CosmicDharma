@@ -44,7 +44,6 @@
     "dev:frontend": "next dev -p 3000",
     "dev:backend": "node scripts/dev-backend.cjs",
     "backend": "node scripts/dev-backend.cjs",
-    "setup": "node scripts/dev-backend.cjs",
     "quick": "npm run dev",
     "lint": "next lint"
   },
