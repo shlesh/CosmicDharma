@@ -49,6 +49,46 @@ class QuickProfileRequest(BaseModel):
         return v
 
 
+class PanchangaRequest(BaseModel):
+    """Daily panchanga may be today or a future calendar date."""
+    model_config = ConfigDict(populate_by_name=True)
+
+    birth_date: date = Field(..., alias="date")
+    birth_time: dt_time = Field(default=dt_time(12, 0), alias="time")
+    location: str = Field(..., min_length=2)
+    ayanamsa: str = "yukteswar"
+    node_type: str = Field(default="mean", alias="lunar_node")
+    house_system: str = "whole_sign"
+
+    @field_validator("birth_time", mode="before")
+    @classmethod
+    def _coerce_time(cls, v):
+        if v is None or v == "":
+            return dt_time(12, 0)
+        if isinstance(v, str):
+            raw = v.strip()
+            if raw.count(":") == 1:
+                raw = f"{raw}:00"
+            parsed = dt_time.fromisoformat(raw)
+            return parsed.replace(microsecond=0)
+        return v
+
+
+def _profile_from_panchanga(request: PanchangaRequest) -> ProfileRequest:
+    return ProfileRequest.model_construct(
+        birth_date=request.birth_date,
+        birth_time=request.birth_time.replace(second=0, microsecond=0),
+        location=request.location,
+        ayanamsa=request.ayanamsa if request.ayanamsa in {
+            "yukteswar", "yukteshwar", "lahiri", "raman", "kp", "yukteswar_swiss"
+        } else "yukteswar",
+        node_type=request.node_type if request.node_type in {"mean", "true"} else "mean",
+        house_system=request.house_system if request.house_system in {
+            "whole_sign", "equal", "sripati"
+        } else "whole_sign",
+    )
+
+
 @router.post("/profile", response_model=ProfileResponse)
 async def get_profile(request: ProfileRequest):
     logger.info(f"Profile request for {request.location} on {request.birth_date}")
@@ -175,9 +215,10 @@ async def get_dasha(
         raise HTTPException(status_code=500, detail=str(e))
 
 @router.post("/panchanga")
-async def get_panchanga(request: ProfileRequest):
+async def get_panchanga(request: PanchangaRequest):
     try:
-        panchanga_data = compute_panchanga(request)
+        full = _profile_from_panchanga(request)
+        panchanga_data = compute_panchanga(full)
         return {
             "panchanga": panchanga_data,
             "vaara": panchanga_data.get("vaara"),
@@ -188,6 +229,8 @@ async def get_panchanga(request: ProfileRequest):
             "auspiciousness": {"overall_rating": "good", "favorable_activities": [], "avoid_activities": []},
             "metadata": {"calculation_date": request.birth_date.isoformat(), "location": request.location},
         }
+    except HTTPException:
+        raise
     except Exception as e:
         logger.exception("Panchanga computation failed")
         raise HTTPException(status_code=500, detail=str(e))
