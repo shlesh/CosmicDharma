@@ -226,8 +226,19 @@ async def get_panchanga(request: PanchangaRequest):
             "nakshatra": panchanga_data.get("nakshatra"),
             "yoga": panchanga_data.get("yoga"),
             "karana": panchanga_data.get("karana"),
-            "auspiciousness": {"overall_rating": "good", "favorable_activities": [], "avoid_activities": []},
-            "metadata": {"calculation_date": request.birth_date.isoformat(), "location": request.location},
+            "quality": panchanga_data.get("quality"),
+            "summary": panchanga_data.get("summary"),
+            "auspiciousness": {
+                "overall_rating": panchanga_data.get("quality", "mixed"),
+                "favorable_activities": panchanga_data.get("favor", []),
+                "avoid_activities": panchanga_data.get("avoid", []),
+                "summary": panchanga_data.get("summary"),
+            },
+            "metadata": {
+                "calculation_date": request.birth_date.isoformat(),
+                "location": request.location,
+                "frame": full.ayanamsa,
+            },
         }
     except HTTPException:
         raise
