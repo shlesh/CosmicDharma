@@ -6,6 +6,7 @@ import { Button } from '../ui/Button';
 import BasicInfo from '../astrology/BasicInfo';
 import PlanetTable from '../astrology/PlanetTable';
 import HouseAnalysis from '../astrology/HouseAnalysis';
+import DivisionalCharts from '../astrology/DivisionalCharts';
 import DashaChart from '../astrology/DashaChart';
 import CoreElements from '../astrology/CoreElements';
 import PanchangaPanel from '../astrology/PanchangaPanel';
@@ -21,7 +22,7 @@ const tabConfig = [
   { id: 'planets', label: 'Planets', icon: '🪐' },
   { id: 'houses', label: 'Houses', icon: '🏠' },
   { id: 'dasha', label: 'Dasha', icon: '⏰' },
-  { id: 'charts', label: 'Divisional Charts', icon: '📊' },
+  { id: 'charts', label: 'Vargas', icon: '📊' },
   { id: 'yogas', label: 'Yogas', icon: '🕉️' },
   { id: 'predictions', label: 'Predictions', icon: '🔮' },
 ];
@@ -126,28 +127,14 @@ export function DashboardPage({ profileData, onNewChart }: DashboardPageProps) {
             ))}
           </Card>
         );
-      case 'charts': {
-        const rawCharts = profileData.divisionalCharts || {};
+      case 'charts':
         return (
-          <Card className="p-6">
-            <h3 className="text-xl font-bold mb-4">Divisional Charts (Vargas)</h3>
-            <div className="space-y-6">
-              {Object.keys(rawCharts).sort().map((chart) => (
-                <div key={chart} className="border border-gray-200 dark:border-gray-700 rounded-xl p-4">
-                  <h4 className="font-bold mb-2">{chart}</h4>
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-                    {Object.entries(rawCharts[chart] || {}).map(([planet, signVal]) => (
-                      <div key={planet} className="flex justify-between text-sm">
-                        <span>{planet}</span><span>{String(signVal)}</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </Card>
+          <DivisionalCharts
+            charts={profileData.divisionalCharts}
+            analysis={profileData.analysis?.divisionalCharts}
+            vargottama={profileData.vargottamaPlanets}
+          />
         );
-      }
       default:
         return null;
     }
