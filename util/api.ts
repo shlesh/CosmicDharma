@@ -62,13 +62,32 @@ export interface JobStatusResponse {
   error?: string;
 }
 
+export interface PanchangaLimb {
+  name?: string;
+  nakshatra?: string;
+  pada?: number;
+  paksha?: string;
+  class?: string;
+  meaning?: string;
+  quality?: string;
+  deity?: string;
+  ruling_planet?: string;
+}
+
 export interface PanchangaRequest { date: string; time: string; location: string; }
 export interface PanchangaResponse {
   vaara?: string;
-  tithi?: { name: string };
-  nakshatra?: { nakshatra: string };
-  yoga?: { name: string };
-  karana?: { name: string };
+  vaara_lord?: string;
+  vaara_meaning?: string;
+  tithi?: PanchangaLimb;
+  nakshatra?: PanchangaLimb;
+  yoga?: PanchangaLimb;
+  karana?: PanchangaLimb;
+  quality?: string;
+  summary?: string;
+  favor?: string[];
+  avoid?: string[];
+  panchanga?: PanchangaResponse;
 }
 
 export const profileApi = {

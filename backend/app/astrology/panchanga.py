@@ -159,7 +159,7 @@ _VAARA_NOTES = {
     "Sunday": ("Sun", "Authority, health, father, and public face."),
 }
 
-_IN AUSPICIOUS_YOGAS = {
+_INAUSPICIOUS_YOGAS = {
     "Vishkambha",
     "Atiganda",
     "Shoola",
@@ -317,7 +317,6 @@ def _summarize(tithi: Dict, nakshatra: Dict, yoga: Dict, karana: Dict, vaara: st
         f"Day quality: {quality}. "
         + ("; ".join(flags) if flags else "No severe calendar flags.")
     )
-    # Deduplicate while keeping order.
     seen = set()
     clean_favor = []
     for item in favor:

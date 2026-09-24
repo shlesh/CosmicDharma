@@ -17,11 +17,21 @@ def test_tithi_calculation():
     res = panchanga.get_tithi(0.0, 13.0)
     assert res["index"] == 2
     assert "Dvitiya" in res["name"]
+    assert res["class"] == "Bhadra"
+    assert res["meaning"]
+
+
+def test_rikta_tithi_is_flagged():
+    # 4th tithi: 36-48 deg elongation
+    res = panchanga.get_tithi(0.0, 40.0)
+    assert res["class"] == "Rikta"
+    assert res["quality"] == "caution"
 
 
 def test_karana_calculation():
     res = panchanga.get_karana(0.0, 15.0)
     assert res["name"] == "Kaulava"
+    assert res["meaning"]
 
 
 def test_vaara():
@@ -33,6 +43,16 @@ def test_calculate_panchanga_accepts_naive_datetime():
     data = panchanga.calculate_panchanga(datetime(2020, 1, 1, 12, 0), 0.0, 15.0, "UTC")
     assert data["vaara"] == "Wednesday"
     assert data["tithi"]["name"].startswith("Shukla")
+    assert data["summary"]
+    assert data["quality"] in {"favorable", "mixed", "caution"}
+    assert data["nakshatra"]["ruling_planet"]
+
+
+def test_vishti_karana_is_caution():
+    # 6-12 deg is Balava; 36-42 is Vishti (6th half-tithi)
+    res = panchanga.get_karana(0.0, 39.0)
+    assert res["name"] == "Vishti"
+    assert res["quality"] == "caution"
 
 
 def test_compute_panchanga(monkeypatch):
@@ -49,6 +69,7 @@ def test_compute_panchanga(monkeypatch):
     data = astro.compute_panchanga(req)
     assert data["tithi"]["name"].startswith("Shukla")
     assert data["vaara"] == "Wednesday"
+    assert "meaning" in data["tithi"]
 
 
 def test_panchanga_route(monkeypatch):
