@@ -9,6 +9,7 @@ import ProfileSummary from '@/components/astrology/ProfileSummary';
 import CoreElements from '@/components/astrology/CoreElements';
 import PlanetTable from '@/components/astrology/PlanetTable';
 import HouseAnalysis from '@/components/astrology/HouseAnalysis';
+import DivisionalCharts from '@/components/astrology/DivisionalCharts';
 import DashaTable from '@/components/astrology/DashaTable';
 import DashaChart from '@/components/astrology/DashaChart';
 import PanchangaPanel from '@/components/astrology/PanchangaPanel';
@@ -85,6 +86,11 @@ export default function ProfilePage() {
           <CoreElements elements={result.coreElements} />
           <PlanetTable planets={result.planetaryPositions} />
           <HouseAnalysis houses={result.houses} />
+          <DivisionalCharts
+            charts={result.divisionalCharts}
+            analysis={result.analysis?.divisionalCharts}
+            vargottama={result.vargottamaPlanets}
+          />
           {result.vimshottariDasha && (
             <>
               <DashaTable dasha={result.vimshottariDasha} />
