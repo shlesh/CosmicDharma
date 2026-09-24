@@ -1,47 +1,33 @@
 # Run Cosmic Dharma from the console
 
-From the repo root. Works in PowerShell, cmd, and bash.
+You do **not** have to rename `git stuff`. The starter now launches processes with PowerShell so a space in the path is fine.
+
+From the repo root:
 
 ```powershell
 cd "C:\Users\23shl\Downloads\git stuff\CosmicDharma"
+git pull origin feat/yukteswar-lineage
+
+npm run down
+npm run up
+npm run status
 ```
 
-## One-shot commands
+Same thing via the helper:
 
 ```powershell
-npm run up         # start frontend :3000 and backend :8000 in the background
-npm run status     # are they up?
-npm run restart    # stop both, then start both
-npm run down       # stop both and free the ports
+.\scripts\dev.ps1 down
+.\scripts\dev.ps1 up
+.\scripts\dev.ps1 status
 ```
-
-`npm run stop` is the same as `down`.
-
-## After start
 
 - Site: http://localhost:3000
-- API health: http://localhost:8000/health
-- Logs: `logs\frontend.log` and `logs\backend.log`
-
-Tail logs in PowerShell:
+- Health: http://127.0.0.1:8000/health
 
 ```powershell
-Get-Content .\logs\frontend.log -Wait
-Get-Content .\logs\backend.log -Wait
-```
-
-## Foreground (logs in this window)
-
-```powershell
-npm run dev
-```
-
-Ctrl+C stops both.
-
-## If a port is stuck
-
-```powershell
+npm run restart
 npm run down
+npm run logs
 ```
 
-That kills whatever is listening on 3000 and 8000, not only the last PIDs we recorded.
+Renaming the folder to `git-stuff` is optional. Only do it if some other Windows tool still chokes; this app no longer needs it.

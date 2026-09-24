@@ -1,7 +1,8 @@
 #!/usr/bin/env node
 /**
- * Start, stop, restart, and status for frontend + backend.
- * No shell on Windows so paths with spaces (git stuff) stay intact.
+ * Start / stop / restart / status for frontend + backend.
+ * On Windows, processes are launched with PowerShell Start-Process so they
+ * survive after `npm run up` returns (npm's job object will not kill them).
  */
 const { spawn, execSync, spawnSync } = require("child_process");
 const fs = require("fs");
@@ -35,17 +36,12 @@ function writePids(data) {
 }
 
 function pythonBin() {
-  const names = isWin
-    ? ["python.exe", "python3.exe"]
-    : ["python", "python3"];
-  const folders = isWin ? ["Scripts"] : ["bin"];
-  const venvs = ["venv", "venv311"];
-  for (const v of venvs) {
-    for (const folder of folders) {
-      for (const name of names) {
-        const p = path.join(BACKEND, v, folder, name);
-        if (fs.existsSync(p)) return p;
-      }
+  const names = isWin ? ["python.exe", "python3.exe"] : ["python", "python3"];
+  const folder = isWin ? "Scripts" : "bin";
+  for (const v of ["venv", "venv311"]) {
+    for (const name of names) {
+      const p = path.join(BACKEND, v, folder, name);
+      if (fs.existsSync(p)) return p;
     }
   }
   return null;
@@ -56,12 +52,28 @@ function nextBin() {
   return fs.existsSync(p) ? p : null;
 }
 
+function logFiles(name) {
+  return [
+    path.join(LOG_DIR, `${name}.err.log`),
+    path.join(LOG_DIR, `${name}.out.log`),
+    path.join(LOG_DIR, `${name}.log`),
+  ];
+}
+
 function tailLog(name, lines = 40) {
-  const logPath = path.join(LOG_DIR, `${name}.log`);
-  if (!fs.existsSync(logPath)) return `(no ${name}.log yet)`;
-  const text = fs.readFileSync(logPath, "utf8").replace(/\r\n/g, "\n");
-  const parts = text.trim().split("\n");
-  return parts.slice(-lines).join("\n") || `(${name}.log empty)`;
+  const chunks = [];
+  for (const file of logFiles(name)) {
+    if (!fs.existsSync(file)) continue;
+    const text = fs.readFileSync(file, "utf8").replace(/\r\n/g, "\n").trim();
+    if (text) chunks.push(text);
+  }
+  if (!chunks.length) return `(no ${name} logs yet)`;
+  return chunks.join("\n").split("\n").slice(-lines).join("\n");
+}
+
+function appendBanner(file, line) {
+  ensureLogDir();
+  fs.appendFileSync(file, `\n----- ${new Date().toISOString()} ${line} -----\n`);
 }
 
 function pidsOnPort(port) {
@@ -90,10 +102,10 @@ function killPid(pid) {
   if (!pid) return;
   try {
     if (isWin) execSync(`taskkill /PID ${pid} /T /F`, { stdio: "ignore" });
-    else process.kill(Number(pid), "SIGTERM");
-  } catch {
-    /* gone */
-  }
+    else {
+      try { process.kill(Number(pid), "SIGTERM"); } catch { /* gone */ }
+    }
+  } catch { /* gone */ }
 }
 
 function killPort(port) {
@@ -107,14 +119,14 @@ function portOpen(port) {
       resolve(true);
     });
     sock.on("error", () => resolve(false));
-    sock.setTimeout(400, () => {
+    sock.setTimeout(500, () => {
       sock.destroy();
       resolve(false);
     });
   });
 }
 
-function waitFor(port, label, ms = 30000) {
+function waitFor(port, label, ms = 40000) {
   const start = Date.now();
   return new Promise((resolve) => {
     const tick = async () => {
@@ -129,25 +141,61 @@ function waitFor(port, label, ms = 30000) {
   });
 }
 
-function spawnLogged(name, command, args, cwd, extraEnv) {
-  ensureLogDir();
+function spawnUnix(name, command, args, cwd, extraEnv) {
   const logPath = path.join(LOG_DIR, `${name}.log`);
-  fs.appendFileSync(
-    logPath,
-    `\n----- ${new Date().toISOString()} ${command} ${args.join(" ")} -----\n`
-  );
+  appendBanner(logPath, `${command} ${args.join(" ")}`);
   const out = fs.openSync(logPath, "a");
   const child = spawn(command, args, {
     cwd,
     env: { ...process.env, ...(extraEnv || {}) },
     detached: true,
     stdio: ["ignore", out, out],
-    windowsHide: true,
     shell: false,
-    windowsVerbatimArguments: false,
   });
   child.unref();
-  return { pid: child.pid, logPath };
+  return child.pid;
+}
+
+function spawnWin(name, command, args, cwd, extraEnv) {
+  const outPath = path.join(LOG_DIR, `${name}.out.log`);
+  const errPath = path.join(LOG_DIR, `${name}.err.log`);
+  appendBanner(outPath, `${command} ${args.join(" ")}`);
+  appendBanner(errPath, `${command} ${args.join(" ")}`);
+
+  const envLines = Object.entries(extraEnv || {})
+    .map(([k, v]) => `$env:${k} = ${JSON.stringify(String(v))}`)
+    .join("; ");
+  const argList = args.map((a) => JSON.stringify(String(a))).join(", ");
+  const script = `
+    ${envLines}
+    $p = Start-Process -FilePath ${JSON.stringify(command)} `
+    + `-ArgumentList @(${argList}) `
+    + `-WorkingDirectory ${JSON.stringify(cwd)} `
+    + `-WindowStyle Hidden `
+    + `-RedirectStandardOutput ${JSON.stringify(outPath)} `
+    + `-RedirectStandardError ${JSON.stringify(errPath)} `
+    + `-PassThru
+    Write-Output $p.Id
+  `;
+  const r = spawnSync(
+    "powershell.exe",
+    ["-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", script],
+    { encoding: "utf8", windowsHide: true }
+  );
+  const pid = Number(String(r.stdout || "").trim().split(/\s+/).pop());
+  if (!Number.isFinite(pid) || pid <= 0) {
+    console.error(`Failed to start ${name}`);
+    console.error((r.stderr || r.stdout || "").trim());
+    process.exit(1);
+  }
+  return pid;
+}
+
+function spawnLogged(name, command, args, cwd, extraEnv) {
+  ensureLogDir();
+  return isWin
+    ? spawnWin(name, command, args, cwd, extraEnv)
+    : spawnUnix(name, command, args, cwd, extraEnv);
 }
 
 function preflight(py) {
@@ -159,29 +207,25 @@ function preflight(py) {
   if (check.status !== 0) {
     console.error("Backend venv cannot import uvicorn/fastapi.");
     console.error((check.stderr || check.stdout || "").trim());
-    console.error("Fix with:");
-    console.error(`  "${py}" -m pip install -r "${path.join(BACKEND, "requirements.txt")}"`);
+    console.error(`Fix:  "${py}" -m pip install -r "${path.join(BACKEND, "requirements.txt")}"`);
     process.exit(1);
   }
   const [pyVer, uvVer] = (check.stdout || "").trim().split(/\r?\n/);
-  console.log(`Python ${pyVer}  uvicorn ${uvVer}  (${py})`);
+  console.log(`Python ${pyVer}  uvicorn ${uvVer}`);
   if (pyVer && !pyVer.startsWith("3.11")) {
-    console.warn("Warning: this project expects Python 3.11 for pyswisseph wheels.");
+    console.warn("Warning: pyswisseph wheels expect Python 3.11.");
   }
 }
 
 function start() {
   const py = pythonBin();
   if (!py) {
-    console.error("No backend venv Python found under backend/venv.");
-    console.error(isWin
-      ? "  py -3.11 -m venv backend\\venv"
-      : "  python3.11 -m venv backend/venv");
+    console.error("No backend venv Python found under backend\\venv.");
     process.exit(1);
   }
   const next = nextBin();
   if (!next) {
-    console.error("Next.js is not installed. Run npm install in the repo root.");
+    console.error("Next.js is missing. Run npm install in the repo root.");
     process.exit(1);
   }
 
@@ -189,47 +233,46 @@ function start() {
   killPort(FRONT_PORT);
   killPort(BACK_PORT);
 
-  const backend = spawnLogged(
+  const backendPid = spawnLogged(
     "backend",
     py,
     ["-m", "uvicorn", "main:app", "--reload", "--host", "127.0.0.1", "--port", String(BACK_PORT)],
     BACKEND,
     { PYTHONPATH: BACKEND, PYTHONUNBUFFERED: "1" }
   );
-
-  const frontend = spawnLogged(
+  const frontendPid = spawnLogged(
     "frontend",
     process.execPath,
     [next, "dev", "-p", String(FRONT_PORT)],
-    ROOT
+    ROOT,
+    {}
   );
 
   writePids({
-    frontend: frontend.pid,
-    backend: backend.pid,
+    frontend: frontendPid,
+    backend: backendPid,
     frontPort: FRONT_PORT,
     backPort: BACK_PORT,
     python: py,
     startedAt: new Date().toISOString(),
   });
 
-  console.log(`Starting backend  :${BACK_PORT}  (pid ${backend.pid})`);
-  console.log(`Starting frontend :${FRONT_PORT}  (pid ${frontend.pid})`);
-  console.log(`Logs: ${path.join(LOG_DIR, "backend.log")}`);
+  console.log(`Starting backend  :${BACK_PORT}  (pid ${backendPid})`);
+  console.log(`Starting frontend :${FRONT_PORT}  (pid ${frontendPid})`);
 
-  Promise.all([
+  return Promise.all([
     waitFor(BACK_PORT, "Backend"),
     waitFor(FRONT_PORT, "Frontend"),
   ]).then(([backOk, frontOk]) => {
     if (backOk) console.log(`Backend ready   http://127.0.0.1:${BACK_PORT}/health`);
     else {
-      console.error("---- backend.log ----");
+      console.error("---- backend log ----");
       console.error(tailLog("backend", 50));
     }
     if (frontOk) console.log(`Frontend ready  http://localhost:${FRONT_PORT}`);
     else {
-      console.error("---- frontend.log ----");
-      console.error(tailLog("frontend", 30));
+      console.error("---- frontend log ----");
+      console.error(tailLog("frontend", 40));
     }
     if (!backOk || !frontOk) process.exitCode = 1;
   });
@@ -266,7 +309,7 @@ async function status() {
       });
     });
   } else {
-    console.log("---- last backend.log ----");
+    console.log("---- last backend log ----");
     console.log(tailLog("backend", 40));
   }
   process.exit(front && back ? 0 : 1);
@@ -281,7 +324,13 @@ function logs() {
 
 function restart() {
   stop();
-  setTimeout(start, isWin ? 1000 : 400);
+  setTimeout(() => {
+    const p = start();
+    if (p && typeof p.then === "function") p.catch((err) => {
+      console.error(err);
+      process.exit(1);
+    });
+  }, isWin ? 1200 : 400);
 }
 
 const cmd = (process.argv[2] || "status").toLowerCase();
@@ -290,4 +339,10 @@ if (!actions[cmd]) {
   console.error("Usage: node scripts/dev-ctl.cjs start|stop|restart|status|logs");
   process.exit(2);
 }
-actions[cmd]();
+const result = actions[cmd]();
+ if (result && typeof result.then === "function") {
+  result.catch((err) => {
+    console.error(err);
+    process.exit(1);
+  });
+}
