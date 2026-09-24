@@ -14,6 +14,35 @@ _ASPECT_PATTERNS = {
     "Saturn": [3, 7, 10],
 }
 
+BHAVA = {
+    1: ("Tanu", "Body and first impression"),
+    2: ("Dhana", "Speech, family, stored wealth"),
+    3: ("Sahaja", "Courage, siblings, short journeys"),
+    4: ("Sukha", "Home, mother, inner peace"),
+    5: ("Putra", "Intelligence, children, poorva-punya"),
+    6: ("Ari", "Debt, disease, daily labour"),
+    7: ("Kalatra", "Spouse, contracts, the other"),
+    8: ("Ayu", "Longevity, research, sudden change"),
+    9: ("Dharma", "Guru, father, fortune"),
+    10: ("Karma", "Work, status, public deed"),
+    11: ("Labha", "Gains, friends, elder allies"),
+    12: ("Vyaya", "Loss, exile, the bedroom and the far shore"),
+}
+
+# Tone down canned one-liners that read like verdicts.
+_NOTE_OVERRIDE = {
+    ("Mars", 7): (
+        "Heat in partnership. Classical texts flag Kuja / Mangal dosha here; "
+        "read it as a caution to weigh, not as a ruined marriage."
+    ),
+    ("Venus", 12): (
+        "Private comforts, spend on beauty, and the far-away. Isolation is one reading, not the only one."
+    ),
+    ("Saturn", 1): (
+        "A serious, delayed first house. Discipline shows on the face; youth arrives late."
+    ),
+}
+
 
 def _normalize_house_system(house_system):
     if house_system is None:
@@ -70,6 +99,20 @@ def _calculate_aspects(placements):
     return {"planet_aspects": aspects, "mutual_aspects": mutual}
 
 
+def _occupant_notes(name: str, house: int) -> str | None:
+    if (name, house) in _NOTE_OVERRIDE:
+        return f"{name}: {_NOTE_OVERRIDE[(name, house)]}"
+    try:
+        from .interpretations import PLANETS_IN_HOUSES
+        raw = PLANETS_IN_HOUSES.get(name, {}).get(house)
+    except Exception:
+        raw = None
+    if not raw:
+        return None
+    text = raw.split(":", 1)[-1].strip()
+    return f"{name}: {text}"
+
+
 def analyze_houses(binfo, planets, *, house_system=None):
     requested = house_system or binfo.get("house_system") or "cusps"
     if isinstance(requested, bytes):
@@ -117,31 +160,26 @@ def analyze_houses(binfo, planets, *, house_system=None):
             lord = get_sign_lord(sign_num)
         sign_name = get_sign_name(sign_num)
         house_occupants = occupants[i]
-        summary = f"{sign_name}"
-        if lord:
-            summary += f" (ruled by {lord})"
+        bhava, topic = BHAVA[i]
+        notes = [n for n in (_occupant_notes(name, i) for name in house_occupants) if n]
         if house_occupants:
-            summary += f". Contains: {', '.join(house_occupants)}."
-            try:
-                from .interpretations import PLANETS_IN_HOUSES
-                bits = [
-                    PLANETS_IN_HOUSES[name][i]
-                    for name in house_occupants
-                    if name in PLANETS_IN_HOUSES and i in PLANETS_IN_HOUSES[name]
-                ]
-                if bits:
-                    summary += " " + " ".join(bits)
-            except Exception:
-                pass
+            summary = (
+                f"{sign_name} (ruled by {lord}). Contains: {', '.join(house_occupants)}."
+            )
+            if notes:
+                summary += " " + " ".join(notes)
         else:
-            summary += ". Empty."
+            summary = f"{sign_name} (ruled by {lord}). No graha sits here; the lord still speaks."
         houses_data[i] = {
             "house_num": i,
+            "bhava": bhava,
+            "topic": topic,
             "sign": sign_name,
             "sign_id": sign_num,
             "degree": degree_in_sign,
             "lord": lord,
             "occupants": house_occupants,
+            "notes": notes,
             "summary": summary,
         }
 
@@ -151,4 +189,5 @@ def analyze_houses(binfo, planets, *, house_system=None):
         "placements": placements,
         "aspects": _calculate_aspects(placements),
         "lagna_sign": lagna_sign,
+        "house_system": requested_key,
     }
