@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useRouter } from 'next/router';
 import Link from 'next/link';
+import Head from 'next/head';
 import { apiFetch } from '../util/api';
 import { useToast } from '../components/ui/ToastProvider';
 import Card from '../components/ui/Card';
@@ -11,6 +12,9 @@ interface LoginForm {
   username: string;
   password: string;
 }
+
+const fieldClass =
+  'w-full px-4 py-3 rounded-xl border border-amber-200/20 bg-black/25 text-amber-50 focus:border-amber-300 focus:ring-2 focus:ring-amber-300/20';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -24,19 +28,16 @@ export default function LoginPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-
     try {
       const data = await apiFetch<{ access_token: string }>('/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-        body: new URLSearchParams({ ...form })
+        body: new URLSearchParams({ ...form }),
       });
-
       localStorage.setItem('token', data.access_token);
-      toast('Login successful!');
+      toast('Welcome back.');
       router.push('/dashboard');
     } catch (err: any) {
-      console.error('Login error:', err);
       toast(err.message || 'Network error. Please try again.');
     } finally {
       setLoading(false);
@@ -44,77 +45,32 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="container max-w-md mx-auto py-16">
-      <motion.div
-        initial={{ opacity: 0, y: 30 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
-      >
+    <div className="container max-w-md mx-auto py-16 page-shell">
+      <Head><title>Enter — Cosmic Dharma</title></Head>
+      <motion.div initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }}>
+        <p className="text-center help-text mb-3">The gate is quiet after dusk.</p>
         <Card variant="cosmic" className="p-8">
-          <h2 className="text-3xl font-bold text-center mb-6">Welcome Back</h2>
-
+          <h2 className="text-3xl font-display text-center mb-6 text-amber-50">Enter</h2>
           <form onSubmit={handleSubmit} className="space-y-6">
             <div>
-              <label htmlFor="username" className="block text-sm font-medium mb-2">
-                Username
-              </label>
-              <input
-                id="username"
-                name="username"
-                type="text"
-                autoComplete="username"
-                required
-                value={form.username}
-                onChange={handleChange}
-                placeholder="Enter your username"
-                className="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-700 
-                         bg-white dark:bg-gray-900 
-                         focus:border-purple-600 focus:ring-2 focus:ring-purple-600/20"
-              />
+              <label htmlFor="username" className="block text-sm mb-2">Username</label>
+              <input id="username" name="username" type="text" autoComplete="username" required value={form.username} onChange={handleChange} className={fieldClass} />
             </div>
-
             <div>
-              <label htmlFor="password" className="block text-sm font-medium mb-2">
-                Password
-              </label>
-              <input
-                id="password"
-                name="password"
-                type="password"
-                autoComplete="current-password"
-                required
-                value={form.password}
-                onChange={handleChange}
-                placeholder="Enter your password"
-                className="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-700 
-                         bg-white dark:bg-gray-900 
-                         focus:border-purple-600 focus:ring-2 focus:ring-purple-600/20"
-              />
+              <label htmlFor="password" className="block text-sm mb-2">Password</label>
+              <input id="password" name="password" type="password" autoComplete="current-password" required value={form.password} onChange={handleChange} className={fieldClass} />
             </div>
-
-            <Button
-              type="submit"
-              variant="cosmic"
-              size="lg"
-              loading={loading}
-              disabled={loading}
-              className="w-full"
-            >
-              {loading ? 'Signing in...' : 'Sign In'}
+            <Button type="submit" variant="cosmic" size="lg" loading={loading} disabled={loading} className="w-full">
+              {loading ? 'Opening…' : 'Sign in'}
             </Button>
           </form>
-
-          <div className="mt-6 text-center space-y-2">
-            <p className="text-gray-600 dark:text-gray-400">
-              Don't have an account?{' '}
-              <Link href="/register" className="text-purple-600 hover:text-purple-700">
-                Sign up
-              </Link>
+          <div className="mt-6 text-center space-y-2 help-text">
+            <p>
+              New here?{' '}
+              <Link href="/register" className="text-amber-200 hover:text-amber-100">Register</Link>
             </p>
             <p>
-              <Link href="/request-reset" className="text-sm text-purple-600 hover:text-purple-700">
-                Forgot password?
-              </Link>
+              <Link href="/request-reset" className="text-sm text-amber-200/80">Forgot password?</Link>
             </p>
           </div>
         </Card>

@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import Head from 'next/head';
 import { useProfileJob } from '@/hooks/useProfileJob';
 import { ProfileResult, StartProfileJobRequest } from '@/util/api';
 import ProfileForm from '@/components/astrology/ProfileForm';
@@ -16,13 +17,12 @@ import { motion } from 'framer-motion';
 
 export default function ProfilePage() {
   const [announcement, setAnnouncement] = useState<string>('');
-
   const { startJob, starting, startError, job, progress } = useProfileJob();
 
   const onSubmit = (values: StartProfileJobRequest) => {
     setAnnouncement('Starting…');
     startJob(values, {
-      onSuccess: () => setAnnouncement('Calculating your chart…'),
+      onSuccess: () => setAnnouncement('Casting the chart against the night sky…'),
     });
   };
 
@@ -32,25 +32,31 @@ export default function ProfilePage() {
   const done = status === 'complete' && result;
 
   return (
-    <main className="container mx-auto px-4 py-8">
-      <h1 className="text-3xl md:text-4xl font-bold mb-6">Your Vedic Profile</h1>
+    <main className="container mx-auto px-4 py-8 page-shell">
+      <Head>
+        <title>Birth chart — Cosmic Dharma</title>
+      </Head>
+      <h1 className="font-display text-amber-50 mb-2">Birth kundali</h1>
+      <p className="help-text mb-6 max-w-2xl">
+        Yukteswar Revati frame, whole-sign houses. Enter the moment as it happened on that soil.
+      </p>
 
       <ProfileForm onSubmit={onSubmit} submitting={starting} serverError={startError || job?.error} />
 
       {(starting || (status && status !== 'complete' && status !== 'error')) && !done && (
         <div className="max-w-2xl mx-auto mt-8">
           <div className="mb-4">
-            <div className="flex justify-between text-sm text-gray-600 dark:text-gray-400 mb-2">
-              <span role="status" aria-live="polite">{announcement || 'Calculating your chart…'}</span>
+            <div className="flex justify-between text-sm help-text mb-2">
+              <span role="status" aria-live="polite">{announcement || 'Casting the chart…'}</span>
               <span>{Math.round(effectiveProgress)}%</span>
             </div>
-            <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+            <div className="w-full bg-white/10 rounded-full h-2">
               <motion.div
                 role="progressbar"
                 aria-valuenow={Math.round(effectiveProgress)}
                 aria-valuemin={0}
                 aria-valuemax={100}
-                className="bg-gradient-to-r from-purple-600 to-blue-600 h-2 rounded-full"
+                className="bg-gradient-to-r from-amber-300 to-emerald-500 h-2 rounded-full"
                 initial={{ width: 0 }}
                 animate={{ width: `${effectiveProgress}%` }}
                 transition={{ duration: 0.5 }}
@@ -62,7 +68,7 @@ export default function ProfilePage() {
       )}
 
       {status === 'error' && (
-        <p className="text-red-600 mt-4">{job?.error || 'Calculation failed. Please try again.'}</p>
+        <p className="text-red-400 mt-4">{job?.error || 'Calculation failed. Please try again.'}</p>
       )}
 
       {done && result && (

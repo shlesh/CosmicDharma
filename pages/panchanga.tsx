@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import Head from 'next/head';
 import { panchangaApi, PanchangaResponse } from '@/util/api';
 import LocationAutocomplete from '@/components/astrology/LocationAutocomplete';
 import type { PlaceSuggestion } from '@/util/geocode';
@@ -66,33 +67,35 @@ export default function PanchangaPage() {
   };
 
   return (
-    <main className="container mx-auto px-4 py-8">
-      <h1 className="text-3xl font-bold mb-2">Daily Panchanga</h1>
+    <main className="container mx-auto px-4 py-8 page-shell">
+      <Head>
+        <title>Daily Panchanga — Cosmic Dharma</title>
+      </Head>
+      <h1 className="font-display text-amber-50 mb-2">Daily Panchanga</h1>
       <p className="help-text mb-6 max-w-xl">
-        Five-limb calendar for a chosen date, time and place in the Yukteswar / Revati frame.
-        This is weather for the day, not a natal reading.
+        Five limbs for a chosen date, time and place. Calendar weather, not a natal reading.
       </p>
-      <Card className="max-w-xl p-4 md:p-6">
+      <Card variant="glass" className="max-w-xl p-4 md:p-6">
         <form className="grid gap-3" onSubmit={onSubmit}>
-          <label className="text-sm font-medium">Date
+          <label className="text-sm font-medium text-amber-50/90">Date
             <input
               type="date"
-              className="border rounded p-2 bg-transparent w-full mt-1"
+              className="border border-amber-200/20 rounded-xl p-2 bg-black/20 w-full mt-1"
               value={date}
               onChange={(e) => setDate(e.target.value)}
               required
             />
           </label>
-          <label className="text-sm font-medium">Time
+          <label className="text-sm font-medium text-amber-50/90">Time
             <input
               type="time"
-              className="border rounded p-2 bg-transparent w-full mt-1"
+              className="border border-amber-200/20 rounded-xl p-2 bg-black/20 w-full mt-1"
               value={time}
               onChange={(e) => setTime(e.target.value)}
               required
             />
           </label>
-          <label className="text-sm font-medium">Place
+          <label className="text-sm font-medium text-amber-50/90">Place
             <div className="mt-1">
               <LocationAutocomplete
                 value={location}
@@ -102,12 +105,12 @@ export default function PanchangaPage() {
             </div>
           </label>
           <Button type="submit" disabled={loading || !date || !time || location.trim().length < 3}>
-            {loading ? 'Loading…' : 'Get Panchanga'}
+            {loading ? 'Listening…' : 'Read the sky'}
           </Button>
         </form>
       </Card>
 
-      {error && <p className="text-red-600 mt-4">{error}</p>}
+      {error && <p className="text-red-400 mt-4">{error}</p>}
       {data && (
         <div className="max-w-xl mt-6">
           <PanchangaPanel panchanga={data} context="daily" />
