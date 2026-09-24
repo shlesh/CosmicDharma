@@ -13,14 +13,17 @@ function unwrapPanchanga(res: PanchangaResponse | { panchanga?: PanchangaRespons
   return res as PanchangaResponse;
 }
 
-function normalizeTime(value: string): string {
-  if (/^\d{2}:\d{2}$/.test(value)) return `${value}:00`;
-  return value;
+function toApiTime(value: string): string {
+  if (!value) return '12:00';
+  const parts = value.split(':');
+  const hh = (parts[0] || '12').padStart(2, '0');
+  const mm = (parts[1] || '00').padStart(2, '0');
+  return `${hh}:${mm}`;
 }
 
 export default function PanchangaPage() {
   const [date, setDate] = useState('');
-  const [time, setTime] = useState('');
+  const [time, setTime] = useState('12:00');
   const [location, setLocation] = useState('');
   const [data, setData] = useState<PanchangaResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -34,7 +37,7 @@ export default function PanchangaPage() {
     try {
       const res = await panchangaApi.compute({
         date,
-        time: normalizeTime(time),
+        time: toApiTime(time),
         location,
       });
       setData(unwrapPanchanga(res as PanchangaResponse));
@@ -50,25 +53,33 @@ export default function PanchangaPage() {
       <h1 className="text-3xl font-bold mb-6">Daily Panchanga</h1>
       <Card className="max-w-xl p-4 md:p-6">
         <form className="grid gap-3" onSubmit={onSubmit}>
-          <input
-            className="border rounded p-2 bg-transparent"
-            placeholder="YYYY-MM-DD"
-            value={date}
-            onChange={(e) => setDate(e.target.value)}
-            required
-          />
-          <input
-            className="border rounded p-2 bg-transparent"
-            placeholder="HH:MM"
-            value={time}
-            onChange={(e) => setTime(e.target.value)}
-            required
-          />
-          <LocationAutocomplete
-            value={location}
-            onChange={(v: string) => setLocation(v)}
-            onSelect={(it: PlaceSuggestion) => setLocation(it.label)}
-          />
+          <label className="text-sm font-medium">Date
+            <input
+              type="date"
+              className="border rounded p-2 bg-transparent w-full mt-1"
+              value={date}
+              onChange={(e) => setDate(e.target.value)}
+              required
+            />
+          </label>
+          <label className="text-sm font-medium">Time
+            <input
+              type="time"
+              className="border rounded p-2 bg-transparent w-full mt-1"
+              value={time}
+              onChange={(e) => setTime(e.target.value)}
+              required
+            />
+          </label>
+          <label className="text-sm font-medium">Place
+            <div className="mt-1">
+              <LocationAutocomplete
+                value={location}
+                onChange={(v: string) => setLocation(v)}
+                onSelect={(it: PlaceSuggestion) => setLocation(it.label)}
+              />
+            </div>
+          </label>
           <Button type="submit" disabled={loading || !date || !time || location.trim().length < 3}>
             {loading ? 'Loading…' : 'Get Panchanga'}
           </Button>
