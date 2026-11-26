@@ -85,8 +85,9 @@ Wrap components that use React Query or SWR in their providers (see DashboardPag
 
 ## Rules for working here
 
-- Branch: active work is on `feat/yukteswar-lineage`. `main` auto-deploys (Netlify + Hostinger over SSH) on push,
-  so never push to main without asking.
+- Branches: work on a short-lived branch, open a PR, merge it when CI passes, then delete the branch. `main` is
+  the only long-lived branch. Pushing to main triggers a Netlify deploy (the SSH `Deploy` workflow is manual-only).
+  The user has OK'd merging green PRs; ask before anything touching DNS, Netlify settings or other accounts.
 - Run both test suites before committing. If a test is wrong rather than the code, fix the test and say so in
   the commit body.
 - Prefer deleting dead code to adding another layer. Earlier agents tended to add parallel versions

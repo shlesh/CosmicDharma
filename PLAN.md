@@ -1,6 +1,6 @@
 # Cosmic Dharma: plan
 
-Status as of 2026-11-26, branch `feat/yukteswar-lineage` (30 commits ahead of `main`).
+Status as of 2026-11-26. Everything is merged into `main`, which is the only branch.
 
 ## Where things stand
 
@@ -42,7 +42,7 @@ Goal: both suites pass locally, CI passes on the branch, and `next build` succee
 - [x] Bundle size: the admin tools, editor, and Chart.js are lazy-loaded. /dashboard went from 683 to 320 KB of
       first-load JS, and /admin from 627 to 187 KB.
       There are also two markdown editors (MDXEditor and @uiw/react-md-editor); keep one.
-- [ ] Confirm CI passes on GitHub after the next push.
+- [x] CI passes on GitHub (frontend, backend, and a Linux Netlify build job).
 
 Real bugs fixed along the way: Saturn's ashtakavarga had an extra bindu (40, should be 39); admin edit-post
 always returned 500; admin new-post POSTed to a route that doesn't exist; getPostById hit the slug route;
@@ -111,7 +111,7 @@ locally. CI is green on GitHub too.
       in `ProfileRequest`. Wire them up or delete them.
 - [ ] docker-compose runs Postgres, but no Postgres driver is in requirements.txt.
 - [ ] Decide between /api and root mounting, keep one, and drop the other (the frontend uses /api).
-- [ ] Prune the stale `codex/*` remote branches.
+- [x] Pruned every merged or abandoned branch (21, including the old `codex/*` ones); closed PRs keep their commits.
 - [ ] The dashboard page still uses the old gray/white theme, not the night-sky one.
 
 ## Phase 3: product
