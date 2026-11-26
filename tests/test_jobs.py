@@ -45,7 +45,26 @@ def test_failed_job_records_error(monkeypatch):
 
     job = astro.get_job(job_id)
     assert job["status"] == "error"
-    assert "ephemeris exploded" in job["error"]
+    # The job error is shown to users: internals stay in the server log.
+    assert "ephemeris exploded" not in job["error"]
+    assert "Traceback" not in job["error"]
+    assert job["error"] == "Chart calculation failed. Please try again."
+
+
+def test_failed_job_passes_on_user_facing_4xx_messages(monkeypatch):
+    from fastapi import HTTPException
+
+    def unknown_place(req):
+        raise HTTPException(status_code=400, detail="Could not resolve location 'Atlantis'")
+
+    monkeypatch.setattr(astro, "compute_vedic_profile", unknown_place)
+    tasks = BackgroundTasks()
+    job_id = astro.enqueue_profile_job(_request(), tasks)
+
+    import asyncio
+    asyncio.run(_run(tasks))
+
+    assert astro.get_job(job_id)["error"] == "Could not resolve location 'Atlantis'"
 
 
 def test_unknown_job_is_none():

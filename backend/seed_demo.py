@@ -5,13 +5,19 @@ import os
 # Run from anywhere: put backend/ on the path so `app.*` resolves like it does for the server.
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
+from app.core.settings import APP_ENV, IS_DEV
+
+if not IS_DEV:
+    # Demo accounts have public passwords (admin/admin); never create them on a real deployment.
+    sys.exit(f"Refusing to seed demo accounts with APP_ENV={APP_ENV!r}. Set APP_ENV=development.")
+
 from app.core.db import Base, engine, SessionLocal
 from app.models import User, BlogPost
 from app.core.auth import get_password_hash
 
 
 def seed():
-    """Seed the database with demo users and posts."""
+    """Seed the database with demo users and posts (development only)."""
     # Create tables
     Base.metadata.create_all(bind=engine)
     db = SessionLocal()

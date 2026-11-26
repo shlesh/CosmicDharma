@@ -1,3 +1,9 @@
+import os
+
+# Must be set before any app module is imported: it relaxes the SECRET_KEY check and stops
+# backend/.env from leaking a developer's local settings into the tests.
+os.environ["APP_ENV"] = "test"
+
 import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine

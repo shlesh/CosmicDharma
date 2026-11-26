@@ -12,7 +12,6 @@ import swisseph as swe
 import time
 import threading
 import uuid
-import traceback
 
 from ..core.config import load_config
 from ..core.geocoder import geocode_location, timezone_at
@@ -97,8 +96,14 @@ def enqueue_profile_job(request: "ProfileRequest", background_tasks: BackgroundT
             with _JOBS_LOCK:
                 _JOBS[job_id]["status"] = "complete"
                 _JOBS[job_id]["result"] = result
-        except Exception:
-            err = traceback.format_exc()
+        except Exception as ex:
+            # The error is shown to the user via GET /jobs/{id}: pass on our own 4xx messages
+            # (e.g. "Could not resolve location"), but keep tracebacks in the server log.
+            if isinstance(ex, HTTPException) and ex.status_code < 500:
+                err = str(ex.detail)
+            else:
+                logger.exception("Profile job %s failed", job_id)
+                err = "Chart calculation failed. Please try again."
             with _JOBS_LOCK:
                 _JOBS[job_id]["status"] = "error"
                 _JOBS[job_id]["error"] = err
@@ -235,7 +240,8 @@ def compute_vedic_profile(request: ProfileRequest) -> dict:
     except ValueError as ex:
         raise HTTPException(status_code=400, detail=str(ex))
     except swe.Error as ex:
-        raise HTTPException(status_code=500, detail=f"SwissEph error: {ex}")
+        logger.exception("Swiss Ephemeris error")
+        raise HTTPException(status_code=500, detail="Ephemeris calculation failed")
     except Exception as ex:
         logger.exception("Failed to compute birth info")
         raise HTTPException(status_code=500, detail="Failed to compute birth information") from ex
@@ -243,7 +249,8 @@ def compute_vedic_profile(request: ProfileRequest) -> dict:
     try:
         planets = calculate_planets(binfo, node_type=request.node_type)
     except swe.Error as ex:
-        raise HTTPException(status_code=500, detail=f"SwissEph error: {ex}")
+        logger.exception("Swiss Ephemeris error")
+        raise HTTPException(status_code=500, detail="Ephemeris calculation failed")
     except Exception as ex:
         logger.exception("Failed to compute planetary positions")
         raise HTTPException(status_code=500, detail="Failed to compute planetary positions") from ex
@@ -398,7 +405,8 @@ def compute_panchanga(request: ProfileRequest) -> dict:
     except ValueError as ex:
         raise HTTPException(status_code=400, detail=str(ex))
     except swe.Error as ex:
-        raise HTTPException(status_code=500, detail=f"SwissEph error: {ex}")
+        logger.exception("Swiss Ephemeris error")
+        raise HTTPException(status_code=500, detail="Ephemeris calculation failed")
 
     planets = calculate_planets(binfo, node_type=request.node_type)
     sun = next(p for p in planets if p["name"] == "Sun")

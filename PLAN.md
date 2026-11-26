@@ -75,7 +75,13 @@ locally. CI is green on GitHub too.
       the zone, not the actual birthplace's longitude. Add a "local mean time" input for historical charts.
 - [x] #5: `/register` ignores privilege fields; admins grant donor status via
       `PATCH /admin/users/{username}/donor` (the Make/Remove donor button in the admin users list).
-- [ ] #6 (fail hard on a missing SECRET_KEY when not in dev; no admin/admin outside dev), #7, and #8.
+- [x] #6: `APP_ENV` (default `production`). Production refuses to start without a 32+ character SECRET_KEY.
+      `backend/.env` is now actually loaded (it was silently ignored before). The demo seed refuses outside
+      development. `create_users.py`, which reset any existing admin's password to "admin", and the broken
+      `init_db.py` are deleted.
+- [x] #7: only admins can create posts (POST /posts returns 403 otherwise); the /editor page says so.
+- [x] #8: 500s return generic messages (details only in the log). Routes no longer turn our own 4xx errors
+      into 500s, and the job status no longer sends Python tracebacks to the browser.
 - [ ] Geocoder: a real Nominatim user agent, rate limiting, and caching results to the DB instead of only an
       `lru_cache`.
 - [ ] Accept `fagan_bradley` in `ProfileRequest`, or drop it from LINEAGE.md.

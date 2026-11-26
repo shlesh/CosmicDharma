@@ -141,7 +141,8 @@ def test_swisseph_failure(monkeypatch):
         json={"date": "2020-01-01", "time": "12:00:00", "location": "Delhi"},
     )
     assert resp.status_code == 500
-    assert "SwissEph" in resp.json()["detail"]
+    # Generic message for users; the Swiss Ephemeris error itself goes to the server log.
+    assert resp.json()["detail"] == "Ephemeris calculation failed"
 
 def setup_test_app():
     engine = create_engine(

@@ -121,9 +121,11 @@ async def get_profile(request: ProfileRequest):
     except ValueError as e:
         logger.error(f"Validation error: {str(e)}")
         raise HTTPException(status_code=400, detail=str(e))
-    except Exception as e:
+    except HTTPException:
+        raise  # keep 4xx (e.g. unknown place) as-is
+    except Exception:
         logger.exception("Unhandled error in profile computation")
-        raise HTTPException(status_code=500, detail=f"Profile computation failed: {str(e)}")
+        raise HTTPException(status_code=500, detail="Unhandled error in profile computation")  # details stay in the log
 
 @router.post("/profile/quick")
 async def get_quick_profile(request: QuickProfileRequest):
@@ -157,9 +159,11 @@ async def get_quick_profile(request: QuickProfileRequest):
             elif planet['name'] == 'Sun':
                 quick_result['sun_sign'] = planet.get('sign')
         return quick_result
-    except Exception as e:
+    except HTTPException:
+        raise  # keep 4xx (e.g. unknown place) as-is
+    except Exception:
         logger.exception("Quick profile computation failed")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Quick profile computation failed")  # details stay in the log
 
 @router.post("/profile/job", response_model=JobResponse)
 async def start_profile_job(request: ProfileRequest, background_tasks: BackgroundTasks):
@@ -170,9 +174,11 @@ async def start_profile_job(request: ProfileRequest, background_tasks: Backgroun
             status="queued",
             message=f"Profile computation queued for {request.location}"
         )
-    except Exception as e:
+    except HTTPException:
+        raise  # keep 4xx (e.g. unknown place) as-is
+    except Exception:
         logger.exception("Failed to enqueue profile job")
-        raise HTTPException(status_code=500, detail=f"Job creation failed: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to enqueue profile job")  # details stay in the log
 
 @router.get("/jobs/{job_id}", response_model=JobStatusResponse)
 async def get_job_result(job_id: str):
@@ -201,9 +207,11 @@ async def get_divisional_charts(request: ProfileRequest):
             "vargottama_planets": data.get("vargottamaPlanets", []),
             "summary": {"total_charts": len(charts), "strong_planets": []},
         }
-    except Exception as e:
+    except HTTPException:
+        raise  # keep 4xx (e.g. unknown place) as-is
+    except Exception:
         logger.exception("Divisional charts computation failed")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Divisional charts computation failed")  # details stay in the log
 
 @router.post("/dasha")
 async def get_dasha(
@@ -220,9 +228,11 @@ async def get_dasha(
             "interpretations": data.get("analysis", {}).get("vimshottariDasha", []),
             "metadata": {"depth": depth, "total_periods": len(dashas)},
         }
-    except Exception as e:
+    except HTTPException:
+        raise  # keep 4xx (e.g. unknown place) as-is
+    except Exception:
         logger.exception("Dasha computation failed")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Dasha computation failed")  # details stay in the log
 
 @router.post("/panchanga")
 async def get_panchanga(request: PanchangaRequest):
@@ -251,10 +261,10 @@ async def get_panchanga(request: PanchangaRequest):
             },
         }
     except HTTPException:
-        raise
-    except Exception as e:
+        raise  # keep 4xx (e.g. unknown place) as-is
+    except Exception:
         logger.exception("Panchanga computation failed")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Panchanga computation failed")  # details stay in the log
 
 @router.post("/yogas")
 async def get_yogas(request: ProfileRequest):
