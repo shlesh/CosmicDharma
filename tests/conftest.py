@@ -69,11 +69,13 @@ def _no_nominatim_throttle(monkeypatch):
 
 @pytest.fixture(autouse=True)
 def _no_photon(monkeypatch):
-    """Keep tests off the network: the Photon fallback finds nothing unless a test says otherwise."""
+    """Keep tests off the network: the keyless fallbacks find nothing unless a test says otherwise."""
     from app.core import geocoder
 
     async def _none_async(query, locale=None):
         return None, None
 
-    monkeypatch.setattr(geocoder, "_photon_geocode", lambda query, locale=None: (None, None))
-    monkeypatch.setattr(geocoder, "_photon_geocode_async", _none_async)
+    for name in ("_photon_geocode", "_open_meteo_geocode"):
+        monkeypatch.setattr(geocoder, name, lambda query, locale=None: (None, None))
+    for name in ("_photon_geocode_async", "_open_meteo_geocode_async"):
+        monkeypatch.setattr(geocoder, name, _none_async)

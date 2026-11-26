@@ -73,6 +73,46 @@ async def _photon_geocode_async(query: str, locale: str | None = None):
         return None, None
 
 
+# Open-Meteo's geocoder (https://open-meteo.com/en/docs/geocoding-api) is built for server-side
+# use, needs no key, and is free for non-commercial use. Photon turned out to refuse Render's
+# IPs too, so this is the last fallback. It matches place names (GeoNames), not street addresses.
+OPEN_METEO_URL = "https://geocoding-api.open-meteo.com/v1/search"
+
+
+def _open_meteo_params(query: str, locale: str | None) -> dict:
+    lang = (locale or "en").split("-")[0].lower() or "en"
+    return {"name": query, "count": 1, "language": lang, "format": "json"}
+
+
+def _open_meteo_point(data: dict):
+    results = (data or {}).get("results") or []
+    if not results:
+        return None, None
+    return float(results[0]["latitude"]), float(results[0]["longitude"])
+
+
+def _open_meteo_geocode(query: str, locale: str | None = None):
+    try:
+        with httpx.Client(headers={"User-Agent": NOMINATIM_USER_AGENT}, timeout=10) as client:
+            resp = client.get(OPEN_METEO_URL, params=_open_meteo_params(query, locale))
+            resp.raise_for_status()
+            return _open_meteo_point(resp.json())
+    except Exception as ex:  # pragma: no cover - network
+        logger.warning("Open-Meteo geocode failed: %s", ex)
+        return None, None
+
+
+async def _open_meteo_geocode_async(query: str, locale: str | None = None):
+    try:
+        async with httpx.AsyncClient(headers={"User-Agent": NOMINATIM_USER_AGENT}, timeout=10) as client:
+            resp = await client.get(OPEN_METEO_URL, params=_open_meteo_params(query, locale))
+            resp.raise_for_status()
+            return _open_meteo_point(resp.json())
+    except Exception as ex:  # pragma: no cover - network
+        logger.warning("Open-Meteo geocode failed: %s", ex)
+        return None, None
+
+
 def _nominatim_throttle():
     """Block until at least NOMINATIM_MIN_INTERVAL has passed since the previous request."""
     global _nominatim_last
@@ -127,6 +167,8 @@ def _geocode_once(query: str, locale: str | None = None):
 
     if lat is None or lon is None:
         lat, lon = _photon_geocode(query, locale)
+    if lat is None or lon is None:
+        lat, lon = _open_meteo_geocode(query, locale)
 
     return lat, lon, tz
 
@@ -170,6 +212,8 @@ async def _async_geocode_once(query: str, locale: str | None = None):
 
     if lat is None or lon is None:
         lat, lon = await _photon_geocode_async(query, locale)
+    if lat is None or lon is None:
+        lat, lon = await _open_meteo_geocode_async(query, locale)
 
     return lat, lon, tz
 

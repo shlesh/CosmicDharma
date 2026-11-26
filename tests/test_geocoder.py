@@ -207,3 +207,25 @@ async def test_async_falls_back_to_photon(monkeypatch):
     monkeypatch.setattr(geocoder, "_photon_geocode_async", photon)
     monkeypatch.setattr(geocoder, "timezone_at", lambda lat, lon: "Asia/Kolkata")
     assert await geocoder.geocode_location_async("Varanasi, India") == (25.3356, 83.0076, "Asia/Kolkata")
+
+
+
+def test_open_meteo_point_and_params():
+    data = {"results": [{"latitude": 19.07283, "longitude": 72.88261}]}
+    assert geocoder._open_meteo_point(data) == (19.07283, 72.88261)
+    assert geocoder._open_meteo_point({}) == (None, None)
+    assert geocoder._open_meteo_params("Mumbai", "hi-IN")["language"] == "hi"
+    assert geocoder._open_meteo_params("Mumbai", None)["language"] == "en"
+
+
+def test_open_meteo_is_the_last_fallback(monkeypatch):
+    """On Render both Nominatim and Photon refused lookups; Open-Meteo answers."""
+    geocoder.geocode_location.cache_clear()
+    monkeypatch.setattr(geocoder, "gmaps", None)
+    monkeypatch.setattr(geocoder._geopy, "geocode", lambda q, exactly_one=True, **kw: None)
+    order = []
+    monkeypatch.setattr(geocoder, "_photon_geocode", lambda q, locale=None: order.append("photon") or (None, None))
+    monkeypatch.setattr(geocoder, "_open_meteo_geocode", lambda q, locale=None: order.append("open-meteo") or (19.07, 72.88))
+    monkeypatch.setattr(geocoder, "timezone_at", lambda lat, lon: "Asia/Kolkata")
+    assert geocoder.geocode_location("Mumbai") == (19.07, 72.88, "Asia/Kolkata")
+    assert order == ["photon", "open-meteo"]
