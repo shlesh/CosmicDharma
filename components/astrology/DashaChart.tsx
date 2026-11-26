@@ -3,8 +3,8 @@ import Card from '../ui/Card';
 
 export interface DashaChartPeriod {
   lord: string;
-  start: string;
-  end: string;
+  start: string | Date; // ISO string from the API; Date when built client-side
+  end: string | Date;
   description?: string;
 }
 

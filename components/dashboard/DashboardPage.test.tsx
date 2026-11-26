@@ -1,60 +1,64 @@
-import React from 'react';
 import { render, screen, fireEvent } from '@testing-library/react';
-import { expect, test, vi } from 'vitest';
-import DashboardPage from '../pages/dashboard/index';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { SWRConfig } from 'swr';
+import { beforeEach, expect, test, vi } from 'vitest';
+import DashboardPage from '@/pages/dashboard/index';
+import ToastProvider from '@/components/ui/ToastProvider';
 
-import { fetchJson } from '../util/api';
-vi.mock('../util/api', () => ({
-  fetchJson: vi.fn()
+let currentUser: Record<string, unknown> = {};
+
+vi.mock('@/util/api', () => ({
+  // Route by URL so the test doesn't depend on fetch order.
+  fetchJson: vi.fn(async (url: string) => (url === '/users/me' ? currentUser : [])),
+  apiFetch: vi.fn(async () => ({})),
+  blogApi: { getPosts: vi.fn(async () => []) },
+  profileApi: { startJob: vi.fn(), jobStatus: vi.fn() },
 }));
 
-function setupToken(token) {
-  if (token) {
-    window.localStorage.setItem('token', token);
-  } else {
-    window.localStorage.removeItem('token');
-  }
+function renderDashboard() {
+  const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+  return render(
+    <SWRConfig value={{ provider: () => new Map(), dedupingInterval: 0 }}>
+      <QueryClientProvider client={qc}>
+        <ToastProvider>
+          <DashboardPage />
+        </ToastProvider>
+      </QueryClientProvider>
+    </SWRConfig>
+  );
 }
 
-test('prompts to login when no token', () => {
-  fetchJson.mockReset();
-  setupToken(null);
-  render(<DashboardPage />);
+beforeEach(() => {
+  localStorage.clear();
+  currentUser = { username: 'u' };
+});
+
+test('asks visitors without a token to log in', () => {
+  renderDashboard();
   expect(screen.getByText(/please login/i)).toBeDefined();
 });
 
-test('shows dashboard after loading user', async () => {
-  fetchJson.mockReset();
-  setupToken('t');
-  fetchJson.mockResolvedValue({ username: 'u', is_admin: true, is_donor: true });
-  render(<DashboardPage />);
-  await screen.findAllByText('Dashboard');
-  expect(screen.getByText('Admin')).toBeDefined();
-  expect(screen.getByText('Posts')).toBeDefined();
+test('a regular user sees only the profile tab and the birth form', async () => {
+  localStorage.setItem('token', 't');
+  renderDashboard();
+  expect(await screen.findByText('Discover Your Cosmic Blueprint')).toBeDefined();
+  expect(screen.getByRole('button', { name: 'Profile' })).toBeDefined();
+  expect(screen.queryByRole('button', { name: 'Posts' })).toBeNull();
+  expect(screen.queryByRole('button', { name: 'Admin' })).toBeNull();
 });
 
-test('renders post list for donors', async () => {
-  fetchJson.mockReset();
-  setupToken('t');
-  fetchJson
-    .mockResolvedValueOnce({ username: 'u', is_donor: true })
-    .mockResolvedValueOnce([{ id: 1, title: 'Hello' }]);
-  render(<DashboardPage />);
-  await screen.findAllByText('Dashboard');
-  fireEvent.click(screen.getAllByText('Posts')[0]);
-  await screen.findByText(/cosmic insights/i);
+test('donors get a posts tab', async () => {
+  currentUser = { username: 'u', is_donor: true };
+  localStorage.setItem('token', 't');
+  renderDashboard();
+  expect(await screen.findByRole('button', { name: 'Posts' })).toBeDefined();
+  expect(screen.queryByRole('button', { name: 'Admin' })).toBeNull();
 });
 
-test('renders admin dashboard for admins', async () => {
-  fetchJson.mockReset();
-  setupToken('t');
-  fetchJson
-    .mockResolvedValueOnce({ username: 'u', is_admin: true })
-    .mockResolvedValueOnce([]) // posts fetch will not be used
-    .mockResolvedValueOnce([]) // admin posts
-    .mockResolvedValueOnce([]); // admin users
-  render(<DashboardPage />);
-  await screen.findAllByText('Dashboard');
-  fireEvent.click(screen.getAllByText('Admin')[0]);
-  await screen.findByText(/admin dashboard/i);
+test('admins can open the admin dashboard', async () => {
+  currentUser = { username: 'u', is_admin: true };
+  localStorage.setItem('token', 't');
+  renderDashboard();
+  fireEvent.click(await screen.findByRole('button', { name: 'Admin' }));
+  expect(await screen.findByRole('heading', { name: 'Admin Dashboard' })).toBeDefined();
 });

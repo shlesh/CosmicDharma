@@ -1,15 +1,16 @@
-fastapi
-uvicorn[standard]
-pydantic
-swisseph
-pyswisseph
-timezonefinder
-pytz
-geopy
-httpx<0.25
-pytest-asyncio>=0.21
-sqlalchemy
-passlib[bcrypt]>=1.7.4
-bcrypt<4.0
-python-jose[cryptography]
-python-multipart
+# Runtime dependencies for the FastAPI backend.
+# Pinned to compatible releases of the versions the test suite runs against.
+fastapi~=0.141.1
+uvicorn[standard]~=0.53.0
+pydantic~=2.13.5
+pyswisseph~=2.10.3       # provides the `swisseph` module (do NOT add the `swisseph` placeholder package)
+tzfpy>=1.0               # coordinate -> IANA timezone (lighter than timezonefinder, which pulls h3 + numpy)
+pytz>=2024.1
+geopy~=2.5.0
+httpx~=0.24.1            # <0.25 keeps starlette's TestClient working
+SQLAlchemy~=2.0.54
+passlib[bcrypt]~=1.7.4
+bcrypt<4.0               # passlib 1.7 breaks on bcrypt 4's removed __about__
+python-jose[cryptography]~=3.5.0
+python-multipart>=0.0.20
+PyYAML~=6.0

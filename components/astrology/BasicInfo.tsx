@@ -8,14 +8,13 @@ export interface BirthInfo {
   latitude: number;
   longitude: number;
   timezone: string;
+  ayanamsa?: { name?: string; value?: number };
+  yuga?: { display?: string; dharma?: string; quality?: string; note?: string };
 }
 
 export interface BasicInfoProps {
   birth?: BirthInfo;
 }
-
-// Displays the birth data used for all calculations so users can verify
-// the core information driving their profile.
 
 export default function BasicInfo({ birth }: BasicInfoProps) {
   if (!birth) return null;
@@ -49,6 +48,23 @@ export default function BasicInfo({ birth }: BasicInfoProps) {
       <p>
         <strong>Timezone:</strong> {birth.timezone}
       </p>
+      {birth.ayanamsa?.name && (
+        <p>
+          <strong>Ayanamsa:</strong> {birth.ayanamsa.name}
+          {typeof birth.ayanamsa.value === "number"
+            ? ` (${birth.ayanamsa.value.toFixed(4)}°)`
+            : ""}
+        </p>
+      )}
+      {birth.yuga?.display && (
+        <p>
+          <strong>Yuga:</strong> {birth.yuga.display}
+          {birth.yuga.dharma ? ` — dharma ${birth.yuga.dharma}` : ""}
+        </p>
+      )}
+      {birth.yuga?.note && (
+        <p className="help-text mt-2">{birth.yuga.note}</p>
+      )}
     </Card>
   );
 }

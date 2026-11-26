@@ -6,7 +6,7 @@ import { PostInput } from '@/util/api';
 const Schema = z.object({
   title: z.string().min(3),
   slug: z.string().optional(),
-  summary: z.string().optional(),
+  excerpt: z.string().optional(),
   content: z.string().min(10),
   tags: z.string().optional(),
   published: z.boolean().optional(),
@@ -21,7 +21,7 @@ export default function AdminPostForm({ initial, submitting, onSubmit }: {
 }) {
   const { register, handleSubmit, formState: { errors } } = useForm<FormValues>({
     resolver: zodResolver(Schema),
-    defaultValues: { title: '', slug: '', summary: '', content: '', tags: '', published: false, ...(initial || {}) },
+    defaultValues: { title: '', slug: '', excerpt: '', content: '', tags: '', published: false, ...(initial || {}) },
   });
 
   return (
@@ -37,7 +37,7 @@ export default function AdminPostForm({ initial, submitting, onSubmit }: {
       </div>
       <div>
         <label className="block text-sm font-medium mb-1">Summary</label>
-        <textarea className="border rounded p-2 w-full" rows={3} {...register('summary')} />
+        <textarea className="border rounded p-2 w-full" rows={3} {...register('excerpt')} />
       </div>
       <div>
         <label className="block text-sm font-medium mb-1">Content (Markdown)</label>

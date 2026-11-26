@@ -2,42 +2,32 @@ name: CI
 
 on:
   push:
-    branches: [ main ]
+    branches: [main]
   pull_request:
   workflow_dispatch:
-    inputs:
-      use-docker:
-        description: "Run backend tests inside Docker"
-        required: false
-        default: "false"
 
 jobs:
-  test:
+  frontend:
     runs-on: ubuntu-latest
-    env:
-      USE_DOCKER: ${{ github.event.inputs.use-docker || 'false' }}
     steps:
-      - uses: actions/checkout@v3
-      - uses: actions/setup-node@v3
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
         with:
-          node-version: '18'
+          node-version: '20'
       - run: npm install --legacy-peer-deps
-      - run: npm test
-      - uses: actions/setup-python@v4
-        if: env.USE_DOCKER != 'true'
+      - run: npm run test:frontend
+      # Same build Netlify runs; it fails on any type error or bad import.
+      - run: npm run build
+
+  backend:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
-      - run: python -m venv backend/venv
-        if: env.USE_DOCKER != 'true'
-      - run: backend/venv/bin/pip install -r backend/requirements.txt
-        if: env.USE_DOCKER != 'true'
-      - run: backend/venv/bin/pip install pytest
-        if: env.USE_DOCKER != 'true'
-      - run: PYTHONPATH=. backend/venv/bin/pytest -q
-        if: env.USE_DOCKER != 'true'
-      - name: Build backend Docker image
-        if: env.USE_DOCKER == 'true'
-        run: docker build -t backend-tests -f backend/Dockerfile .
-      - name: Run backend tests in Docker
-        if: env.USE_DOCKER == 'true'
-        run: docker run --rm -v ${{ github.workspace }}/tests:/tests backend-tests bash -c "pip install pytest && PYTHONPATH=/app pytest -q /tests"
+          cache: pip
+          cache-dependency-path: backend/requirements*.txt
+      - run: pip install -r backend/requirements-dev.txt
+      # pytest.ini puts backend/ on sys.path, so tests import `app.*` like the server does.
+      - run: pytest

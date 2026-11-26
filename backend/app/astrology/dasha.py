@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta, date
+from datetime import datetime, timedelta, date, timezone
 from typing import List, Dict, Optional
 
 
@@ -27,9 +27,23 @@ ORDER = [
 ]
 
 
-def _build_sub_periods(lord: str, start_dt: datetime, duration: float, depth: int) -> List[Dict]:
-    """Recursively build sub-periods for a given dasha lord."""
+def _birth_datetime(binfo: Dict) -> datetime:
+    """Civil birth instant. Never use the host machine timezone."""
+    for key in ("local", "utc"):
+        raw = binfo.get(key)
+        if raw:
+            try:
+                dt = datetime.fromisoformat(str(raw).replace("Z", "+00:00"))
+                if dt.tzinfo is None:
+                    dt = dt.replace(tzinfo=timezone.utc)
+                return dt.astimezone(timezone.utc).replace(tzinfo=None)
+            except ValueError:
+                pass
+    jd = float(binfo["jd_ut"])
+    return datetime(1970, 1, 1) + timedelta(days=jd - 2440587.5)
 
+
+def _build_sub_periods(lord: str, start_dt: datetime, duration: float, depth: int) -> List[Dict]:
     if depth == 0:
         return []
 
@@ -54,13 +68,10 @@ def _build_sub_periods(lord: str, start_dt: datetime, duration: float, depth: in
 
 
 def _filter_periods(periods: List[Dict], start_dt: datetime) -> List[Dict]:
-    """Trim periods so the sequence begins at ``start_dt``."""
-
     result = []
     for p in periods:
         if p["end"] <= start_dt:
             continue
-
         entry = {
             "lord": p["lord"],
             "start": max(p["start"], start_dt),
@@ -81,14 +92,12 @@ def calculate_vimshottari_dasha(
     start_date: Optional[datetime] = None,
     depth: int = 1,
 ) -> List[Dict]:
-    """Return Vimshottari dasha periods with optional depth and start date."""
-
     moon = next(p for p in planets if p["name"] == "Moon")
     lon = moon["longitude"]
     frac = (lon % (360 / 27)) / (360 / 27)
     start_index = int(lon // (360 / 27)) % len(ORDER)
 
-    birth_dt = datetime.fromtimestamp((binfo["jd_ut"] - 2440587.5) * 86400)
+    birth_dt = _birth_datetime(binfo)
     if start_date is None:
         start_date = birth_dt
     elif isinstance(start_date, date) and not isinstance(start_date, datetime):

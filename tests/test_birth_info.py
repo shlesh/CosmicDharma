@@ -2,8 +2,9 @@ import datetime
 import pytest
 import swisseph as swe
 
-from backend.app.astrology.birth_info import get_birth_info, get_lagna, AYANAMSHA_MAP
-from backend.app.astrology.constants import RASHI_METADATA
+from app.astrology import birth_info as birth_info_mod
+from app.astrology.birth_info import get_birth_info, get_lagna, AYANAMSHA_MAP
+from app.astrology.constants import RASHI_METADATA
 
 
 def test_ayanamsha_and_house(monkeypatch):
@@ -85,10 +86,12 @@ def test_unknown_house_system():
 
 def test_get_lagna_basic(monkeypatch):
     """get_lagna should return metadata for the rising sign."""
+    # The Lagna comes from ascmc[0] (the Ascendant), not from the first cusp.
     def fake_houses(jd, lat, lon, hsys=b'P'):
-        return ([45.0] + [0] * 11, [0] * 8)
+        return ([0.0] * 12, [45.0] + [0] * 7)
 
     monkeypatch.setattr(swe, 'houses', fake_houses)
+    monkeypatch.setattr(birth_info_mod, 'get_ayanamsa', lambda jd, mode="yukteswar": 0.0)
 
     res = get_lagna(0.0, 0.0, 0.0)
     assert res == RASHI_METADATA[1]

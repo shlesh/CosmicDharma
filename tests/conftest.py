@@ -4,9 +4,9 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 import sqlalchemy
 
-from backend import main
-from backend.app import models
-from backend.app.core import auth
+import main
+from app import models
+from app.core import auth
 
 
 @pytest.fixture

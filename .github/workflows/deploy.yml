@@ -1,8 +1,9 @@
 name: Deploy
 
+# Manual only until hosting is set up (PLAN.md, Phase 3). This workflow still assumes
+# SSH + systemctl on a VPS and `netlify deploy --dir=.next`, and no deploy secrets exist yet,
+# so running it on every push to main would only fail.
 on:
-  push:
-    branches: [ main ]
   workflow_dispatch:
 
 jobs:

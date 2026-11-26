@@ -1,5 +1,5 @@
-from backend.app import models
-from backend.app.core import auth
+from app import models
+from app.core import auth
 
 
 def test_login_valid(test_app):

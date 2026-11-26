@@ -2,12 +2,12 @@
 import sys
 import os
 
-# Add parent directory to path for imports
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+# Run from anywhere: put backend/ on the path so `app.*` resolves like it does for the server.
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-from backend.db import Base, engine, SessionLocal
-from backend.models import User, BlogPost
-from backend.auth import get_password_hash
+from app.core.db import Base, engine, SessionLocal
+from app.models import User, BlogPost
+from app.core.auth import get_password_hash
 
 
 def seed():
@@ -27,7 +27,7 @@ def seed():
                 is_admin=True,
             )
             db.add(admin)
-            print("✓ Created admin user")
+            print("+ Created admin user")
 
         # Check if regular user exists
         user = db.query(User).filter_by(username="user").first()
@@ -39,7 +39,7 @@ def seed():
                 is_admin=False,
             )
             db.add(user)
-            print("✓ Created regular user")
+            print("+ Created regular user")
 
         # Check if donor exists
         donor = db.query(User).filter_by(username="donor").first()
@@ -51,7 +51,7 @@ def seed():
                 is_donor=True,
             )
             db.add(donor)
-            print("✓ Created donor user")
+            print("+ Created donor user")
 
         db.commit()
 
@@ -60,18 +60,20 @@ def seed():
             posts = [
                 BlogPost(
                     title="Welcome to Cosmic Dharma",
+                    slug="welcome-to-cosmic-dharma",
                     content="Discover the ancient wisdom of Vedic astrology...",
                     owner=admin
                 ),
                 BlogPost(
                     title="Understanding Your Birth Chart",
+                    slug="understanding-your-birth-chart",
                     content="Your birth chart is a cosmic blueprint...",
                     owner=user
                 ),
             ]
             db.add_all(posts)
             db.commit()
-            print("✓ Created sample blog posts")
+            print("+ Created sample blog posts")
 
         print("\nDatabase seeded successfully!")
         print("\nYou can login with:")

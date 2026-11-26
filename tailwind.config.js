@@ -9,6 +9,18 @@ module.exports = {
   theme: {
     extend: {
       colors: {
+        night: '#05080d',
+        gold: {
+          50: '#f8f1dc',
+          100: '#f3e2b0',
+          200: '#e4c57a',
+          300: '#d4a853',
+          400: '#c4923a',
+        },
+        leaf: {
+          400: '#8fd0a4',
+          700: '#2f5a3c',
+        },
         primary: {
           50: '#faf5ff',
           100: '#f3e8ff',
@@ -38,8 +50,8 @@ module.exports = {
           '50%': { transform: 'translateY(-10px)' },
         },
         'pulse-glow': {
-          '0%, 100%': { boxShadow: '0 0 20px rgba(168, 85, 247, 0.5)' },
-          '50%': { boxShadow: '0 0 40px rgba(168, 85, 247, 0.8)' },
+          '0%, 100%': { boxShadow: '0 0 20px rgba(212, 168, 83, 0.35)' },
+          '50%': { boxShadow: '0 0 36px rgba(212, 168, 83, 0.55)' },
         },
         'bounce-gentle': {
           '0%, 100%': { transform: 'translateY(0)' },
@@ -51,6 +63,7 @@ module.exports = {
       },
       fontFamily: {
         sans: ['Inter', 'system-ui', 'sans-serif'],
+        display: ['"Cormorant Garamond"', 'Georgia', 'serif'],
       },
     },
   },

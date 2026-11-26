@@ -2,7 +2,10 @@ import React from 'react';
 import { motion } from 'framer-motion';
 import { cn } from '../../util/cn';
 
-interface CardProps extends React.HTMLAttributes<HTMLDivElement> {
+// framer-motion redefines drag/animation handlers with its own signatures.
+type MotionConflicts = 'onDrag' | 'onDragStart' | 'onDragEnd' | 'onAnimationStart';
+
+interface CardProps extends Omit<React.HTMLAttributes<HTMLDivElement>, MotionConflicts> {
   variant?: 'default' | 'glass' | 'gradient' | 'cosmic';
   hover?: boolean;
   padding?: 'none' | 'sm' | 'md' | 'lg';

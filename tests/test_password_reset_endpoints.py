@@ -1,6 +1,7 @@
-from backend import main
-from backend.app import models
-from backend.app.core import auth
+import main
+from app.routes import auth as auth_routes
+from app import models
+from app.core import auth
 from datetime import datetime, timedelta
 
 def test_request_reset_stores_token_and_sends_email(test_app, monkeypatch):
@@ -12,7 +13,7 @@ def test_request_reset_stores_token_and_sends_email(test_app, monkeypatch):
         sent["to"] = to
         sent["body"] = body
 
-    monkeypatch.setattr(main, "send_email", fake_send)
+    monkeypatch.setattr(auth_routes, "send_email", fake_send)
 
     with Session() as db:
         user = models.User(

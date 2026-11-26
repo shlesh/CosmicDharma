@@ -1,4 +1,4 @@
-// components/ui/index.ts (rename from Index.ts)
+// components/ui/index.ts (lowercase: Linux builds are case-sensitive)
 export { default as Button } from './Button';
 export { 
   default as Card, 

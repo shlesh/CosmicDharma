@@ -1,11 +1,10 @@
-import React from 'react';
 import { render, screen } from '@testing-library/react';
 import { expect, test } from 'vitest';
-import NotFoundPage from '../pages/404';
+import NotFoundPage from '@/pages/404';
 
-test('renders friendly not found message', () => {
+test('renders a not-found heading and a link home', () => {
   render(<NotFoundPage />);
-  expect(screen.getByText(/page not found/i)).toBeDefined();
-  const link = screen.getByRole('link', { name: /go back home/i });
+  expect(screen.getByRole('heading', { level: 1 }).textContent).toMatch(/empty/i);
+  const link = screen.getByRole('link', { name: /return home/i });
   expect(link.getAttribute('href')).toBe('/');
 });
