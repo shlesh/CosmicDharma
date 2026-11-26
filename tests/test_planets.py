@@ -1,5 +1,5 @@
 import swisseph as swe
-from backend.app.astrology import planets as planets_mod
+from app.astrology import planets as planets_mod
 
 
 def test_calculate_planets_with_mock(monkeypatch):

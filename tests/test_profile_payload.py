@@ -1,6 +1,6 @@
 from datetime import date, time
 
-from backend.app.services import astro
+from app.services import astro
 
 
 def test_profile_includes_lineage_yuga_panchanga(monkeypatch):

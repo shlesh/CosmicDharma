@@ -1,9 +1,9 @@
 from datetime import time
 import math
-from backend.app.astrology.yogas import calculate_all_yogas
-from backend.app.astrology.shadbala import calculate_shadbala
-from backend.app.astrology.divisional_charts import calculate_all_vargas
-from backend.app.utils.signs import get_sign_lord
+from app.astrology.yogas import calculate_all_yogas
+from app.astrology.shadbala import calculate_shadbala
+from app.astrology.divisional_charts import calculate_all_vargas
+from app.utils.signs import get_sign_lord
 
 
 def test_calculate_all_yogas_empty():
@@ -38,7 +38,8 @@ def test_calculate_shadbala_edge_cases():
     assert res["Saturn"]["sthana_bala"] == 0
     assert res["Sun"]["dig_bala"] == 30
     assert res["Sun"]["kala_bala"] == 30
-    assert res["Saturn"]["kala_bala"] == 15
+    # JD 2451545.0 falls on a Saturday, so Saturn gets the BPHS vara bala (45).
+    assert res["Saturn"]["kala_bala"] == 45
 
 
 def test_moon_paksha_bala():
@@ -49,7 +50,8 @@ def test_moon_paksha_bala():
     binfo = {"birth_time": time(12, 0), "jd_ut": 2451545.0}
     houses = {"houses": {1: ["Sun"], 4: ["Moon"]}}
     res = calculate_shadbala(planets, binfo, houses)
-    assert math.isclose(res["Moon"]["kala_bala"], 15.0)
+    # BPHS paksha bala for a benefic Moon: Moon-Sun distance / 3 = 90 / 3 = 30 virupas.
+    assert math.isclose(res["Moon"]["kala_bala"], 30.0)
 
 
 def test_calculate_all_vargas_values():

@@ -1,10 +1,9 @@
 from fastapi.testclient import TestClient
-from backend import main
-from backend.app.routes import profile
-from backend.app.services import astro
-import fakeredis
-from backend.app import models
-from backend.app.core import auth
+import main
+from app.routes import profile
+from app.services import astro
+from app import models
+from app.core import auth
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 import sqlalchemy
@@ -21,7 +20,7 @@ def _parse_response(data: dict):
 
 
 def test_profile(monkeypatch):
-    fake = fakeredis.FakeRedis()
+    fake = astro._TTLCache(default_ttl=60)
     monkeypatch.setattr(astro, "_CACHE", fake)
     astro.clear_profile_cache()
     # stub external services
@@ -46,7 +45,7 @@ def test_profile(monkeypatch):
 
 
 def test_divisional_charts(monkeypatch):
-    fake = fakeredis.FakeRedis()
+    fake = astro._TTLCache(default_ttl=60)
     monkeypatch.setattr(astro, "_CACHE", fake)
     astro.clear_profile_cache()
     monkeypatch.setattr(astro, "geocode_location", lambda loc: (10.0, 20.0, "UTC"))
@@ -67,7 +66,7 @@ def test_divisional_charts(monkeypatch):
 
 
 def test_dasha(monkeypatch):
-    fake = fakeredis.FakeRedis()
+    fake = astro._TTLCache(default_ttl=60)
     monkeypatch.setattr(astro, "_CACHE", fake)
     astro.clear_profile_cache()
     monkeypatch.setattr(astro, "geocode_location", lambda loc: (10.0, 20.0, "UTC"))
@@ -88,7 +87,7 @@ def test_dasha(monkeypatch):
 
 
 def test_geocode_error(monkeypatch):
-    fake = fakeredis.FakeRedis()
+    fake = astro._TTLCache(default_ttl=60)
     monkeypatch.setattr(astro, "_CACHE", fake)
     astro.clear_profile_cache()
     def fail(loc):
@@ -105,7 +104,7 @@ def test_geocode_error(monkeypatch):
 
 
 def test_birth_info_invalid(monkeypatch):
-    fake = fakeredis.FakeRedis()
+    fake = astro._TTLCache(default_ttl=60)
     monkeypatch.setattr(astro, "_CACHE", fake)
     astro.clear_profile_cache()
     monkeypatch.setattr(astro, "geocode_location", lambda loc: (10.0, 20.0, "UTC"))
@@ -124,7 +123,7 @@ def test_birth_info_invalid(monkeypatch):
 
 
 def test_swisseph_failure(monkeypatch):
-    fake = fakeredis.FakeRedis()
+    fake = astro._TTLCache(default_ttl=60)
     monkeypatch.setattr(astro, "_CACHE", fake)
     astro.clear_profile_cache()
     monkeypatch.setattr(astro, "geocode_location", lambda loc: (10.0, 20.0, "UTC"))
@@ -198,7 +197,7 @@ def test_admin_can_update_post():
         )
         db.add_all([admin, user])
         db.commit()
-        post = models.BlogPost(title="t", content="c", owner=user)
+        post = models.BlogPost(title="t", content="c", slug="t", owner=user)
         db.add(post)
         db.commit()
         db.refresh(post)
@@ -277,12 +276,12 @@ def test_admin_metrics_and_donor_endpoints():
     assert resp.json() == {"users": 3, "posts": 2, "donors": 1}
 
     token_user = auth.create_access_token({"sub": "user"})
-    assert client.get("/prompts", headers={"Authorization": f"Bearer {token_user}"}).status_code == 403
+    assert client.get("/api/prompts", headers={"Authorization": f"Bearer {token_user}"}).status_code == 403
 
     token_donor = auth.create_access_token({"sub": "donor"})
-    resp = client.get("/prompts", headers={"Authorization": f"Bearer {token_donor}"})
+    resp = client.get("/api/prompts", headers={"Authorization": f"Bearer {token_donor}"})
     assert resp.status_code == 200 and resp.json() == []
-    resp = client.get("/reports", headers={"Authorization": f"Bearer {token_donor}"})
+    resp = client.get("/api/reports", headers={"Authorization": f"Bearer {token_donor}"})
     assert resp.status_code == 200 and resp.json() == []
 
 
@@ -301,23 +300,23 @@ def test_donor_prompt_report_crud():
     token = auth.create_access_token({"sub": "donor"})
 
     resp = client.post(
-        "/prompts",
+        "/api/prompts",
         headers={"Authorization": f"Bearer {token}", "Content-Type": "application/json"},
         json={"text": "What is my future?"},
     )
     assert resp.status_code == 200
 
-    resp = client.get("/prompts", headers={"Authorization": f"Bearer {token}"})
+    resp = client.get("/api/prompts", headers={"Authorization": f"Bearer {token}"})
     assert any(p["text"] == "What is my future?" for p in resp.json())
 
     resp = client.post(
-        "/reports",
+        "/api/reports",
         headers={"Authorization": f"Bearer {token}", "Content-Type": "application/json"},
         json={"content": "Great things ahead."},
     )
     assert resp.status_code == 200
 
-    resp = client.get("/reports", headers={"Authorization": f"Bearer {token}"})
+    resp = client.get("/api/reports", headers={"Authorization": f"Bearer {token}"})
     assert any(r["content"] == "Great things ahead." for r in resp.json())
 
 

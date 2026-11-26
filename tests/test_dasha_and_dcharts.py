@@ -1,7 +1,7 @@
 import datetime
-from backend.app.astrology.dasha import calculate_vimshottari_dasha
-from backend.app.astrology.analysis import DIV_CHART_INTERP
-from backend.app.astrology.divisional_charts import calculate_divisional_charts
+from app.astrology.dasha import calculate_vimshottari_dasha
+from app.astrology.analysis import DIV_CHART_INTERP
+from app.astrology.divisional_charts import calculate_divisional_charts
 
 
 def test_vimshottari_dasha_sequence():

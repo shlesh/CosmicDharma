@@ -1,4 +1,4 @@
-from backend.app.astrology.ashtakavarga import calculate_ashtakavarga
+from app.astrology.ashtakavarga import calculate_ashtakavarga
 
 
 def test_bav_canonical_totals():

@@ -1,14 +1,13 @@
 import pytz
 from datetime import datetime, date, time
-import fakeredis
 from fastapi.testclient import TestClient
 import pytest
 from fastapi import HTTPException
 
-from backend import main
-from backend.app.routes import profile
-from backend.app.services import astro
-from backend.app.astrology import panchanga
+import main
+from app.routes import profile
+from app.services import astro
+from app.astrology import panchanga
 
 client = TestClient(main.app)
 
@@ -56,7 +55,7 @@ def test_vishti_karana_is_caution():
 
 
 def test_compute_panchanga(monkeypatch):
-    fake = fakeredis.FakeRedis()
+    fake = astro._TTLCache(default_ttl=60)
     monkeypatch.setattr(astro, "_CACHE", fake)
     astro.clear_profile_cache()
     monkeypatch.setattr(astro, "geocode_location", lambda loc: (10.0, 20.0, "UTC"))

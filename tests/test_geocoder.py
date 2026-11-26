@@ -1,7 +1,7 @@
 import pytest
 from types import SimpleNamespace
 
-from backend.app.core import geocoder
+from app.core import geocoder
 
 
 def test_geocode_exact(monkeypatch):
@@ -14,7 +14,7 @@ def test_geocode_exact(monkeypatch):
         return None
 
     monkeypatch.setattr(geocoder._geopy, "geocode", fake_geocode)
-    monkeypatch.setattr(geocoder, "_tzfinder", SimpleNamespace(timezone_at=lambda lat, lng: "Asia/Kolkata"))
+    monkeypatch.setattr(geocoder, "timezone_at", lambda lat, lon: "Asia/Kolkata")
 
     lat, lon, tz = geocoder.geocode_location("Renukoot, Sonbhadra, India")
     assert lat == 1.0
@@ -38,7 +38,7 @@ def test_geocode_fallback(monkeypatch):
         return None
 
     monkeypatch.setattr(geocoder._geopy, "geocode", fake_geocode)
-    monkeypatch.setattr(geocoder, "_tzfinder", SimpleNamespace(timezone_at=lambda lat, lng: "Asia/Kolkata"))
+    monkeypatch.setattr(geocoder, "timezone_at", lambda lat, lon: "Asia/Kolkata")
 
     lat, lon, tz = geocoder.geocode_location("Renukoot, Sonebhadra, India")
     assert lat == 5.0
@@ -87,7 +87,7 @@ def test_geocode_locale(monkeypatch):
         return SimpleNamespace(latitude=1.0, longitude=2.0)
 
     monkeypatch.setattr(geocoder._geopy, "geocode", fake_geocode)
-    monkeypatch.setattr(geocoder, "_tzfinder", SimpleNamespace(timezone_at=lambda lat, lng: "Asia/Kolkata"))
+    monkeypatch.setattr(geocoder, "timezone_at", lambda lat, lon: "Asia/Kolkata")
 
     lat, lon, tz = geocoder.geocode_location("Renukoot, Sonbhadra, India", locale="hi")
     assert lat == 1.0
@@ -117,7 +117,7 @@ async def test_geocode_async(monkeypatch):
             return await fake_get(url, params)
 
     monkeypatch.setattr(geocoder.httpx, "AsyncClient", DummyClient)
-    monkeypatch.setattr(geocoder, "_tzfinder", SimpleNamespace(timezone_at=lambda lat, lng: "UTC"))
+    monkeypatch.setattr(geocoder, "timezone_at", lambda lat, lon: "UTC")
 
     lat, lon, tz = await geocoder.geocode_location_async("Renukoot", locale="en")
     assert lat == 1.0

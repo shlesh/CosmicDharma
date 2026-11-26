@@ -5,7 +5,6 @@ import asyncio
 from functools import lru_cache
 
 from geopy.geocoders import Nominatim
-from timezonefinder import TimezoneFinder
 import httpx
 
 try:
@@ -17,7 +16,17 @@ except ImportError:  # pragma: no cover - googlemaps optional
 
 logger = logging.getLogger(__name__)
 _geopy = Nominatim(user_agent="vedic-astrology-geocoder")
-_tzfinder = TimezoneFinder()
+
+
+def timezone_at(lat: float, lon: float) -> str:
+    """IANA timezone name for a coordinate, offline.
+
+    Uses tzfpy (one small wheel) rather than timezonefinder (h3 + numpy + cffi).
+    Note tzfpy takes (lon, lat). The import is lazy so that a missing or
+    OS-blocked native binary breaks only this lookup, not app startup.
+    """
+    from tzfpy import get_tz
+    return get_tz(lon, lat) or "UTC"
 
 
 def _geocode_once(query: str, locale: str | None = None):
@@ -111,7 +120,7 @@ def geocode_location(query: str, locale: str | None = None):
         raise ValueError(f"Could not resolve location '{query}'")
 
     if not tz:
-        tz = _tzfinder.timezone_at(lat=lat, lng=lon) or 'UTC'
+        tz = timezone_at(lat, lon)
     return lat, lon, tz
 
 
@@ -132,5 +141,5 @@ async def geocode_location_async(query: str, locale: str | None = None):
         raise ValueError(f"Could not resolve location '{query}'")
 
     if not tz:
-        tz = _tzfinder.timezone_at(lat=lat, lng=lon) or 'UTC'
+        tz = timezone_at(lat, lon)
     return lat, lon, tz

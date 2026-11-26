@@ -1,5 +1,5 @@
 import swisseph as swe
-from backend.app.astrology.house_analysis import analyze_houses
+from app.astrology.house_analysis import analyze_houses
 
 
 def test_house_system_override(monkeypatch):

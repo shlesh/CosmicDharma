@@ -45,14 +45,19 @@ def admin_update_post(
     db_post = db.get(BlogPost, post_id)
     if not db_post:
         raise HTTPException(status_code=404, detail="Post not found")
-    db_post.title = post.title
-    db_post.content = post.content
+    for field, value in post.model_dump(exclude_unset=True).items():
+        setattr(db_post, field, value)
     db.commit()
     db.refresh(db_post)
     return BlogPostOut(
         id=db_post.id,
         title=db_post.title,
         content=db_post.content,
+        excerpt=db_post.excerpt,
+        slug=db_post.slug,
+        published=db_post.published,
+        featured=db_post.featured,
+        tags=db_post.tags,
         created_at=db_post.created_at,
         updated_at=db_post.updated_at,
         owner=db_post.owner.username,

@@ -1,8 +1,8 @@
 import pytest
 import swisseph as swe
 
-from backend.app.astrology.ayanamsa import get_ayanamsa, yukteswar_ayanamsa
-from backend.app.astrology.yuga import describe_yuga
+from app.astrology.ayanamsa import get_ayanamsa, yukteswar_ayanamsa
+from app.astrology.yuga import describe_yuga
 
 
 def test_yukteswar_anchor_1894():
@@ -13,8 +13,9 @@ def test_yukteswar_anchor_1894():
 
 
 def test_yukteswar_rate():
+    # The rate is per Julian year (365.25 days); 1894 itself has only 365 days.
     jd0 = swe.julday(1894, 1, 1, 0.0)
-    jd1 = swe.julday(1895, 1, 1, 0.0)
+    jd1 = jd0 + 365.25
     delta = (yukteswar_ayanamsa(jd1) - yukteswar_ayanamsa(jd0)) * 3600
     assert abs(delta - 54.0) < 0.02
 
