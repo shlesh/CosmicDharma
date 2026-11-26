@@ -1,20 +1,24 @@
 import React, { useEffect, useState } from 'react';
+import Link from 'next/link';
 import useSWR from 'swr';
-import { fetchJson, apiFetch } from '../../util/api';
-import { useToast } from '../ui/ToastProvider';
-import dynamic from 'next/dynamic';
-
-// Heavy and only needed on demand: loaded on first use, not with the page.
-const MarkdownEditor = dynamic(() => import('./MarkdownEditor'), {
-  ssr: false,
-  loading: () => <p className="p-4 text-sm text-gray-500">Loading editor…</p>,
-});
-const CountsChart = dynamic(() => import('./CountsChart'), { ssr: false });
+import { FileText, Users, HeartHandshake, ShieldCheck, Plus, Pencil, Trash2, ExternalLink } from 'lucide-react';
+import { fetchJson, apiFetch } from '@/util/api';
+import { useToast } from '@/components/ui/ToastProvider';
+import Card, { CardHeader } from '@/components/ui/Card';
+import Badge from '@/components/ui/Badge';
+import Button, { ButtonLink } from '@/components/ui/Button';
+import Skeleton from '@/components/ui/Skeleton';
+import EmptyState from '@/components/ui/EmptyState';
+import { formatDate } from '@/util/astro';
+import { cn } from '@/util/cn';
 
 interface Post {
   id: number;
   title: string;
-  content: string;
+  slug?: string;
+  published?: boolean;
+  featured?: boolean;
+  created_at?: string;
 }
 
 // Shape of GET /admin/users (UserOut); there is no id, so username is the key.
@@ -25,100 +29,52 @@ interface User {
   is_donor: boolean;
 }
 
+function Stat({ icon: Icon, label, value }: { icon: React.ElementType; label: string; value: React.ReactNode }) {
+  return (
+    <div className="panel p-5">
+      <div className="flex items-center justify-between">
+        <p className="text-sm text-muted">{label}</p>
+        <Icon className="h-4 w-4 text-accent" aria-hidden="true" />
+      </div>
+      <p className="mt-2 font-display text-4xl font-semibold tabular-nums">{value}</p>
+    </div>
+  );
+}
 
 export default function AdminDashboard() {
-  const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
-  const headers = {
-    'Content-Type': 'application/json',
-    Authorization: `Bearer ${token}`,
-  };
-
-  const {
-    data: posts = [],
-    mutate: mutatePosts,
-    error: postsError
-  } = useSWR<Post[]>(
-    token ? ['admin/posts', token] : null,
-    ([url, t]) => fetchJson(url, { headers })
-  );
-
-  const {
-    data: users = [],
-    mutate: mutateUsers,
-    error: usersError
-  } = useSWR<User[]>(
-    token ? ['admin/users', token] : null,
-    ([url, t]) => fetchJson(url, { headers })
-  );
-
-  const [editingId, setEditingId] = useState<number | null>(null);
-  const [isCreating, setIsCreating] = useState(false);
-  const [form, setForm] = useState<{ title: string; content: string }>({
-    title: '',
-    content: '',
-  });
   const toast = useToast();
+  const [mounted, setMounted] = useState(false);
+  const [confirming, setConfirming] = useState<number | null>(null);
+  useEffect(() => setMounted(true), []);
 
-  const load = () => {
-    mutatePosts();
-    mutateUsers();
-  };
+  const token = mounted ? localStorage.getItem('token') : null;
+  const headers = { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` };
 
-  useEffect(() => {
-    if (postsError) toast('Failed to load posts');
-  }, [postsError]);
+  const { data: posts, mutate: mutatePosts, error: postsError } = useSWR<Post[]>(
+    token ? ['admin/posts', token] : null,
+    ([url]: [string]) => fetchJson(url, { headers }),
+  );
+  const { data: users, mutate: mutateUsers, error: usersError } = useSWR<User[]>(
+    token ? ['admin/users', token] : null,
+    ([url]: [string]) => fetchJson(url, { headers }),
+  );
 
-  useEffect(() => {
-    if (usersError) toast('Failed to load users');
-  }, [usersError]);
+  useEffect(() => { if (postsError) toast('Could not load posts'); }, [postsError, toast]);
+  useEffect(() => { if (usersError) toast('Could not load users'); }, [usersError, toast]);
 
-  const startEdit = (post: Post) => {
-    setEditingId(post.id);
-    setForm({ title: post.title, content: post.content });
-  };
-
-  const startCreate = () => {
-    setEditingId(null);
-    setIsCreating(true);
-    setForm({ title: '', content: '' });
-  };
-
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) =>
-    setForm({ ...form, [e.target.name]: e.target.value });
-
-  const handleContentChange = (markdown: string) =>
-    setForm({ ...form, content: markdown });
-
-  const handleSave = async () => {
-    // There is no POST /admin/posts; new posts go through the regular blog route.
-    const url = editingId ? `admin/posts/${editingId}` : 'posts';
-    const method = editingId ? 'PUT' : 'POST';
-    try {
-      await apiFetch(url, {
-        method,
-        headers,
-        body: JSON.stringify(form),
-      });
-      setEditingId(null);
-      setIsCreating(false);
-      load();
-      toast('Post saved successfully!', 'success');
-    } catch (e) {
-      toast('Save failed');
+  const handleDelete = async (post: Post) => {
+    if (confirming !== post.id) {
+      setConfirming(post.id);
+      setTimeout(() => setConfirming((c) => (c === post.id ? null : c)), 4000);
+      return;
     }
-  };
-
-  const handleDelete = async (id: number) => {
-    if (!window.confirm('Delete this post?')) return;
+    setConfirming(null);
     try {
-      await apiFetch(`admin/posts/${id}`, {
-        method: 'DELETE',
-        headers,
-      });
-      load();
-      toast('Post deleted successfully!', 'success');
-    } catch (e) {
-      toast('Delete failed');
+      await apiFetch(`admin/posts/${post.id}`, { method: 'DELETE', headers });
+      mutatePosts();
+      toast(`Deleted “${post.title}”`, 'success');
+    } catch {
+      toast('Could not delete the post');
     }
   };
 
@@ -132,130 +88,108 @@ export default function AdminDashboard() {
       });
       mutateUsers();
       toast(user.is_donor ? `${user.username} is no longer a donor` : `${user.username} is now a donor`, 'success');
-    } catch (e) {
+    } catch {
       toast('Could not update donor status');
     }
   };
 
-  const [mounted, setMounted] = useState(false);
-  useEffect(() => setMounted(true), []);
-
   if (!mounted) return null;
-  if (!token) return <p>Please login.</p>;
+  if (!token) return <p className="text-muted">Please sign in.</p>;
+
+  const postList = Array.isArray(posts) ? posts : [];
+  const userList = Array.isArray(users) ? users : [];
 
   return (
-    <div className="p-6 max-w-6xl mx-auto">
-      <h2 className="text-2xl font-bold mb-6">Admin Dashboard</h2>
-
-      {((posts || []).length > 0 || (users || []).length > 0) && (
-        <div className="mb-8 bg-white p-4 rounded-lg shadow">
-          <CountsChart posts={posts.length} users={users.length} />
+    <div className="space-y-6">
+      <div className="flex flex-wrap items-end justify-between gap-4">
+        <div>
+          <p className="eyebrow">Administration</p>
+          <h2 className="mt-1 font-display text-display-md font-semibold">Admin Dashboard</h2>
         </div>
-      )}
-
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Posts Section */}
-        <div className="bg-white p-6 rounded-lg shadow">
-          <div className="flex justify-between items-center mb-4">
-            <h3 className="text-xl font-semibold">Posts</h3>
-            {!editingId && !isCreating && (
-              <button
-                onClick={startCreate}
-                className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
-              >
-                New Post
-              </button>
-            )}
-          </div>
-
-          <div className="space-y-3">
-            {(Array.isArray(posts) ? posts : []).map(p => (
-              <div key={p.id} className="flex items-center justify-between p-3 border rounded">
-                <span className="font-medium">{p.title}</span>
-                <div className="space-x-2">
-                  <button
-                    onClick={() => startEdit(p)}
-                    className="text-blue-600 hover:text-blue-800"
-                  >
-                    Edit
-                  </button>
-                  <button
-                    onClick={() => handleDelete(p.id)}
-                    className="text-red-600 hover:text-red-800"
-                  >
-                    Delete
-                  </button>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Users Section */}
-        <div className="bg-white p-6 rounded-lg shadow">
-          <h3 className="text-xl font-semibold mb-4">Users</h3>
-          <div className="space-y-2">
-            {(Array.isArray(users) ? users : []).map(u => (
-              <div key={u.username} className="flex items-center justify-between p-2 border rounded">
-                <span>
-                  {u.username}
-                  {u.is_admin && <span className="ml-2 text-xs text-gray-500">admin</span>}
-                  {u.is_donor && <span className="ml-2 text-xs text-amber-600">donor</span>}
-                </span>
-                <button
-                  onClick={() => handleToggleDonor(u)}
-                  className="text-sm text-blue-600 hover:text-blue-800"
-                >
-                  {u.is_donor ? 'Remove donor' : 'Make donor'}
-                </button>
-              </div>
-            ))}
-          </div>
-        </div>
+        <ButtonLink href="/editor" size="md"><Plus className="h-4 w-4" /> New post</ButtonLink>
       </div>
 
-      {/* Editor Modal */}
-      {(editingId || isCreating) && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-lg p-6 w-full max-w-4xl max-h-[90vh] overflow-y-auto">
-            <h3 className="text-xl font-bold mb-4">
-              {editingId ? 'Edit Post' : 'Create Post'}
-            </h3>
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+        <Stat icon={FileText} label="Posts" value={posts ? postList.length : '–'} />
+        <Stat icon={Users} label="Users" value={users ? userList.length : '–'} />
+        <Stat icon={HeartHandshake} label="Donors" value={users ? userList.filter((u) => u.is_donor).length : '–'} />
+        <Stat icon={ShieldCheck} label="Admins" value={users ? userList.filter((u) => u.is_admin).length : '–'} />
+      </div>
 
-            <div className="space-y-4">
-              <input
-                name="title"
-                value={form.title}
-                onChange={handleChange}
-                placeholder="Post title..."
-                className="w-full p-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
+      <div className="grid gap-4 xl:grid-cols-2">
+        <Card>
+          <CardHeader title="Posts" as="h3" description="Everything in the journal, drafts included." />
+          {!posts ? (
+            <div className="space-y-2">{Array.from({ length: 3 }, (_, i) => <Skeleton key={i} className="h-14" />)}</div>
+          ) : postList.length === 0 ? (
+            <EmptyState icon={<FileText className="h-5 w-5" />} title="No posts yet" description="Write the first one." action={<ButtonLink href="/editor" size="sm">Write a post</ButtonLink>} className="py-8" />
+          ) : (
+            <ul className="divide-y divide-line/[0.07]">
+              {postList.map((p) => (
+                <li key={p.id} className="flex items-center gap-3 py-3">
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate font-medium text-fg">{p.title}</p>
+                    <p className="mt-0.5 flex items-center gap-2 text-xs text-subtle">
+                      <Badge tone={p.published === false ? 'neutral' : 'success'} className="px-2 py-0">{p.published === false ? 'Draft' : 'Published'}</Badge>
+                      {p.featured && <Badge tone="accent" className="px-2 py-0">Featured</Badge>}
+                      {p.created_at && formatDate(p.created_at)}
+                    </p>
+                  </div>
+                  <div className="flex shrink-0 items-center gap-1">
+                    {p.slug && p.published !== false && (
+                      <Link href={`/posts/${p.slug}`} className="rounded-lg p-2 text-subtle hover:bg-line/[0.06] hover:text-fg" aria-label={`View ${p.title}`}>
+                        <ExternalLink className="h-4 w-4" />
+                      </Link>
+                    )}
+                    <Link href={`/editor?edit=${p.id}`} className="rounded-lg p-2 text-subtle hover:bg-line/[0.06] hover:text-fg" aria-label={`Edit ${p.title}`}>
+                      <Pencil className="h-4 w-4" />
+                    </Link>
+                    <button
+                      type="button"
+                      onClick={() => handleDelete(p)}
+                      className={cn(
+                        'rounded-lg p-2 text-sm transition-colors',
+                        confirming === p.id ? 'bg-danger/15 px-3 font-medium text-danger' : 'text-subtle hover:bg-danger/10 hover:text-danger',
+                      )}
+                      aria-label={confirming === p.id ? `Confirm deleting ${p.title}` : `Delete ${p.title}`}
+                    >
+                      {confirming === p.id ? 'Confirm' : <Trash2 className="h-4 w-4" />}
+                    </button>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          )}
+        </Card>
 
-              <div className="border rounded-lg">
-                <MarkdownEditor markdown={form.content} onChange={handleContentChange} />
-              </div>
-            </div>
-
-            <div className="flex justify-end space-x-3 mt-6">
-              <button
-                onClick={() => {
-                  setEditingId(null);
-                  setIsCreating(false);
-                }}
-                className="px-4 py-2 text-gray-600 border border-gray-300 rounded hover:bg-gray-50"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleSave}
-                className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
-              >
-                Save
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+        <Card>
+          <CardHeader title="Users" as="h3" description="Donor status unlocks donor-only features. Grant it here." />
+          {!users ? (
+            <div className="space-y-2">{Array.from({ length: 3 }, (_, i) => <Skeleton key={i} className="h-14" />)}</div>
+          ) : (
+            <ul className="divide-y divide-line/[0.07]">
+              {userList.map((u) => (
+                <li key={u.username} className="flex items-center gap-3 py-3">
+                  <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-accent/10 text-sm font-semibold text-accent" aria-hidden="true">
+                    {u.username.slice(0, 1).toUpperCase()}
+                  </span>
+                  <div className="min-w-0 flex-1">
+                    <p className="flex items-center gap-2 truncate font-medium text-fg">
+                      {u.username}
+                      {u.is_admin && <Badge tone="lunar" className="px-2 py-0">admin</Badge>}
+                      {u.is_donor && <Badge tone="accent" className="px-2 py-0">donor</Badge>}
+                    </p>
+                    <p className="truncate text-xs text-subtle">{u.email}</p>
+                  </div>
+                  <Button variant={u.is_donor ? 'ghost' : 'secondary'} size="sm" onClick={() => handleToggleDonor(u)}>
+                    {u.is_donor ? 'Remove donor' : 'Make donor'}
+                  </Button>
+                </li>
+              ))}
+            </ul>
+          )}
+        </Card>
+      </div>
     </div>
   );
 }

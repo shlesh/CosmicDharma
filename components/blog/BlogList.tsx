@@ -1,10 +1,15 @@
-import React, { useState, useEffect } from 'react';
-import { blogApi } from '../../util/api';
+import React, { useEffect, useState } from 'react';
+import { motion } from 'framer-motion';
+import { Search, BookOpen, X } from 'lucide-react';
+import { blogApi, type BlogPostMeta } from '@/util/api';
 import BlogCard from './BlogCard';
-import { Button } from '../ui/Button';
-import { Card } from '../ui/Card';
-
-import { BlogPostMeta } from '../../util/api';
+import Button from '@/components/ui/Button';
+import Card from '@/components/ui/Card';
+import Skeleton from '@/components/ui/Skeleton';
+import EmptyState from '@/components/ui/EmptyState';
+import { controlClass } from '@/components/ui/Field';
+import { useDebouncedValue } from '@/hooks/useGeocode';
+import { cn } from '@/util/cn';
 
 interface BlogListProps {
   featuredOnly?: boolean;
@@ -12,182 +17,143 @@ interface BlogListProps {
   showPagination?: boolean;
 }
 
-const BlogList: React.FC<BlogListProps> = ({
-  featuredOnly = false,
-  limit = 10,
-  showPagination = true
-}) => {
+export default function BlogList({ featuredOnly = false, limit = 12, showPagination = true }: BlogListProps) {
   const [posts, setPosts] = useState<BlogPostMeta[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [page, setPage] = useState(0);
-  const [hasMore, setHasMore] = useState(true);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [selectedTags, setSelectedTags] = useState<string[]>([]);
-  const [availableTags, setAvailableTags] = useState<string[]>([]);
+  const [hasMore, setHasMore] = useState(false);
+  const [search, setSearch] = useState('');
+  const [tags, setTags] = useState<string[]>([]);
+  const [selected, setSelected] = useState<string[]>([]);
+  const [reload, setReload] = useState(0);
+  const query = useDebouncedValue(search.trim(), 350);
+
+  useEffect(() => { setPage(0); }, [query, selected]);
 
   useEffect(() => {
-    loadPosts();
-    loadTags();
-  }, [page, searchTerm, selectedTags, featuredOnly]);
-
-  const loadPosts = async () => {
-    try {
-      setLoading(true);
-      const params = {
-        skip: page * limit,
-        limit,
-        search: searchTerm || undefined,
-        tags: selectedTags.join(',') || undefined,
-        published_only: true,
-        featured_only: featuredOnly,
-      };
-
-      // Convert params to query string manually for getPosts
-      const qs = new URLSearchParams(
-        Object.entries(params).reduce((acc, [key, val]) => {
-          if (val !== undefined) acc[key] = String(val);
-          return acc;
-        }, {} as Record<string, string>)
-      ).toString();
-
-      const data = await blogApi.getPosts(qs);
-
-      if (page === 0) {
-        setPosts(data);
-      } else {
-        setPosts(prev => [...prev, ...data]);
+    let cancelled = false;
+    (async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        const qs = new URLSearchParams({ skip: String(page * limit), limit: String(limit), published_only: 'true', featured_only: String(featuredOnly) });
+        if (query) qs.set('search', query);
+        if (selected.length) qs.set('tags', selected.join(','));
+        const data = await blogApi.getPosts(qs.toString());
+        if (cancelled) return;
+        setPosts((prev) => (page === 0 ? data : [...prev, ...data]));
+        setHasMore(data.length === limit);
+      } catch (err) {
+        if (!cancelled) setError(err instanceof Error ? err.message : 'Could not load posts');
+      } finally {
+        if (!cancelled) setLoading(false);
       }
+    })();
+    return () => { cancelled = true; };
+  }, [page, query, selected, featuredOnly, limit, reload]);
 
-      setHasMore(data.length === limit);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load posts');
-    } finally {
-      setLoading(false);
-    }
-  };
+  useEffect(() => {
+    blogApi.getTags().then((d) => setTags(d.tags || [])).catch(() => setTags([]));
+  }, []);
 
-  const loadTags = async () => {
-    try {
-      const data = await blogApi.getTags();
-      setAvailableTags(data.tags || []);
-    } catch (err) {
-      console.error('Failed to load tags:', err);
-    }
-  };
-
-  const handleSearch = (event: React.FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    setPage(0);
-    loadPosts();
-  };
-
-  const toggleTag = (tag: string) => {
-    setSelectedTags(prev =>
-      prev.includes(tag)
-        ? prev.filter(t => t !== tag)
-        : [...prev, tag]
-    );
-    setPage(0);
-  };
-
-  const loadMore = () => {
-    setPage(prev => prev + 1);
-  };
-
-  if (loading && posts.length === 0) {
-    return (
-      <div className="space-y-4">
-        {[...Array(3)].map((_, i) => (
-          <Card key={i} className="p-6 animate-pulse">
-            <div className="h-6 bg-gray-300 rounded mb-4"></div>
-            <div className="h-4 bg-gray-200 rounded mb-2"></div>
-            <div className="h-4 bg-gray-200 rounded w-3/4"></div>
-          </Card>
-        ))}
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <Card className="p-6 text-center">
-        <p className="text-red-600 mb-4">Error: {error}</p>
-        <Button onClick={() => { setError(null); loadPosts(); }}>
-          Try Again
-        </Button>
-      </Card>
-    );
-  }
+  const toggleTag = (tag: string) => setSelected((prev) => (prev.includes(tag) ? prev.filter((t) => t !== tag) : [...prev, tag]));
+  const filtering = !!query || selected.length > 0;
+  const [lead, ...rest] = posts;
+  const showLead = !filtering && page === 0 && lead?.featured;
 
   return (
-    <div className="space-y-6">
-      {/* Search and Filters */}
+    <div className="space-y-8">
       {!featuredOnly && (
-        <Card className="p-4">
-          <form onSubmit={handleSearch} className="mb-4">
-            <div className="flex gap-2">
-              <input
-                type="text"
-                placeholder="Search posts..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-              />
-              <Button type="submit">Search</Button>
-            </div>
-          </form>
-
-          {/* Tag Filters */}
-          {availableTags.length > 0 && (
-            <div>
-              <p className="text-sm text-gray-600 mb-2">Filter by tags:</p>
-              <div className="flex flex-wrap gap-2">
-                {availableTags.map(tag => (
+        <div className="space-y-4">
+          <div className="relative max-w-xl">
+            <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-subtle" aria-hidden="true" />
+            <input
+              type="search"
+              aria-label="Search the journal"
+              placeholder="Search the journal"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className={cn(controlClass, 'h-12 rounded-full pl-11 pr-11')}
+            />
+            {search && (
+              <button type="button" onClick={() => setSearch('')} className="absolute right-3 top-1/2 -translate-y-1/2 rounded-full p-1.5 text-subtle hover:text-fg" aria-label="Clear search">
+                <X className="h-4 w-4" />
+              </button>
+            )}
+          </div>
+          {tags.length > 0 && (
+            <div className="flex flex-wrap gap-2" role="group" aria-label="Filter by topic">
+              {tags.map((tag) => {
+                const on = selected.includes(tag);
+                return (
                   <button
                     key={tag}
+                    type="button"
                     onClick={() => toggleTag(tag)}
-                    className={`px-3 py-1 text-xs rounded-full border transition-colors ${selectedTags.includes(tag)
-                      ? 'bg-purple-100 border-purple-300 text-purple-800'
-                      : 'bg-gray-100 border-gray-300 text-gray-700 hover:bg-gray-200'
-                      }`}
+                    aria-pressed={on}
+                    className={cn(
+                      'rounded-full border px-3.5 py-1.5 text-sm transition-colors',
+                      on ? 'border-accent bg-accent/15 text-accent' : 'border-line/15 text-muted hover:border-line/30 hover:text-fg',
+                    )}
                   >
                     {tag}
                   </button>
-                ))}
-              </div>
+                );
+              })}
             </div>
           )}
-        </Card>
-      )}
-
-      {/* Posts List */}
-      {posts.length === 0 ? (
-        <Card className="p-6 text-center">
-          <p className="text-gray-600">No posts found.</p>
-        </Card>
-      ) : (
-        <div className="space-y-4">
-          {posts.map(post => (
-            <BlogCard key={post.id} post={post} />
-          ))}
         </div>
       )}
 
-      {/* Load More */}
+      {error ? (
+        <Card>
+          <EmptyState title="The journal didn’t load" description={error} action={<Button onClick={() => { setPage(0); setReload((n) => n + 1); }}>Try again</Button>} />
+        </Card>
+      ) : loading && posts.length === 0 ? (
+        <div className="grid gap-4 md:grid-cols-2">
+          {Array.from({ length: 4 }, (_, i) => (
+            <Card key={i} className="space-y-3">
+              <Skeleton className="h-3 w-32" />
+              <Skeleton className="h-7 w-3/4" />
+              <Skeleton className="h-4 w-full" />
+              <Skeleton className="h-4 w-2/3" />
+            </Card>
+          ))}
+        </div>
+      ) : posts.length === 0 ? (
+        <Card>
+          <EmptyState
+            icon={<BookOpen className="h-5 w-5" />}
+            title={filtering ? 'Nothing matches' : 'No posts yet'}
+            description={filtering ? 'Try a different word or clear the filters.' : 'The first essays are on their way.'}
+            action={filtering ? <Button variant="secondary" onClick={() => { setSearch(''); setSelected([]); }}>Clear filters</Button> : undefined}
+          />
+        </Card>
+      ) : (
+        <>
+          {showLead && (
+            <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}>
+              <BlogCard post={lead} featured />
+            </motion.div>
+          )}
+          <div className="grid gap-4 md:grid-cols-2">
+            {(showLead ? rest : posts).map((post, i) => (
+              <motion.div key={post.id} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: (i % limit) * 0.04 }}>
+                <BlogCard post={post} />
+              </motion.div>
+            ))}
+          </div>
+        </>
+      )}
+
       {showPagination && hasMore && posts.length > 0 && (
         <div className="text-center">
-          <Button
-            onClick={loadMore}
-            disabled={loading}
-            variant="secondary"
-          >
-            {loading ? 'Loading...' : 'Load More Posts'}
+          <Button variant="secondary" onClick={() => setPage((p) => p + 1)} loading={loading}>
+            Load more
           </Button>
         </div>
       )}
     </div>
   );
-};
-
-export default BlogList;
+}

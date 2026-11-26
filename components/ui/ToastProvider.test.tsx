@@ -1,4 +1,4 @@
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { expect, test } from 'vitest';
 import ToastProvider, { useToast } from './ToastProvider';
 
@@ -12,18 +12,18 @@ function Buttons() {
   );
 }
 
-test('successes are polite and green; errors are alerts and red (the default)', () => {
+test('successes are polite; errors are alerts (the default)', () => {
   render(<ToastProvider><Buttons /></ToastProvider>);
   fireEvent.click(screen.getByText('ok'));
   fireEvent.click(screen.getByText('bad'));
 
   const ok = screen.getByRole('status');
   expect(ok.textContent).toBe('Saved');
-  expect(ok.className).toContain('bg-emerald-600');
+  expect(ok.closest('[data-kind]')!.getAttribute('data-kind')).toBe('success');
 
   const bad = screen.getByRole('alert');
   expect(bad.textContent).toBe('Broke');
-  expect(bad.className).toContain('bg-red-600');
+  expect(bad.closest('[data-kind]')!.getAttribute('data-kind')).toBe('error');
 });
 
 test('two toasts fired at once both show (ids no longer collide)', () => {
@@ -31,4 +31,11 @@ test('two toasts fired at once both show (ids no longer collide)', () => {
   fireEvent.click(screen.getByText('bad'));
   fireEvent.click(screen.getByText('bad'));
   expect(screen.getAllByRole('alert')).toHaveLength(2);
+});
+
+test('a toast can be dismissed', async () => {
+  render(<ToastProvider><Buttons /></ToastProvider>);
+  fireEvent.click(screen.getByText('ok'));
+  fireEvent.click(screen.getByRole('button', { name: 'Dismiss notification' }));
+  await waitFor(() => expect(screen.queryByRole('status')).toBeNull()); // after the exit animation
 });

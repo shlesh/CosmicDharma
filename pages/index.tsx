@@ -1,197 +1,273 @@
-import Head from 'next/head';
 import { motion } from 'framer-motion';
-import { useRouter } from 'next/router';
-import { Star, Sparkles, Clock, Shield, ArrowRight, TreePine } from 'lucide-react';
-import { Button } from '@/components/ui/Button';
-import { Card } from '@/components/ui/Card';
+import Link from 'next/link';
+import {
+  ArrowRight, Check, CircleDot, Layers, Hourglass, Sparkles, CalendarDays, Gauge, Telescope,
+} from 'lucide-react';
+import Seo from '@/components/layout/Seo';
+import ZodiacWheel from '@/components/home/ZodiacWheel';
+import LiveSky from '@/components/home/LiveSky';
+import { ButtonLink } from '@/components/ui/Button';
+import SectionHeading from '@/components/ui/SectionHeading';
 
-const features = [
+const ease = [0.16, 1, 0.3, 1] as const;
+
+const FEATURES = [
   {
-    icon: Star,
-    title: 'Whole-sign kundali',
-    description: 'Lagna, grahas and bhavas in the Yukteswar Revati frame. Whole-sign houses by default.',
+    icon: CircleDot,
+    title: 'Birth chart',
+    body: 'Ascendant, planets, nakshatras and whole-sign houses, drawn in North or South Indian style.',
+    wide: true,
   },
   {
-    icon: Clock,
-    title: 'Vimshottari daśā',
-    description: 'Moon-nakshatra timing with local timezone handling, not a UTC guess.',
+    icon: Hourglass,
+    title: 'Vimshottari dasha',
+    body: 'All 120 years of major and sub-periods, with the one you are living in now highlighted.',
+  },
+  {
+    icon: Layers,
+    title: 'Divisional charts',
+    body: 'The sixteen classical vargas from D1 to D60, including the navamsha, with vargottama planets flagged.',
   },
   {
     icon: Sparkles,
+    title: 'Yogas',
+    body: 'Pancha Mahapurusha, raja, dhana and lunar yogas, each with the planets that form it.',
+  },
+  {
+    icon: Gauge,
+    title: 'Strength',
+    body: 'Shadbala for every planet and ashtakavarga points for every house.',
+  },
+  {
+    icon: CalendarDays,
     title: 'Daily panchanga',
-    description: 'Tithi, vaara, nakshatra, yoga and karana with classical notes for the chosen instant.',
-  },
-  {
-    icon: Shield,
-    title: 'Yuga clock',
-    description: 'Ascending Dwapara of The Holy Science — 24,000-year dual cycle, not the later 4.32 million year count.',
+    body: 'Tithi, vara, nakshatra, yoga and karana for any date and place, with what the day supports.',
+    wide: true,
   },
 ];
 
-const steps = [
-  {
-    step: '01',
-    title: 'Name the moment',
-    description: 'Date, time and a real place. The sky is read from that soil, not from a default city.',
-  },
-  {
-    step: '02',
-    title: 'Cast the chart',
-    description: 'Sidereal longitudes, Revati ayanamsa, panchanga limbs and dasha balance.',
-  },
-  {
-    step: '03',
-    title: 'Sit with it',
-    description: 'A portrait of probable fruit. Will can outwit the stars.',
-  },
+const STEPS = [
+  { title: 'Enter your birth details', body: 'Date, time and place of birth. We look up the coordinates and the historical time zone for you.' },
+  { title: 'We calculate the chart', body: 'Planetary positions from the Swiss Ephemeris, set in Sri Yukteswar’s sidereal frame.' },
+  { title: 'Explore and keep it', body: 'Move between the chart, dashas, vargas and yogas. Print it, or save it to your account.' },
 ];
 
-export default function LandingPage() {
-  const router = useRouter();
+const STATS = [
+  { value: '0.86″', label: 'largest planetary error against NASA JPL Horizons' },
+  { value: '14″', label: 'largest ascendant error against the textbook formula' },
+  { value: '16', label: 'divisional charts, from the rashi to the shashtiamsha' },
+  { value: '120', label: 'years of Vimshottari periods, down to antardasha' },
+];
 
+export default function HomePage() {
   return (
     <>
-      <Head>
-        <title>Cosmic Dharma — night sky, kundali, panchanga</title>
-        <meta
-          name="description"
-          content="Vedic charts in Sri Yukteswar’s Revati frame. Birth kundali, dasha, yogas and daily panchanga."
-        />
-      </Head>
+      <Seo />
 
-      <div className="relative page-shell">
-        <section className="relative min-h-[88vh] flex items-center justify-center overflow-hidden">
-          <div className="relative z-10 text-center px-4 max-w-4xl mx-auto">
-            <motion.div initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.7 }}>
-              <div className="inline-flex items-center gap-2 glass rounded-full px-4 py-2 mb-6">
-                <TreePine className="w-4 h-4 text-amber-200" />
-                <span className="text-sm text-amber-100/90">Vanvas under the Dwapara sky</span>
-              </div>
+      {/* Hero */}
+      <section className="relative overflow-hidden">
+        <div className="container grid items-center gap-10 pb-16 pt-10 sm:pt-16 lg:grid-cols-[1.2fr_0.8fr] lg:gap-6 lg:pb-24 lg:pt-20">
+          <div className="relative z-10 max-w-2xl">
+            <motion.p
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, ease }}
+              className="inline-flex items-center gap-2 rounded-full border border-line/10 bg-surface/60 px-3.5 py-1.5 text-xs font-medium text-muted backdrop-blur"
+            >
+              <Telescope className="h-3.5 w-3.5 shrink-0 text-accent" />
+              <span>
+                In the sidereal frame of <span className="text-fg">The Holy Science</span>
+              </span>
+            </motion.p>
 
-              <h1 className="font-display text-white mb-5">
-                Sit with the night.
-                <br />
-                <span className="gradient-text">Read the chart it keeps.</span>
-              </h1>
+            <motion.h1
+              initial={{ opacity: 0, y: 18 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.8, delay: 0.08, ease }}
+              className="mt-6 font-display text-display-xl font-semibold"
+            >
+              Vedic astrology,
+              <br />
+              <span className="text-gradient">calculated with care.</span>
+            </motion.h1>
 
-              <p className="text-lg md:text-xl text-amber-50/80 mb-10 max-w-2xl mx-auto leading-relaxed">
-                Cosmic Dharma casts Vedic kundalis in the lineage of Sri Yukteswar Giri —
-                Revati ayanamsa, whole-sign houses, panchanga and the 24,000-year yuga clock
-                of <em>The Holy Science</em>.
-              </p>
+            <motion.p
+              initial={{ opacity: 0, y: 18 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.8, delay: 0.16, ease }}
+              className="mt-6 max-w-xl text-lg leading-relaxed text-muted"
+            >
+              Precise birth charts, dasha periods and a daily panchanga. Every position comes from the Swiss Ephemeris
+              and is checked against NASA’s own planetary data.
+            </motion.p>
 
-              <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
-                <Button size="lg" onClick={() => router.push('/profile')} className="group">
-                  Cast a birth chart
-                  <ArrowRight className="w-5 h-5 ml-2 group-hover:translate-x-1 transition-transform" />
-                </Button>
-                <Button
-                  size="lg"
-                  variant="ghost"
-                  onClick={() => router.push('/panchanga')}
-                  className="text-amber-50 border border-amber-200/30 hover:bg-white/10"
-                >
-                  Today&apos;s panchanga
-                </Button>
-              </div>
+            <motion.div
+              initial={{ opacity: 0, y: 18 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.8, delay: 0.24, ease }}
+              className="mt-9 flex flex-col gap-3 sm:flex-row"
+            >
+              <ButtonLink href="/profile" size="lg" className="group">
+                Create your birth chart
+                <ArrowRight className="h-4 w-4 transition-transform duration-300 group-hover:translate-x-0.5" />
+              </ButtonLink>
+              <ButtonLink href="/panchanga" size="lg" variant="secondary">
+                Today’s panchanga
+              </ButtonLink>
             </motion.div>
+
+            <motion.ul
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ duration: 0.8, delay: 0.4 }}
+              className="mt-8 flex flex-wrap gap-x-6 gap-y-2 text-sm text-muted"
+            >
+              {['Free, no sign-up needed', 'Verified against NASA JPL', 'D1–D60 divisional charts'].map((item) => (
+                <li key={item} className="flex items-center gap-2">
+                  <Check className="h-4 w-4 text-accent" aria-hidden="true" />
+                  {item}
+                </li>
+              ))}
+            </motion.ul>
           </div>
 
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 1 }}
-            className="absolute bottom-10 left-1/2 -translate-x-1/2"
-          >
-            <div className="w-6 h-10 border border-amber-100/30 rounded-full flex justify-center">
-              <motion.div
-                animate={{ y: [0, 10, 0] }}
-                transition={{ duration: 1.6, repeat: Infinity }}
-                className="w-1 h-3 bg-amber-100/70 rounded-full mt-2"
-              />
-            </div>
+          <div className="relative mx-auto w-full max-w-[min(80vw,400px)] sm:max-w-[480px] lg:max-w-none">
+            <ZodiacWheel />
+          </div>
+        </div>
+
+        <div className="container pb-8">
+          <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5, duration: 0.8, ease }}>
+            <LiveSky />
           </motion.div>
-        </section>
+        </div>
+      </section>
 
-        <section className="py-20">
-          <div className="container mx-auto px-4">
-            <div className="text-center mb-14">
-              <h2 className="mb-3 text-amber-50">What the ashram night holds</h2>
-              <p className="help-text max-w-2xl mx-auto">
-                Not a marketplace of predictions. A working desk for the five limbs,
-                the houses, and the age we are actually living in.
+      {/* Features */}
+      <section className="container py-20 sm:py-28" aria-labelledby="features-title">
+        <SectionHeading
+          eyebrow="What you get"
+          title={<span id="features-title">A complete Jyotisha workbench</span>}
+          description="Everything a practitioner reaches for, laid out so a beginner can follow it too."
+        />
+        <div className="mt-12 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          {FEATURES.map((f, i) => (
+            <motion.article
+              key={f.title}
+              initial={{ opacity: 0, y: 18 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true, margin: '-40px' }}
+              transition={{ duration: 0.6, delay: (i % 4) * 0.06, ease }}
+              className={`panel group relative overflow-hidden p-6 transition-[border-color,transform] duration-300 hover:-translate-y-0.5 hover:border-accent/25 ${f.wide ? 'lg:col-span-2' : ''}`}
+            >
+              <div className="pointer-events-none absolute -right-16 -top-16 h-40 w-40 rounded-full bg-accent/10 opacity-0 blur-2xl transition-opacity duration-500 group-hover:opacity-100" />
+              <div className="flex h-11 w-11 items-center justify-center rounded-xl border border-accent/20 bg-accent/10 text-accent">
+                <f.icon className="h-5 w-5" aria-hidden="true" />
+              </div>
+              <h3 className="mt-5 text-lg font-semibold">{f.title}</h3>
+              <p className="mt-2 text-sm leading-relaxed text-muted">{f.body}</p>
+            </motion.article>
+          ))}
+        </div>
+      </section>
+
+      {/* How it works */}
+      <section className="container py-20 sm:py-28" aria-labelledby="how-title">
+        <div className="grid gap-12 lg:grid-cols-[0.9fr_1.1fr] lg:gap-16">
+          <SectionHeading
+            eyebrow="How it works"
+            title={<span id="how-title">From a birth moment to a full chart in seconds</span>}
+            description="No forms to fill twice and no account needed. Sign in only if you want to keep your chart."
+          />
+          <ol className="relative space-y-4">
+            {STEPS.map((step, i) => (
+              <motion.li
+                key={step.title}
+                initial={{ opacity: 0, x: 20 }}
+                whileInView={{ opacity: 1, x: 0 }}
+                viewport={{ once: true, margin: '-40px' }}
+                transition={{ duration: 0.6, delay: i * 0.1, ease }}
+                className="panel flex gap-5 p-5 sm:p-6"
+              >
+                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-accent/30 font-display text-lg font-semibold text-accent">
+                  {i + 1}
+                </span>
+                <div>
+                  <h3 className="font-semibold">{step.title}</h3>
+                  <p className="mt-1 text-sm leading-relaxed text-muted">{step.body}</p>
+                </div>
+              </motion.li>
+            ))}
+          </ol>
+        </div>
+      </section>
+
+      {/* Accuracy */}
+      <section className="container py-20 sm:py-28" aria-labelledby="accuracy-title">
+        <div className="panel relative overflow-hidden p-6 sm:p-10 lg:p-14">
+          <div className="pointer-events-none absolute -left-24 top-0 h-72 w-72 rounded-full bg-lunar/10 blur-3xl" />
+          <div className="pointer-events-none absolute -right-24 bottom-0 h-72 w-72 rounded-full bg-accent/10 blur-3xl" />
+          <div className="relative grid gap-12 lg:grid-cols-2 lg:items-center">
+            <div>
+              <p className="eyebrow mb-3">Accuracy</p>
+              <h2 id="accuracy-title" className="font-display text-display-md font-semibold">
+                Tested against the sky, not against itself
+              </h2>
+              <p className="mt-4 leading-relaxed text-muted">
+                Our test suite compares every planet with NASA JPL Horizons, the ascendant with the formula in
+                Meeus’s <em>Astronomical Algorithms</em>, and birth times against the historical time zone of the birthplace.
+                The default ayanamsa is Sri Yukteswar’s; Lahiri, Raman, KP and Fagan/Bradley are one click away.
               </p>
+              <Link href="/about" className="mt-6 inline-flex items-center gap-1.5 text-sm font-medium text-accent hover:underline">
+                Read about the method <ArrowRight className="h-4 w-4" />
+              </Link>
             </div>
-            <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
-              {features.map((feature, index) => {
-                const Icon = feature.icon;
-                return (
-                  <motion.div
-                    key={feature.title}
-                    initial={{ opacity: 0, y: 24 }}
-                    whileInView={{ opacity: 1, y: 0 }}
-                    viewport={{ once: true }}
-                    transition={{ delay: index * 0.08 }}
-                  >
-                    <Card variant="glass" className="h-full p-6">
-                      <div className="w-11 h-11 rounded-xl mb-4 flex items-center justify-center bg-amber-200/10 border border-amber-200/20">
-                        <Icon className="w-5 h-5 text-amber-200" />
-                      </div>
-                      <h3 className="text-xl mb-2 text-amber-50">{feature.title}</h3>
-                      <p className="help-text">{feature.description}</p>
-                    </Card>
-                  </motion.div>
-                );
-              })}
-            </div>
-          </div>
-        </section>
-
-        <section className="py-16">
-          <div className="container mx-auto px-4 max-w-3xl">
-            <h2 className="text-center mb-12 text-amber-50">Three steps, then silence</h2>
-            <div className="space-y-8">
-              {steps.map((item, index) => (
+            <dl className="grid grid-cols-2 gap-4">
+              {STATS.map((s, i) => (
                 <motion.div
-                  key={item.step}
-                  initial={{ opacity: 0, x: index % 2 === 0 ? -24 : 24 }}
-                  whileInView={{ opacity: 1, x: 0 }}
+                  key={s.label}
+                  initial={{ opacity: 0, scale: 0.96 }}
+                  whileInView={{ opacity: 1, scale: 1 }}
                   viewport={{ once: true }}
-                  className="flex gap-6 items-start glass rounded-2xl p-5"
+                  transition={{ duration: 0.5, delay: i * 0.07, ease }}
+                  className="rounded-2xl border border-line/10 bg-canvas/40 p-5"
                 >
-                  <div className="w-14 h-14 shrink-0 rounded-full border border-amber-200/30 flex items-center justify-center text-amber-200 font-display text-xl">
-                    {item.step}
-                  </div>
-                  <div>
-                    <h3 className="text-amber-50 mb-1">{item.title}</h3>
-                    <p className="help-text">{item.description}</p>
-                  </div>
+                  <dt className="sr-only">{s.label}</dt>
+                  <dd className="font-display text-4xl font-semibold text-fg sm:text-5xl">{s.value}</dd>
+                  <dd className="mt-2 text-xs leading-snug text-muted sm:text-sm">{s.label}</dd>
                 </motion.div>
               ))}
-            </div>
+            </dl>
           </div>
-        </section>
+        </div>
+      </section>
 
-        <section className="py-16">
-          <div className="container mx-auto px-4">
-            <Card variant="cosmic" className="max-w-3xl mx-auto p-8 md:p-12 text-center">
-              <p className="font-display text-2xl md:text-3xl text-amber-50 leading-snug mb-4">
-                “The starry vault of heaven is in truth the book of life.”
-              </p>
-              <p className="help-text mb-8">Sri Yukteswar Giri, The Holy Science</p>
-              <div className="flex flex-col sm:flex-row gap-3 justify-center">
-                <Button size="lg" onClick={() => router.push('/profile')}>
-                  Open the book
-                  <Sparkles className="w-4 h-4 ml-2" />
-                </Button>
-                <Button size="lg" variant="ghost" onClick={() => router.push('/panchanga')} className="text-amber-50">
-                  Read today first
-                </Button>
-              </div>
-            </Card>
+      {/* Closing call to action */}
+      <section className="container pb-8 pt-12 sm:pt-20">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.8, ease }}
+          className="mx-auto max-w-3xl text-center"
+        >
+          <blockquote className="font-display text-display-md font-medium italic leading-snug text-fg/90">
+            “A child is born on that day and at that hour when the celestial rays are in mathematical harmony with
+            his individual karma.”
+          </blockquote>
+          <p className="mt-4 text-sm text-subtle">
+            Sri Yukteswar, in Paramahansa Yogananda’s <cite>Autobiography of a Yogi</cite> (1946)
+          </p>
+          <div className="mt-10 flex flex-col justify-center gap-3 sm:flex-row">
+            <ButtonLink href="/profile" size="lg">
+              Create your birth chart <ArrowRight className="h-4 w-4" />
+            </ButtonLink>
+            <ButtonLink href="/register" size="lg" variant="secondary">
+              Create a free account
+            </ButtonLink>
           </div>
-        </section>
-      </div>
+        </motion.div>
+      </section>
     </>
   );
 }

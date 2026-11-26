@@ -1,132 +1,96 @@
-import React, { useState, useEffect } from 'react';
-import { useRouter } from 'next/router';
-import { blogApi } from '../../util/api';
-import { Card } from '../ui/Card';
-import { Button } from '../ui/Button';
+import React, { useEffect, useState } from 'react';
+import Link from 'next/link';
+import { motion } from 'framer-motion';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
+import { ArrowLeft, Clock } from 'lucide-react';
+import Seo from '@/components/layout/Seo';
+import Badge from '@/components/ui/Badge';
+import Card from '@/components/ui/Card';
+import Skeleton from '@/components/ui/Skeleton';
+import EmptyState from '@/components/ui/EmptyState';
+import { ButtonLink } from '@/components/ui/Button';
+import { blogApi, type BlogPost } from '@/util/api';
+import { formatDate } from '@/util/astro';
+import { splitTags } from './BlogCard';
 
-import { BlogPost } from '../../util/api';
+const readingMinutes = (text: string) => Math.max(1, Math.round(text.trim().split(/\s+/).length / 220));
 
-interface BlogPostDetailProps {
-  slug: string;
-}
-
-const BlogPostDetail: React.FC<BlogPostDetailProps> = ({ slug }) => {
+export default function BlogPostDetail({ slug }: { slug: string }) {
   const [post, setPost] = useState<BlogPost | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const router = useRouter();
 
   useEffect(() => {
-    loadPost();
+    let cancelled = false;
+    setLoading(true);
+    blogApi
+      .getPostBySlug(slug)
+      .then((data) => { if (!cancelled) setPost(data); })
+      .catch((err) => { if (!cancelled) setError(err instanceof Error ? err.message : 'Could not load the post'); })
+      .finally(() => { if (!cancelled) setLoading(false); });
+    return () => { cancelled = true; };
   }, [slug]);
 
-  const loadPost = async () => {
-    try {
-      setLoading(true);
-      const data = await blogApi.getPostBySlug(slug);
-      setPost(data);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load post');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric'
-    });
-  };
-
-  const getTags = (tagsString: string | null) => {
-    if (!tagsString) return [];
-    return tagsString.split(',').map(tag => tag.trim()).filter(Boolean);
-  };
+  const back = (
+    <Link href="/posts" className="inline-flex items-center gap-1.5 text-sm text-muted transition-colors hover:text-accent">
+      <ArrowLeft className="h-4 w-4" /> Journal
+    </Link>
+  );
 
   if (loading) {
     return (
-      <Card className="p-6">
-        <div className="animate-pulse">
-          <div className="h-8 bg-gray-300 rounded mb-4"></div>
-          <div className="h-4 bg-gray-200 rounded mb-2"></div>
-          <div className="h-4 bg-gray-200 rounded mb-4 w-3/4"></div>
-          <div className="space-y-2">
-            {[...Array(10)].map((_, i) => (
-              <div key={i} className="h-4 bg-gray-200 rounded"></div>
-            ))}
-          </div>
-        </div>
-      </Card>
+      <div className="mx-auto max-w-3xl space-y-4" aria-busy="true">
+        <Skeleton className="h-4 w-24" />
+        <Skeleton className="h-12 w-4/5" />
+        <Skeleton className="h-4 w-48" />
+        <div className="space-y-3 pt-6">{Array.from({ length: 8 }, (_, i) => <Skeleton key={i} className="h-4 w-full" />)}</div>
+      </div>
     );
   }
 
   if (error || !post) {
     return (
-      <Card className="p-6 text-center">
-        <p className="text-red-600 mb-4">
-          {error || 'Post not found'}
-        </p>
-        <Button onClick={() => router.push('/posts')}>
-          ← Back to Posts
-        </Button>
-      </Card>
+      <div className="mx-auto max-w-xl">
+        <Seo title="Post not found" noindex />
+        <Card>
+          <EmptyState title="We couldn’t find that post" description="It may have been moved or unpublished." action={<ButtonLink href="/posts" variant="secondary">Back to the journal</ButtonLink>} />
+        </Card>
+      </div>
     );
   }
 
+  const tags = splitTags(post.tags);
+  const updated = post.updated_at && post.updated_at.slice(0, 10) !== post.created_at?.slice(0, 10);
+
   return (
-    <article>
-      <Card className="p-8">
-        <div className="mb-6">
-          <Button
-            variant="secondary"
-            onClick={() => router.push('/posts')}
-            className="mb-4"
-          >
-            ← Back to Posts
-          </Button>
-
-          <header className="mb-6">
-            <h1 className="text-3xl font-bold text-gray-900 mb-3">
-              {post.title}
-            </h1>
-
-            <div className="flex flex-wrap items-center gap-4 text-sm text-gray-600 mb-4">
-              <span>By {post.owner}</span>
-              <span>Published {post.created_at ? formatDate(post.created_at) : 'Date unknown'}</span>
-              {post.updated_at !== post.created_at && (
-                <span>Updated {post.updated_at ? formatDate(post.updated_at) : ''}</span>
-              )}
-              {post.featured && (
-                <span className="px-2 py-1 bg-yellow-100 text-yellow-800 rounded-full text-xs">
-                  Featured
-                </span>
-              )}
-            </div>
-
-            {post.tags && (
-              <div className="flex flex-wrap gap-2 mb-6">
-                {getTags(post.tags).map(tag => (
-                  <span
-                    key={tag}
-                    className="px-3 py-1 text-sm bg-purple-100 text-purple-800 rounded-full"
-                  >
-                    {tag}
-                  </span>
-                ))}
-              </div>
-            )}
-          </header>
+    <motion.article initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }} className="mx-auto max-w-3xl">
+      <Seo title={post.title} description={post.excerpt || undefined} />
+      {back}
+      <header className="mt-6 border-b border-line/10 pb-8">
+        {post.featured && <Badge tone="accent" className="mb-4">Featured</Badge>}
+        <h1 className="font-display text-display-lg font-semibold">{post.title}</h1>
+        {post.excerpt && <p className="mt-4 text-lg leading-relaxed text-muted">{post.excerpt}</p>}
+        <div className="mt-6 flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-subtle">
+          {post.owner && <span>By <span className="text-fg">{post.owner}</span></span>}
+          {post.created_at && <time dateTime={post.created_at}>{formatDate(post.created_at, { day: 'numeric', month: 'long', year: 'numeric' })}</time>}
+          {updated && <span>Updated {formatDate(post.updated_at!, { day: 'numeric', month: 'long', year: 'numeric' })}</span>}
+          <span className="flex items-center gap-1.5"><Clock className="h-3.5 w-3.5" /> {readingMinutes(post.content)} min read</span>
         </div>
+      </header>
 
-        <div
-          className="prose prose-lg max-w-none"
-          dangerouslySetInnerHTML={{ __html: post.content }}
-        />
-      </Card>
-    </article>
+      {/* Markdown from the editor. Raw HTML in posts is not rendered, so a post can't inject scripts. */}
+      <div className="prose-cd mt-10">
+        <ReactMarkdown remarkPlugins={[remarkGfm]}>{post.content}</ReactMarkdown>
+      </div>
+
+      {tags.length > 0 && (
+        <footer className="mt-12 flex flex-wrap items-center gap-2 border-t border-line/10 pt-6">
+          <span className="text-sm text-subtle">Topics:</span>
+          {tags.map((t) => <Badge key={t}>{t}</Badge>)}
+        </footer>
+      )}
+      <div className="mt-10">{back}</div>
+    </motion.article>
   );
-};
-
-export default BlogPostDetail;
+}

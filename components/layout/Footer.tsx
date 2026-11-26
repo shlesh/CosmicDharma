@@ -1,53 +1,63 @@
-import React from 'react';
 import Link from 'next/link';
+import Logo from '@/components/ui/Logo';
 
-const columns = {
-  Paths: [
-    { name: 'Birth chart', href: '/profile' },
-    { name: 'Daily panchanga', href: '/panchanga' },
-    { name: 'Journal', href: '/posts' },
-    { name: 'Desk', href: '/dashboard' },
-  ],
-  Gate: [
-    { name: 'Enter', href: '/login' },
-    { name: 'Register', href: '/register' },
-  ],
-};
+const COLUMNS = [
+  {
+    title: 'Tools',
+    links: [
+      { name: 'Birth chart', href: '/profile' },
+      { name: 'Daily panchanga', href: '/panchanga' },
+    ],
+  },
+  {
+    title: 'Learn',
+    links: [
+      { name: 'Journal', href: '/posts' },
+      { name: 'About & method', href: '/about' },
+    ],
+  },
+  {
+    title: 'Account',
+    links: [
+      { name: 'Sign in', href: '/login' },
+      { name: 'Create an account', href: '/register' },
+      { name: 'Dashboard', href: '/dashboard' },
+    ],
+  },
+];
 
 export default function Footer() {
   return (
-    <footer className="relative z-10 mt-24 border-t border-amber-200/10 bg-black/20 backdrop-blur-sm">
-      <div className="container mx-auto px-4 py-16">
-        <div className="grid md:grid-cols-3 gap-10 mb-12">
-          <div>
-            <Link href="/" className="font-display text-2xl gradient-text">Cosmic Dharma</Link>
-            <p className="help-text mt-4 max-w-sm">
-              A working Vedic desk under an open sky. Yukteswar / Revati ayanamsa.
-              The forest line is only a reminder: calculate, then sit.
+    <footer data-site-footer className="relative mt-24 border-t border-line/10 bg-canvas/40 backdrop-blur-sm">
+      <div className="container py-14">
+        <div className="grid grid-cols-2 gap-x-6 gap-y-10 md:grid-cols-[1.4fr_repeat(3,1fr)]">
+          <div className="col-span-2 max-w-xs md:col-span-1">
+            <Link href="/" aria-label="Cosmic Dharma, home" className="inline-block rounded-lg">
+              <Logo />
+            </Link>
+            <p className="mt-4 text-sm leading-relaxed text-muted">
+              Vedic astrology in Sri Yukteswar’s sidereal frame, calculated with the Swiss Ephemeris and checked
+              against NASA JPL.
             </p>
           </div>
-          {Object.entries(columns).map(([title, links]) => (
-            <div key={title}>
-              <h3 className="text-amber-100 mb-3 text-lg">{title}</h3>
-              <ul className="space-y-2">
-                {links.map((link) => (
-                  <li key={link.name}>
-                    <Link href={link.href} className="help-text hover:text-amber-100 transition-colors">
+          {COLUMNS.map((col) => (
+            <nav key={col.title} aria-label={col.title}>
+              <h2 className="text-xs font-semibold uppercase tracking-[0.16em] text-subtle">{col.title}</h2>
+              <ul className="mt-4 space-y-2.5">
+                {col.links.map((link) => (
+                  <li key={link.href}>
+                    <Link href={link.href} className="text-sm text-muted transition-colors hover:text-fg">
                       {link.name}
                     </Link>
                   </li>
                 ))}
               </ul>
-            </div>
+            </nav>
           ))}
         </div>
-        <div className="pt-6 border-t border-amber-200/10 flex flex-col md:flex-row md:justify-between gap-3">
-          <p className="text-sm text-amber-50/50">
-            © {new Date().getFullYear()} Cosmic Dharma. A chart is a portrait, not a sentence.
-          </p>
-          <p className="text-sm text-amber-50/50 italic">
-            Will can outwit the stars.
-          </p>
+        <div className="mt-12 flex flex-col gap-2 border-t border-line/10 pt-6 text-xs text-subtle sm:flex-row sm:items-center sm:justify-between">
+          <p>© {new Date().getFullYear()} Cosmic Dharma</p>
+          <p>For reflection and study. Not a substitute for medical, legal or financial advice.</p>
         </div>
       </div>
     </footer>

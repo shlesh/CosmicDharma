@@ -10,15 +10,6 @@ vi.mock('@/util/api', () => ({
   apiFetch: vi.fn(async () => ({})),
 }));
 
-// The rich editor and Chart.js need browser APIs jsdom lacks; stand-ins are enough.
-vi.mock('@uiw/react-md-editor', () => ({
-  default: ({ value, onChange }: { value: string; onChange: (v?: string) => void }) => (
-    <textarea aria-label="Content" value={value} onChange={(e) => onChange(e.target.value)} />
-  ),
-}));
-vi.mock('@uiw/react-md-editor/markdown-editor.css', () => ({}));
-vi.mock('react-chartjs-2', () => ({ Bar: () => null }));
-
 const fetchJsonMock = fetchJson as unknown as ReturnType<typeof vi.fn>;
 const apiFetchMock = apiFetch as unknown as ReturnType<typeof vi.fn>;
 
@@ -33,7 +24,8 @@ function renderAdmin() {
 }
 
 beforeEach(() => {
-  fetchJsonMock.mockClear();
+  fetchJsonMock.mockReset();
+  fetchJsonMock.mockImplementation(async () => []);
   apiFetchMock.mockClear();
   localStorage.setItem('token', 't');
 });
@@ -64,17 +56,19 @@ test('an admin grants donor status from the users list', async () => {
   fetchJsonMock.mockImplementation(async () => []);
 });
 
-test('creates a new post through POST /posts (there is no POST /admin/posts)', async () => {
+test('deleting a post asks for confirmation first', async () => {
+  fetchJsonMock.mockImplementation(async (url: string) => (url === 'admin/posts' ? [{ id: 7, title: 'Old news', published: true }] : []));
   renderAdmin();
-  fireEvent.click(await screen.findByRole('button', { name: 'New Post' }));
-  fireEvent.change(screen.getByPlaceholderText('Post title...'), { target: { value: 'New' } });
-  // The editor is lazy-loaded (next/dynamic), so wait for it to appear.
-  fireEvent.change(await screen.findByLabelText('Content'), { target: { value: 'Body' } });
-  fireEvent.click(screen.getByRole('button', { name: 'Save' }));
-
+  fireEvent.click(await screen.findByRole('button', { name: 'Delete Old news' }));
+  expect(apiFetchMock).not.toHaveBeenCalled();
+  fireEvent.click(screen.getByRole('button', { name: 'Confirm deleting Old news' }));
   await waitFor(() => expect(apiFetchMock).toHaveBeenCalled());
   const [url, init] = apiFetchMock.mock.calls[0];
-  expect(url).toBe('posts');
-  expect(init.method).toBe('POST');
-  expect(JSON.parse(init.body)).toMatchObject({ title: 'New', content: 'Body' });
+  expect(url).toBe('admin/posts/7');
+  expect(init.method).toBe('DELETE');
+});
+
+test('new posts are written in the editor', async () => {
+  renderAdmin();
+  expect((await screen.findByRole('link', { name: /new post/i })).getAttribute('href')).toBe('/editor');
 });

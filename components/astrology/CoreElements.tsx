@@ -1,64 +1,80 @@
 import React from 'react';
-import Card from '../ui/Card';
+import { motion } from 'framer-motion';
+import Card, { CardHeader } from '@/components/ui/Card';
 
 export interface CoreElementsProps {
   analysis?: Record<string, unknown> | null;
   elements?: Record<string, unknown> | null;
+  bare?: boolean;
 }
 
-// Shows the balance of the four classical elements based on the user's chart.
+const COLORS: Record<string, string> = {
+  fire: '#ef7a5a', earth: '#b9a36a', air: '#8ec5e8', water: '#6c8ff0', space: '#b49ae8',
+  cardinal: 'rgb(var(--accent))', fixed: 'rgb(var(--lunar))', mutable: 'rgb(var(--success))',
+};
 
-export default function CoreElements({ analysis, elements }: CoreElementsProps) {
-  const data =
-    (analysis && (analysis.coreElements || (analysis as any).core_elements)) ||
-    elements;
+const toNumber = (val: unknown) => {
+  if (typeof val === 'number') return val;
+  const m = String(val).match(/([0-9]+(?:\.[0-9]+)?)/);
+  return m ? parseFloat(m[1]) : 0;
+};
 
-  if (!data || typeof data !== 'object') return null;
-
-  // Helper to render a distribution section (e.g. Elements or Modalities)
-  const renderSection = (title: string, subset: any) => {
-    if (!subset || typeof subset !== 'object') return null;
-    const entries = Object.entries(subset);
-    if (entries.length === 0) return null;
-
-    return (
-      <div className="mb-4 last:mb-0">
-        <h4 className="font-semibold text-sm uppercase tracking-wider mb-2 opacity-80">{title}</h4>
-        <div className="grid grid-cols-2 gap-2">
-          {entries.map(([key, val]) => (
-            <div key={key} className="flex justify-between items-center bg-gray-50 dark:bg-white/5 p-2 rounded border border-gray-100 dark:border-transparent">
-              <span className="capitalize text-gray-700 dark:text-gray-300">{key}</span>
-              <span className="font-mono text-gray-900 dark:text-gray-100 font-medium">{formatPercent(val)}%</span>
-            </div>
-          ))}
-        </div>
-      </div>
-    );
-  };
-
-  const formatPercent = (val: any) => {
-    if (typeof val === 'number') return Math.round(val).toString();
-    const m = String(val).match(/([0-9]+(?:\.[0-9]+)?)/);
-    return m ? Math.round(parseFloat(m[1])).toString() : '0';
-  };
-
-  // Check if we have the nested structure { elements: {...}, modalities: {...} }
-  const hasSubsections = 'elements' in data || 'modalities' in data;
-
+function Bars({ title, data }: { title: string; data: Record<string, unknown> }) {
+  const entries = Object.entries(data).filter(([, v]) => v !== null && v !== undefined);
+  if (!entries.length) return null;
   return (
-    <Card variant="glass" className="mb-6">
-      <h3 title="Distribution of energy in your chart">Core Elements</h3>
-      <p className="help-text mb-4">These percentages indicate your dominant energies.</p>
+    <div>
+      <h3 className="mb-3 text-xs font-semibold uppercase tracking-[0.14em] text-subtle">{title}</h3>
+      <ul className="space-y-2.5">
+        {entries.map(([key, val]) => {
+          const pct = Math.round(toNumber(val));
+          return (
+            <li key={key}>
+              <div className="mb-1 flex items-center justify-between text-sm">
+                <span className="capitalize text-fg">{key}</span>
+                <span className="tabular-nums text-muted">{pct}%</span>
+              </div>
+              <div className="h-1.5 overflow-hidden rounded-full bg-line/[0.07]" aria-hidden="true">
+                <motion.div
+                  className="h-full rounded-full"
+                  style={{ background: COLORS[key.toLowerCase()] || 'rgb(var(--accent))' }}
+                  initial={{ width: 0 }}
+                  animate={{ width: `${Math.min(100, pct)}%` }}
+                  transition={{ duration: 0.9, ease: [0.16, 1, 0.3, 1] }}
+                />
+              </div>
+            </li>
+          );
+        })}
+      </ul>
+    </div>
+  );
+}
 
-      {hasSubsections ? (
+/** Balance of the elements and modalities across the planets. */
+export default function CoreElements({ analysis, elements, bare }: CoreElementsProps) {
+  const data: any = (analysis && ((analysis as any).coreElements || (analysis as any).core_elements)) || elements;
+  if (!data || typeof data !== 'object') return null;
+  const nested = 'elements' in data || 'modalities' in data;
+
+  const body = (
+    <div className="grid gap-6 sm:grid-cols-2">
+      {nested ? (
         <>
-          {renderSection('Elements', (data as any).elements)}
-          {renderSection('Modalities', (data as any).modalities)}
+          {data.elements && <Bars title="Elements" data={data.elements} />}
+          {data.modalities && <Bars title="Modalities" data={data.modalities} />}
         </>
       ) : (
-        // Fallback for flat structure if ever mistakenly passed
-        renderSection('Distribution', data)
+        <Bars title="Distribution" data={data} />
       )}
+    </div>
+  );
+
+  if (bare) return body;
+  return (
+    <Card>
+      <CardHeader title="Elements" as="h3" description="How the planets are spread across fire, earth, air and water." />
+      {body}
     </Card>
   );
 }

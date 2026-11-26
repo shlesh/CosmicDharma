@@ -1,11 +1,16 @@
 import React from 'react';
-import Card from '../ui/Card';
+import { motion } from 'framer-motion';
+import Card, { CardHeader } from '@/components/ui/Card';
+import { planetInfo } from '@/util/astro';
+import { cn } from '@/util/cn';
 
 export interface HouseAnalysisProps {
   houses?: Record<string, unknown> | null;
+  /** Sarvashtakavarga points by house number, if available */
+  points?: Record<string, number> | null;
 }
 
-type HouseRow = {
+export type HouseRow = {
   num: number;
   sign?: string;
   lord?: string;
@@ -17,137 +22,134 @@ type HouseRow = {
 };
 
 const BHAVA_FALLBACK: Record<number, [string, string]> = {
-  1: ['Tanu', 'Body and first impression'],
-  2: ['Dhana', 'Speech, family, stored wealth'],
+  1: ['Tanu', 'Body, temperament, first impressions'],
+  2: ['Dhana', 'Speech, family, savings'],
   3: ['Sahaja', 'Courage, siblings, short journeys'],
-  4: ['Sukha', 'Home, mother, inner peace'],
-  5: ['Putra', 'Intelligence, children, poorva-punya'],
-  6: ['Ari', 'Debt, disease, daily labour'],
-  7: ['Kalatra', 'Spouse, contracts, the other'],
+  4: ['Sukha', 'Home, mother, inner contentment'],
+  5: ['Putra', 'Intellect, children, creativity'],
+  6: ['Ari', 'Health, debts, daily work, rivals'],
+  7: ['Kalatra', 'Marriage, partnerships, contracts'],
   8: ['Ayu', 'Longevity, research, sudden change'],
-  9: ['Dharma', 'Guru, father, fortune'],
-  10: ['Karma', 'Work, status, public deed'],
-  11: ['Labha', 'Gains, friends, elder allies'],
-  12: ['Vyaya', 'Loss, exile, the far shore'],
+  9: ['Dharma', 'Teachers, father, fortune'],
+  10: ['Karma', 'Career, status, public life'],
+  11: ['Labha', 'Gains, friends, ambitions'],
+  12: ['Vyaya', 'Expenses, retreat, foreign lands'],
 };
 
-function unwrapHouses(houses: Record<string, any>): Record<string, any> {
-  if (houses && typeof houses === 'object' && houses.houses && typeof houses.houses === 'object') {
-    return houses.houses as Record<string, any>;
-  }
-  return houses;
+function unwrap(houses: Record<string, any>): Record<string, any> {
+  return houses && typeof houses === 'object' && houses.houses && typeof houses.houses === 'object' ? houses.houses : houses;
 }
 
 function toRow(num: number, value: unknown): HouseRow {
   const [bhava, topic] = BHAVA_FALLBACK[num] || ['Bhava', ''];
   if (value && typeof value === 'object' && !Array.isArray(value)) {
     const row = value as Record<string, any>;
-    const occupants = Array.isArray(row.occupants) ? row.occupants.map(String) : [];
-    const notes = Array.isArray(row.notes) ? row.notes.map(String) : [];
     return {
       num,
       sign: row.sign,
       lord: row.lord,
       bhava: row.bhava || bhava,
       topic: row.topic || topic,
-      occupants,
-      notes,
+      occupants: Array.isArray(row.occupants) ? row.occupants.map(String) : [],
+      notes: Array.isArray(row.notes) ? row.notes.map(String) : [],
       summary: String(row.summary || ''),
     };
   }
   if (Array.isArray(value)) {
-    return {
-      num,
-      bhava,
-      topic,
-      occupants: value.map(String),
-      notes: [],
-      summary: value.join(', ') || 'Empty',
-    };
+    return { num, bhava, topic, occupants: value.map(String), notes: [], summary: value.join(', ') || 'Empty' };
   }
-  return {
-    num,
-    bhava,
-    topic,
-    occupants: [],
-    notes: [],
-    summary: String(value ?? ''),
-  };
+  return { num, bhava, topic, occupants: [], notes: [], summary: String(value ?? '') };
 }
 
-export default function HouseAnalysis({ houses }: HouseAnalysisProps) {
-  if (!houses) return null;
-  const housesData = unwrapHouses(houses as Record<string, any>);
-  if (!housesData || typeof housesData !== 'object') return null;
-
-  const rows = Object.entries(housesData)
+/** Normalise the API's houses payload into twelve rows (shared with the chart overview). */
+export function houseRows(houses?: Record<string, unknown> | null): HouseRow[] {
+  if (!houses) return [];
+  const data = unwrap(houses as Record<string, any>);
+  if (!data || typeof data !== 'object') return [];
+  return Object.entries(data)
     .filter(([key]) => !Number.isNaN(Number(key)))
     .sort(([a], [b]) => Number(a) - Number(b))
     .map(([key, value]) => toRow(Number(key), value));
+}
 
+export function Occupants({ names, empty = 'No planets' }: { names: string[]; empty?: string }) {
+  if (!names.length) return <span className="text-subtle">{empty}</span>;
+  return (
+    <span className="flex flex-wrap gap-1.5">
+      {names.map((n) => (
+        <span key={n} className="inline-flex items-center gap-1.5 rounded-full border border-line/10 bg-line/[0.04] px-2 py-0.5 text-xs text-fg">
+          <span className="planet-dot h-1.5 w-1.5 rounded-full" style={{ ['--pc' as any]: planetInfo(n).color }} aria-hidden="true" />
+          {n}
+        </span>
+      ))}
+    </span>
+  );
+}
+
+export default function HouseAnalysis({ houses, points }: HouseAnalysisProps) {
+  const rows = houseRows(houses);
   if (rows.length === 0) return null;
 
   return (
-    <Card variant="glass" className="mb-6">
-      <h3 className="font-display text-amber-50">Houses</h3>
-      <p className="help-text mb-4">
-        Whole-sign bhavas from Lagna. An empty house is not mute; its lord still acts.
-      </p>
-
-      <div className="grid grid-cols-4 sm:grid-cols-6 gap-2 mb-6">
-        {rows.map((row) => (
-          <div
-            key={`map-${row.num}`}
-            className={`rounded-lg border px-2 py-2 text-center ${
-              row.occupants.length
-                ? 'border-amber-200/40 bg-amber-200/10'
-                : 'border-white/10 bg-black/20'
-            }`}
-          >
-            <div className="text-[10px] uppercase tracking-wide text-amber-50/60">{row.num}</div>
-            <div className="text-sm text-amber-50">{row.sign || '—'}</div>
-            <div className="text-[10px] text-amber-50/70 truncate">
-              {row.occupants.length ? row.occupants.join(' · ') : 'lord only'}
-            </div>
-          </div>
-        ))}
-      </div>
-
-      <div className="space-y-3">
-        {rows.map((row) => (
-          <article
-            key={row.num}
-            className="rounded-xl border border-amber-200/15 bg-black/20 p-4"
-          >
-            <header className="flex flex-wrap items-baseline justify-between gap-2 mb-2">
-              <h4 className="text-amber-50 font-display text-lg m-0">
-                House {row.num}
-                <span className="text-amber-50/70 font-normal"> · {row.bhava}</span>
-              </h4>
-              <p className="text-sm text-amber-100/80 m-0">
-                {row.sign ? `${row.sign}` : ''}
-                {row.lord ? ` · lord ${row.lord}` : ''}
-              </p>
-            </header>
-            {row.topic ? <p className="help-text mb-2">{row.topic}</p> : null}
-            {row.occupants.length > 0 ? (
-              <p className="text-sm text-amber-50/90 mb-2">
-                Sits here: {row.occupants.join(', ')}
-              </p>
-            ) : (
-              <p className="text-sm text-amber-50/60 mb-2">No graha in this sign.</p>
-            )}
-            {row.notes.length > 0 ? (
-              <ul className="help-text list-disc pl-5 space-y-1">
-                {row.notes.map((note) => (
-                  <li key={note}>{note}</li>
-                ))}
-              </ul>
-            ) : row.summary && !row.sign ? (
-              <p className="text-sm text-amber-50/80">House {row.num}: {row.summary}</p>
-            ) : null}
-          </article>
-        ))}
+    <Card>
+      <CardHeader
+        title="Houses"
+        description="Whole-sign houses counted from the ascendant. An empty house still acts through its lord."
+      />
+      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+        {rows.map((row, i) => {
+          const sav = points?.[String(row.num)];
+          return (
+            <motion.article
+              key={row.num}
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: i * 0.025, duration: 0.35 }}
+              className={cn(
+                'flex flex-col rounded-2xl border p-4 transition-colors',
+                row.occupants.length ? 'border-accent/20 bg-accent/[0.04]' : 'border-line/10 bg-canvas/30',
+              )}
+            >
+              <header className="flex items-start justify-between gap-3">
+                <div>
+                  <h4 className="font-display text-xl font-semibold leading-tight">
+                    House {row.num}
+                    <span className="font-normal text-muted"> · {row.bhava}</span>
+                  </h4>
+                  {row.topic && <p className="mt-1 text-xs text-subtle">{row.topic}</p>}
+                </div>
+                {typeof sav === 'number' && (
+                  <span
+                    className={cn('shrink-0 rounded-lg px-2 py-1 text-xs tabular-nums', sav >= 28 ? 'bg-success/10 text-success' : 'bg-line/[0.05] text-muted')}
+                    title="Sarvashtakavarga points (28 is average)"
+                  >
+                    {sav} pts
+                  </span>
+                )}
+              </header>
+              <dl className="mt-3 grid grid-cols-2 gap-2 text-sm">
+                <div>
+                  <dt className="text-xs text-subtle">Sign</dt>
+                  <dd className="text-fg">{row.sign || '—'}</dd>
+                </div>
+                <div>
+                  <dt className="text-xs text-subtle">Lord</dt>
+                  <dd className="text-fg">{row.lord ? <span>lord {row.lord}</span> : '—'}</dd>
+                </div>
+              </dl>
+              <div className="mt-3 text-sm">
+                <Occupants names={row.occupants} />
+              </div>
+              {row.notes.length > 0 ? (
+                <ul className="mt-3 space-y-1.5 border-t border-line/[0.06] pt-3 text-sm leading-relaxed text-muted">
+                  {row.notes.map((note) => <li key={note}>{note}</li>)}
+                </ul>
+              ) : row.summary && !row.sign ? (
+                <p className="mt-3 text-sm text-muted">House {row.num}: {row.summary}</p>
+              ) : null}
+            </motion.article>
+          );
+        })}
       </div>
     </Card>
   );

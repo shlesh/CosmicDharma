@@ -1,150 +1,272 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
-import { motion, AnimatePresence } from 'framer-motion';
-import { useTheme } from '../ui/ThemeProvider';
-import Button from '../ui/Button';
+import { AnimatePresence, motion } from 'framer-motion';
+import { Menu, X, Sun, Moon, LayoutDashboard, LogOut, ChevronDown, PenLine } from 'lucide-react';
+import { useTheme } from '@/components/ui/ThemeProvider';
+import Logo from '@/components/ui/Logo';
+import { ButtonLink, buttonClass } from '@/components/ui/Button';
+import { useAuth } from '@/hooks/useAuth';
+import { cn } from '@/util/cn';
 
-const navigation = [
-  { name: 'Home', href: '/' },
-  { name: 'Chart', href: '/profile' },
+export const NAV = [
+  { name: 'Birth chart', href: '/profile' },
   { name: 'Panchanga', href: '/panchanga' },
   { name: 'Journal', href: '/posts' },
-  { name: 'Desk', href: '/dashboard' },
+  { name: 'About', href: '/about' },
 ];
 
-const StarIcon = ({ className = 'w-8 h-8' }: { className?: string }) => (
-  <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
-    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.6} d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
-  </svg>
-);
+function ThemeToggle({ className }: { className?: string }) {
+  const { theme, toggleTheme } = useTheme();
+  const dark = theme === 'dark';
+  return (
+    <button
+      type="button"
+      onClick={toggleTheme}
+      className={cn(buttonClass('ghost', 'icon'), 'overflow-hidden', className)}
+      aria-label={dark ? 'Switch to light theme' : 'Switch to dark theme'}
+      title={dark ? 'Light theme' : 'Dark theme'}
+    >
+      <AnimatePresence mode="wait" initial={false}>
+        <motion.span
+          key={theme}
+          initial={{ y: -14, opacity: 0, rotate: -30 }}
+          animate={{ y: 0, opacity: 1, rotate: 0 }}
+          exit={{ y: 14, opacity: 0, rotate: 30 }}
+          transition={{ duration: 0.2 }}
+          className="flex"
+        >
+          {dark ? <Sun className="h-[18px] w-[18px]" /> : <Moon className="h-[18px] w-[18px]" />}
+        </motion.span>
+      </AnimatePresence>
+    </button>
+  );
+}
 
-const SunIcon = ({ className = 'w-5 h-5' }: { className?: string }) => (
-  <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
-    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
-  </svg>
-);
+function AccountMenu() {
+  const { user, signOut } = useAuth();
+  const router = useRouter();
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
 
-const MoonIcon = ({ className = 'w-5 h-5' }: { className?: string }) => (
-  <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
-    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
-  </svg>
-);
+  useEffect(() => {
+    if (!open) return;
+    const onDown = (e: MouseEvent) => { if (!ref.current?.contains(e.target as Node)) setOpen(false); };
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setOpen(false); };
+    document.addEventListener('mousedown', onDown);
+    document.addEventListener('keydown', onKey);
+    return () => { document.removeEventListener('mousedown', onDown); document.removeEventListener('keydown', onKey); };
+  }, [open]);
+
+  const initial = (user?.username || '·').slice(0, 1).toUpperCase();
+
+  return (
+    <div className="relative" ref={ref}>
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        aria-haspopup="menu"
+        aria-expanded={open}
+        className="flex items-center gap-1.5 rounded-full border border-line/15 bg-surface-2/60 py-1 pl-1 pr-2.5 text-sm text-fg transition-colors hover:border-line/30"
+      >
+        <span className="flex h-7 w-7 items-center justify-center rounded-full bg-accent/15 font-semibold text-accent">{initial}</span>
+        <ChevronDown className={cn('h-4 w-4 text-subtle transition-transform', open && 'rotate-180')} />
+        <span className="sr-only">Account menu</span>
+      </button>
+      <AnimatePresence>
+        {open && (
+          <motion.div
+            role="menu"
+            initial={{ opacity: 0, y: -6, scale: 0.98 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -6, scale: 0.98 }}
+            transition={{ duration: 0.16 }}
+            className="absolute right-0 mt-2 w-56 origin-top-right rounded-2xl border border-line/10 bg-surface/95 p-1.5 shadow-lift backdrop-blur-xl"
+          >
+            {user && (
+              <div className="px-3 py-2">
+                <p className="truncate text-sm font-medium text-fg">{user.username}</p>
+                <p className="truncate text-xs text-subtle">{user.email}</p>
+              </div>
+            )}
+            <Link role="menuitem" href="/dashboard" onClick={() => setOpen(false)} className="flex items-center gap-2.5 rounded-xl px-3 py-2 text-sm text-fg hover:bg-line/[0.06]">
+              <LayoutDashboard className="h-4 w-4 text-subtle" /> Dashboard
+            </Link>
+            {user?.is_admin && (
+              <Link role="menuitem" href="/editor" onClick={() => setOpen(false)} className="flex items-center gap-2.5 rounded-xl px-3 py-2 text-sm text-fg hover:bg-line/[0.06]">
+                <PenLine className="h-4 w-4 text-subtle" /> Write a post
+              </Link>
+            )}
+            <button
+              role="menuitem"
+              type="button"
+              onClick={() => { setOpen(false); signOut(); router.push('/'); }}
+              className="flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-left text-sm text-fg hover:bg-line/[0.06]"
+            >
+              <LogOut className="h-4 w-4 text-subtle" /> Sign out
+            </button>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+}
 
 export default function Header() {
   const router = useRouter();
-  const [authed, setAuthed] = useState(false);
+  const { token, ready, signOut } = useAuth();
   const [scrolled, setScrolled] = useState(false);
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const { theme, toggleTheme } = useTheme();
+  const [menuOpen, setMenuOpen] = useState(false);
+  const signedIn = ready && !!token;
 
   useEffect(() => {
-    const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
-    setAuthed(!!token);
+    const onScroll = () => setScrolled(window.scrollY > 8);
+    onScroll();
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onScroll);
   }, []);
+
+  // Close the mobile menu on navigation and on Escape; lock page scroll while it's open.
+  useEffect(() => {
+    const close = () => setMenuOpen(false);
+    router.events?.on('routeChangeStart', close);
+    return () => router.events?.off('routeChangeStart', close);
+  }, [router.events]);
 
   useEffect(() => {
-    const handleScroll = () => setScrolled(window.scrollY > 16);
-    window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
-  }, []);
+    if (!menuOpen) return;
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setMenuOpen(false); };
+    document.addEventListener('keydown', onKey);
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => { document.removeEventListener('keydown', onKey); document.body.style.overflow = prev; };
+  }, [menuOpen]);
 
-  const handleLogout = () => {
-    localStorage.removeItem('token');
-    setAuthed(false);
-    router.push('/');
-  };
-
-  const isActive = (href: string) =>
-    href === '/' ? router.pathname === href : router.pathname.startsWith(href);
+  const isActive = (href: string) => router.pathname === href || router.pathname.startsWith(`${href}/`);
 
   return (
-    <motion.header
-      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 ${scrolled ? 'py-2' : 'py-4'}`}
-      initial={{ y: -80 }}
-      animate={{ y: 0 }}
+    <>
+    <header
+      data-site-header
+      className={cn(
+        'fixed inset-x-0 top-0 z-50 h-[var(--header-h)] transition-[background-color,border-color,backdrop-filter] duration-300',
+        scrolled || menuOpen ? 'border-b border-line/10 bg-canvas/75 backdrop-blur-xl' : 'border-b border-transparent',
+      )}
     >
-      <div className="container">
-        <nav className={`glass rounded-2xl px-4 py-3 sm:px-6 ${scrolled ? 'shadow-2xl' : ''}`}>
-          <div className="flex items-center justify-between">
-            <Link href="/" className="flex items-center gap-3 group">
-              <div className="relative bg-gradient-to-br from-amber-300/80 to-emerald-700/80 rounded-xl p-2">
-                <StarIcon className="w-5 h-5 sm:w-6 sm:h-6 text-night" />
-              </div>
-              <span className="text-lg sm:text-xl font-display gradient-text">Cosmic Dharma</span>
-            </Link>
+      <div className="container flex h-full items-center justify-between gap-4">
+        <Link href="/" className="-m-1 rounded-lg p-1" aria-label="Cosmic Dharma, home">
+          <Logo />
+        </Link>
 
-            <div className="hidden md:flex items-center gap-1">
-              {navigation.map((item) => (
-                <Link
-                  key={item.name}
-                  href={item.href}
-                  className={`px-3 py-2 rounded-xl font-medium text-sm transition-all ${
-                    isActive(item.href)
-                      ? 'bg-amber-200/15 text-amber-100'
-                      : 'text-amber-50/70 hover:bg-white/5 hover:text-amber-50'
-                  }`}
-                >
-                  {item.name}
-                </Link>
-              ))}
-            </div>
-
-            <div className="flex items-center gap-2">
-              <motion.button
-                onClick={toggleTheme}
-                className="p-2 rounded-xl hover:bg-white/5"
-                whileTap={{ scale: 0.95 }}
-                aria-label="Toggle theme"
-              >
-                {theme === 'dark' ? <SunIcon className="w-4 h-4" /> : <MoonIcon className="w-4 h-4" />}
-              </motion.button>
-
-              {authed ? (
-                <Button variant="glass" size="sm" onClick={handleLogout}>Logout</Button>
-              ) : (
-                <Link href="/login">
-                  <Button variant="cosmic" size="sm">Enter</Button>
-                </Link>
-              )}
-
-              <button
-                onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-                className="md:hidden p-2 rounded-xl hover:bg-white/5"
-                aria-label={mobileMenuOpen ? 'Close menu' : 'Open menu'}
-              >
-                <span className="block w-5 h-px bg-current mb-1" />
-                <span className="block w-5 h-px bg-current mb-1" />
-                <span className="block w-5 h-px bg-current" />
-              </button>
-            </div>
-          </div>
-
-          <AnimatePresence>
-            {mobileMenuOpen && (
-              <motion.div
-                initial={{ height: 0, opacity: 0 }}
-                animate={{ height: 'auto', opacity: 1 }}
-                exit={{ height: 0, opacity: 0 }}
-                className="md:hidden mt-3 pt-3 border-t border-amber-200/10 overflow-hidden"
-              >
-                {navigation.map((item) => (
+        <nav aria-label="Main" className="hidden items-center md:flex">
+          <ul className="flex items-center gap-1">
+            {NAV.map((item) => {
+              const active = isActive(item.href);
+              return (
+                <li key={item.href}>
                   <Link
-                    key={item.name}
                     href={item.href}
-                    onClick={() => setMobileMenuOpen(false)}
-                    className={`block px-4 py-3 rounded-xl ${
-                      isActive(item.href) ? 'bg-amber-200/15 text-amber-100' : 'text-amber-50/80'
-                    }`}
+                    aria-current={active ? 'page' : undefined}
+                    className={cn(
+                      'relative rounded-full px-4 py-2 text-sm font-medium transition-colors',
+                      active ? 'text-fg' : 'text-muted hover:text-fg',
+                    )}
                   >
-                    {item.name}
+                    {active && (
+                      <motion.span
+                        layoutId="nav-active"
+                        className="absolute inset-0 rounded-full bg-line/[0.07]"
+                        transition={{ type: 'spring', stiffness: 400, damping: 34 }}
+                      />
+                    )}
+                    <span className="relative">{item.name}</span>
                   </Link>
-                ))}
-              </motion.div>
-            )}
-          </AnimatePresence>
+                </li>
+              );
+            })}
+          </ul>
         </nav>
+
+        <div className="flex items-center gap-1.5">
+          <ThemeToggle />
+          <div className="hidden items-center gap-2 md:flex">
+            {signedIn ? (
+              <AccountMenu />
+            ) : (
+              <>
+                <ButtonLink href="/login" variant="ghost" size="sm">Sign in</ButtonLink>
+                <ButtonLink href="/profile" size="sm">Get your chart</ButtonLink>
+              </>
+            )}
+          </div>
+          <button
+            type="button"
+            className={cn(buttonClass('ghost', 'icon'), 'md:hidden')}
+            onClick={() => setMenuOpen((v) => !v)}
+            aria-expanded={menuOpen}
+            aria-controls="mobile-menu"
+            aria-label={menuOpen ? 'Close menu' : 'Open menu'}
+          >
+            {menuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+          </button>
+        </div>
       </div>
-    </motion.header>
+    </header>
+
+    {/* Outside <header>: its backdrop-filter would make it the containing block for this fixed overlay. */}
+    <AnimatePresence>
+        {menuOpen && (
+          <motion.div
+            id="mobile-menu"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            data-site-header
+            className="fixed inset-x-0 bottom-0 top-[var(--header-h)] z-40 overflow-y-auto bg-canvas/95 backdrop-blur-2xl md:hidden"
+          >
+            <nav aria-label="Mobile" className="container flex min-h-full flex-col pb-[max(2rem,env(safe-area-inset-bottom))] pt-6">
+              <ul className="space-y-1">
+                {[{ name: 'Home', href: '/' }, ...NAV, ...(signedIn ? [{ name: 'Dashboard', href: '/dashboard' }] : [])].map((item, i) => (
+                  <motion.li
+                    key={item.href}
+                    initial={{ opacity: 0, y: 12 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.04 * i, duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
+                  >
+                    <Link
+                      href={item.href}
+                      aria-current={router.pathname === item.href ? 'page' : undefined}
+                      className={cn(
+                        'flex items-center justify-between rounded-2xl px-4 py-3.5 font-display text-[1.9rem] font-semibold leading-none transition-colors',
+                        router.pathname === item.href ? 'text-accent' : 'text-fg hover:bg-line/[0.05]',
+                      )}
+                    >
+                      {item.name}
+                    </Link>
+                  </motion.li>
+                ))}
+              </ul>
+              <div className="mt-auto grid gap-3 pt-10">
+                {signedIn ? (
+                  <button
+                    type="button"
+                    onClick={() => { signOut(); setMenuOpen(false); router.push('/'); }}
+                    className={buttonClass('secondary', 'lg', 'w-full')}
+                  >
+                    <LogOut className="h-4 w-4" /> Sign out
+                  </button>
+                ) : (
+                  <>
+                    <ButtonLink href="/profile" size="lg" className="w-full">Get your birth chart</ButtonLink>
+                    <ButtonLink href="/login" variant="secondary" size="lg" className="w-full">Sign in</ButtonLink>
+                  </>
+                )}
+              </div>
+            </nav>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </>
   );
 }
