@@ -1,8 +1,12 @@
 import React, { useEffect, useState } from 'react';
 import useSWR from 'swr';
 import { fetchJson } from '../../util/api';
-import BlogList from '../../components/blog/BlogList';
-import AdminDashboard from '../../components/admin/AdminDashboard';
+import dynamic from 'next/dynamic';
+
+// Only donors and admins open these tabs; don't make every user download them.
+const tabLoading = () => <p className="p-8 text-center text-gray-500">Loading…</p>;
+const BlogList = dynamic(() => import('../../components/blog/BlogList'), { loading: tabLoading });
+const AdminDashboard = dynamic(() => import('../../components/admin/AdminDashboard'), { ssr: false, loading: tabLoading });
 import { useToast } from '../../components/ui/ToastProvider';
 
 interface DashboardUser {
