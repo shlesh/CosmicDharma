@@ -15,7 +15,7 @@
 # origin (no trailing slash, no /api) once the backend is deployed; it is baked in at build time.
 
 [[headers]]
-  # next-pwa emits /sw.js; it must never be cached or users get stuck on old builds.
+  # The service worker (Serwist) is served at /sw.js; it must never be cached or users get stuck on old builds.
   for = "/sw.js"
   [headers.values]
     Cache-Control = "public, max-age=0, must-revalidate"

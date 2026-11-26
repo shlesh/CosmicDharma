@@ -41,7 +41,7 @@ Goal: both suites pass locally, CI passes on the branch, and `next build` succee
       the Linux SWC binaries). CI uses `npm ci` with the npm cache.
 - [x] Bundle size: the admin tools, editor, and Chart.js are lazy-loaded. /dashboard went from 683 to 320 KB of
       first-load JS, and /admin from 627 to 187 KB.
-      There are also two markdown editors (MDXEditor and @uiw/react-md-editor); keep one.
+      One markdown editor now (@uiw/react-md-editor); MDXEditor was removed on 2026-11-26.
 - [x] CI passes on GitHub (frontend, backend, and a Linux Netlify build job).
 
 Real bugs fixed along the way: Saturn's ashtakavarga had an extra bindu (40, should be 39); admin edit-post
@@ -137,3 +137,5 @@ Pick a direction before building. Candidates:
   because Netlify refuses to upload a server function built with a Next.js version that has CVE-2025-55182
   (15.3.4), so Next was upgraded to 15.5.29. DNS for cosmicdharma.app is on Netlify DNS; the HTTPS
   certificate still has to be issued. Still open: hosting the backend, then setting `NEXT_PUBLIC_API_BASE_URL`.
+- 2026-11-26: `npm audit` is clean (18 findings → 0). Replaced the abandoned next-pwa with Serwist (worker/sw.ts),
+  dropped MDXEditor for the @uiw editor already used on /editor, and moved Vitest 0.34 → 5 (with Vite 7).
