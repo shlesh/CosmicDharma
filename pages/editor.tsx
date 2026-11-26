@@ -33,6 +33,11 @@ const EditorPage: React.FC = () => {
     return <div>Unauthorized</div>;
   }
 
+  // Mirrors the API: only admins can create posts (POST /posts returns 403 otherwise).
+  if (!user.is_admin) {
+    return <div className="p-8 text-center">Only admins can write posts.</div>;
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-100 to-pink-100">
       <Head>

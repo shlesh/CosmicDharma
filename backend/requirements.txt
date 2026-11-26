@@ -14,3 +14,4 @@ bcrypt<4.0               # passlib 1.7 breaks on bcrypt 4's removed __about__
 python-jose[cryptography]~=3.5.0
 python-multipart>=0.0.20
 PyYAML~=6.0
+python-dotenv>=1.0         # loads backend/.env (see app/__init__.py)

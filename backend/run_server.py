@@ -17,6 +17,7 @@ def main():
     
     # Set environment variables
     os.environ.setdefault("PYTHONPATH", str(backend_dir))
+    os.environ.setdefault("APP_ENV", "development")  # this launcher is for local dev
     
     # Configuration
     host = os.getenv("HOST", "0.0.0.0")

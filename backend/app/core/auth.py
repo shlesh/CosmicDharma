@@ -11,15 +11,10 @@ from sqlalchemy.orm import Session
 from .db import get_session
 from ..models import User
 
-import secrets
-import logging
-logger = logging.getLogger(__name__)
+from .settings import load_secret_key
 
-SECRET_KEY = os.getenv("SECRET_KEY")
-if not SECRET_KEY:
-    # For local dev only: ephemeral key so the app still starts.
-    SECRET_KEY = secrets.token_urlsafe(32)
-    logger.warning("SECRET_KEY is not set. Using a temporary dev key. DO NOT USE IN PRODUCTION.")
+# Raises InsecureConfigError at startup in production if the key is missing or weak.
+SECRET_KEY = load_secret_key()
 
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "30"))

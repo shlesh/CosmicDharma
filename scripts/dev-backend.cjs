@@ -19,7 +19,7 @@ const child = spawn(
   ["-m", "uvicorn", "main:app", "--reload", "--host", "0.0.0.0", "--port", port],
   {
     cwd: backendDir,
-    env: { ...process.env, PYTHONPATH: backendDir },
+    env: { APP_ENV: "development", ...process.env, PYTHONPATH: backendDir },
     stdio: "inherit",
   }
 );

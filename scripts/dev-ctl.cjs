@@ -217,7 +217,7 @@ function start() {
       py,
       ["-m", "uvicorn", "main:app", "--reload", "--host", "127.0.0.1", "--port", String(BACK_PORT)],
       BACKEND,
-      { PYTHONPATH: BACKEND, PYTHONUNBUFFERED: "1" },
+      { APP_ENV: process.env.APP_ENV || "development", PYTHONPATH: BACKEND, PYTHONUNBUFFERED: "1" },
       { out: bout, err: berr }
     );
     // Next.js hangs if stdout is redirected to a file on Windows.
@@ -238,7 +238,7 @@ function start() {
       py,
       ["-m", "uvicorn", "main:app", "--reload", "--host", "127.0.0.1", "--port", String(BACK_PORT)],
       BACKEND,
-      { PYTHONPATH: BACKEND, PYTHONUNBUFFERED: "1" },
+      { APP_ENV: process.env.APP_ENV || "development", PYTHONPATH: BACKEND, PYTHONUNBUFFERED: "1" },
       "backend"
     );
     frontendPid = spawnUnix(process.execPath, [next, "dev", "-p", String(FRONT_PORT)], ROOT, {}, "frontend");

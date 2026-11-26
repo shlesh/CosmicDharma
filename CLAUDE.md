@@ -62,6 +62,16 @@ Frontend tests: Vitest 0.34 + jsdom, with the `@/` alias and automatic JSX set i
 cleanup in vitest.setup.ts. Mock `@/util/api` by named export (`apiFetch`, `fetchJson`, `blogApi`, ...).
 Wrap components that use React Query or SWR in their providers (see DashboardPage.test.tsx).
 
+## Config and environments
+
+- `backend/.env` is loaded by `app/__init__.py` (real env vars win). `APP_ENV` defaults to **production**:
+  without a 32+ character SECRET_KEY, the server refuses to start (`app/core/settings.py`). The dev launchers
+  (dev-ctl, dev-backend, run_server.py) set `APP_ENV=development`; tests/conftest.py sets `test`, which also
+  skips loading `.env`. If you run `uvicorn` by hand, have `APP_ENV=development` in `backend/.env`.
+- Demo data: `backend/seed_demo.py` (development only; it creates admin/admin, user/password, donor/donor).
+- Error responses: 4xx carry our own messages; 500s are generic and the details go to the log. In routes,
+  always `except HTTPException: raise` before a catch-all `except Exception`.
+
 ## Calculation conventions
 
 - Sign numbers are **1-12** (Aries = 1) inside the astrology modules; `get_sign_name()` converts at the edge.
