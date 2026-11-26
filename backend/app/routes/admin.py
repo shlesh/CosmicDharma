@@ -1,4 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException, Response
+from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
 from ..core.db import get_session
@@ -94,6 +95,32 @@ def admin_list_users(
         )
         for u in users
     ]
+
+
+class DonorUpdate(BaseModel):
+    is_donor: bool
+
+
+@router.patch("/admin/users/{username}/donor", response_model=UserOut)
+def admin_set_donor(
+    username: str,
+    payload: DonorUpdate,
+    current_user: User = Depends(require_admin),
+    db: Session = Depends(get_session),
+):
+    """Grant or revoke donor access. The only way a user becomes a donor."""
+    user = db.query(User).filter(User.username == username).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    user.is_donor = payload.is_donor
+    db.commit()
+    db.refresh(user)
+    return UserOut(
+        username=user.username,
+        email=user.email,
+        is_admin=user.is_admin,
+        is_donor=user.is_donor,
+    )
 
 
 @router.get("/admin/metrics")

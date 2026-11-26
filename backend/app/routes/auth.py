@@ -21,10 +21,11 @@ router = APIRouter()
 
 
 class UserCreate(BaseModel):
+    # No is_donor/is_admin here: privileges are granted by an admin, never self-assigned.
+    # Extra fields in the request body are ignored.
     username: str
     email: str
     password: str
-    is_donor: bool = False
 
 
 class Token(BaseModel):
@@ -58,7 +59,6 @@ def register(user: UserCreate, db: Session = Depends(get_session)):
         username=user.username,
         email=user.email,
         hashed_password=get_password_hash(user.password),
-        is_donor=user.is_donor,
     )
     db.add(db_user)
     db.commit()

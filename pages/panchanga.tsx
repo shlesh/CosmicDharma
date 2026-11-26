@@ -43,6 +43,8 @@ export default function PanchangaPage() {
   const [date, setDate] = useState(localToday);
   const [time, setTime] = useState(localNowTime);
   const [location, setLocation] = useState('');
+  // Coordinates of the picked suggestion; cleared on any edit so they never go stale.
+  const [coords, setCoords] = useState<{ lat?: number; lon?: number }>({});
   const [data, setData] = useState<PanchangaResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -57,6 +59,7 @@ export default function PanchangaPage() {
         date,
         time: toApiTime(time),
         location,
+        ...coords,
       });
       setData(unwrapPanchanga(res as PanchangaResponse));
     } catch (err: any) {
@@ -99,8 +102,14 @@ export default function PanchangaPage() {
             <div className="mt-1">
               <LocationAutocomplete
                 value={location}
-                onChange={(v: string) => setLocation(v)}
-                onSelect={(it: PlaceSuggestion) => setLocation(it.label)}
+                onChange={(v: string) => {
+                  setLocation(v);
+                  setCoords({});
+                }}
+                onSelect={(it: PlaceSuggestion) => {
+                  setLocation(it.label);
+                  setCoords({ lat: it.lat, lon: it.lon });
+                }}
               />
             </div>
           </label>

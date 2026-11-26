@@ -56,6 +56,23 @@ test('loads posts and users for the admin', async () => {
   });
 });
 
+test('an admin grants donor status from the users list', async () => {
+  fetchJsonMock.mockImplementation(async (url: string) =>
+    url === 'admin/users'
+      ? [{ username: 'fan', email: 'f@example.com', is_admin: false, is_donor: false }]
+      : []
+  );
+  renderAdmin();
+  fireEvent.click(await screen.findByRole('button', { name: 'Make donor' }));
+
+  await waitFor(() => expect(apiFetchMock).toHaveBeenCalled());
+  const [url, init] = apiFetchMock.mock.calls[0];
+  expect(url).toBe('admin/users/fan/donor');
+  expect(init.method).toBe('PATCH');
+  expect(JSON.parse(init.body)).toEqual({ is_donor: true });
+  fetchJsonMock.mockImplementation(async () => []);
+});
+
 test('creates a new post through POST /posts (there is no POST /admin/posts)', async () => {
   renderAdmin();
   fireEvent.click(await screen.findByRole('button', { name: 'New Post' }));

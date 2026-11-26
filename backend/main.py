@@ -5,6 +5,7 @@ from fastapi import FastAPI, HTTPException, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
+from fastapi.encoders import jsonable_encoder
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 from datetime import datetime
@@ -59,9 +60,12 @@ except Exception as e:
 @app.exception_handler(RequestValidationError)
 async def validation_exception_handler(request, exc):
     logger.error("Validation error: %s", exc.errors())
+    # jsonable_encoder is required: errors from ValueError-raising validators carry the
+    # exception object in `ctx`, which plain JSON cannot serialize (that turned every
+    # such 422, e.g. "birth date cannot be in the future", into a 500).
     return JSONResponse(
         status_code=422,
-        content={"detail": exc.errors()},
+        content={"detail": jsonable_encoder(exc.errors())},
     )
 
 @app.exception_handler(Exception)

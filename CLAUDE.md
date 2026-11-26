@@ -91,5 +91,8 @@ Wrap components that use React Query or SWR in their providers (see DashboardPag
 - Smart App Control was turned **off** on 2026-11-26, after it blocked unsigned `.pyd` files (h3, tzfpy).
   If "DLL load failed ... An Application Control policy has blocked this file" ever comes back, it's the OS
   policy, not the code.
+- uvicorn `--reload` on Windows can log "Reloading..." and never start the new worker, leaving the
+  **old code** serving requests. If live behaviour doesn't match the code, check backend.err.log for a
+  "Started server process" line after the last reload, and restart the backend if it's missing.
 - `npm run up` currently hangs on Windows after starting the backend (see PLAN.md). Until that's fixed, start
   the frontend with `npm run dev:frontend` or by running `scripts/start-frontend.cmd` through Start-Process.
