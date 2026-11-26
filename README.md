@@ -1,340 +1,135 @@
-# Vedic Astrology App
+# Cosmic Dharma
 
-This project contains a Next.js frontend and a FastAPI backend used to generate Vedic astrology profiles. It also features a simple blog where posts are written in Markdown, donor-only endpoints and an admin dashboard with basic metrics.
+Vedic astrology in the **Sri Yukteswar / Holy Science** frame. Birth charts with D1–D60 vargas, Vimshottari
+dasha, yogas, shadbala, ashtakavarga, a daily panchanga and the yuga clock. There's also a small Markdown blog,
+an admin dashboard, and donor-only extras.
 
-## Features
+- **Frontend:** Next.js 15 (pages router), React 19, Tailwind 3
+- **Backend:** FastAPI + SQLAlchemy, with [Swiss Ephemeris](https://www.astro.com/swisseph/) (`pyswisseph`) for
+  the astronomy
 
-- Astrology profile generation with an optional background job queue
-- Blog with a Markdown editor and admin metrics
-- Donor-only prompts and reports
-- Password reset functionality
-- Progressive Web App support
+The default sidereal frame is Sri Yukteswar's Revati ayanamsa from *The Holy Science* (1894). Lahiri, Raman,
+KP and Fagan/Bradley stay selectable for comparison. See [LINEAGE.md](LINEAGE.md) for the reasoning.
 
-## Setup
+## Accuracy
 
-### Install Node dependencies
+The engine is regression-tested against independent sources, not against itself
+([tests/test_reference_charts.py](tests/test_reference_charts.py)):
 
-Install **Node.js 18** or later (for example via `nvm` or your package manager) and run:
+- **Planets:** checked against **NASA JPL Horizons** (DE441). Worst difference: 0.86 arcseconds.
+- **Ascendant:** checked against the textbook formula from Meeus's *Astronomical Algorithms*. Worst
+  difference: 14 arcseconds.
+- **Local time to UT:** verified, including historical offsets (India was +5:30 in 1917).
+- **Nakshatra, pada and birth dasha:** derived independently from the JPL Moon, in both the Lahiri and
+  Yukteswar frames.
+
+## Quick start
+
+You need **Node.js 20+** and **Python 3.11**.
 
 ```bash
+# 1. Frontend dependencies
 npm install --legacy-peer-deps
+
+# 2. Backend virtualenv
+python -m venv backend/venv                      # Windows: py -3.11 -m venv backend\venv
+backend/venv/bin/pip install -r backend/requirements-dev.txt
+#   Windows: backend\venv\Scripts\pip install -r backend\requirements-dev.txt
+
+# 3. Config
+cp backend/.env.example backend/.env             # already sets APP_ENV=development
+cp .env.local.example .env.local                 # NEXT_PUBLIC_API_BASE_URL=http://localhost:8000
+
+# 4. Optional: demo accounts (admin/admin, user/password, donor/donor). Development only.
+backend/venv/bin/python backend/seed_demo.py     # Windows: backend\venv\Scripts\python backend\seed_demo.py
+
+# 5. Run
+npm run dev        # both servers in the foreground: web on :3000, API on :8000 (docs at /docs)
 ```
 
-Run this after cloning to install all runtime and development packages.
+On Windows you can also run both servers in the background:
 
-### Tailwind CSS
-
-Tailwind is configured in `tailwind.config.js` and the directives are imported
-in `styles/globals.css`. Next.js compiles the CSS via PostCSS so no extra build
-step is required. Run `npm run dev` while developing and `npm run build` to
-produce the optimized styles for production.
-
-### Setup Python environment
-
-Install **Python 3** and create a virtual environment under `backend/venv`:
-
-```bash
-cd backend
-python3 -m venv venv
-source venv/bin/activate
-pip install -r requirements.txt
-pip install -r requirements-dev.txt
-cd ..
+```powershell
+npm run up         # start both, detached; logs go to ./logs
+npm run status     # what's running, plus the API health check
+npm run logs
+npm run restart
+npm run down
 ```
-
-Activate this environment whenever you run tests or start the backend.
-
-### Backend configuration
-
-Copy `backend/.env.example` to `backend/.env` and fill in the values. The backend
-reads these environment variables:
-
-- `DATABASE_URL` – connection string for the database. Defaults to
-  `sqlite:///./app.db`.
-- `SECRET_KEY` – secret used to sign authentication tokens.
-- `ACCESS_TOKEN_EXPIRE_MINUTES` – token lifetime in minutes (defaults to `30`).
-- `GOOGLE_MAPS_API_KEY` – optional key for Google Maps geocoding.
-- `AYANAMSA` – ayanamsa used in calculations (`lahiri` by default).
-- `NODE_TYPE` – lunar node calculation (`mean` or `true`).
-- `HOUSE_SYSTEM` – astrological house system (`whole_sign` by default).
-- `CACHE_ENABLED` – enable or disable caching.
-- `CACHE_URL` – Redis URL used for the profile cache.
-- `REDIS_URL` – connection string for Redis used by the background job queue
-  (defaults to `redis://localhost:6379/1`).
-- `CACHE_TTL` – cache lifetime in seconds.
-- `SMTP_SERVER` – hostname of your SMTP server for sending email.
-- `SMTP_PORT` – port of the SMTP server (`587` by default).
-- `SMTP_USER` – SMTP username if authentication is required.
-- `SMTP_PASS` – SMTP password for the above user.
-- `FROM_EMAIL` – default sender address for outgoing mail.
-- `FRONTEND_URL` – URL of the frontend allowed by CORS. Set this to the
-  domain serving the Next.js app so the backend accepts requests from it
-  (defaults to `http://localhost:3000`).
-
-For the Next.js frontend, copy `.env.local.example` to `.env.local` and set
-`NEXT_PUBLIC_API_BASE_URL` to the URL of your backend. During local development
-this is usually `http://localhost:8000`.
-
-Seed the database with demo accounts and posts using the helper script:
-
-```bash
-./scripts/script.sh --seed
-```
-
-This creates two accounts:
-
-- **admin** / **admin** – full admin access
-- **user** / **password** – regular account with one post
-- **donor** / **donor** – donor account with access to extra prompts and reports
-
-### Password Reset
-
-Use the `request-reset.tsx` page or send a `POST` to `/request-reset` with an
-email address. The backend emails a token via SMTP using the `SMTP_SERVER`,
-`SMTP_PORT`, `SMTP_USER`, `SMTP_PASS` and `FROM_EMAIL` variables. Submit that
-token to `/reset-password` (handled by `reset-password.tsx`) along with a new
-password to finish the process.
-
-## Running the application
-
-### First Time Setup
-
-Run the setup script which installs all dependencies, runs tests, and launches the application:
-
-```bash
-# Full setup with tests
-./scripts/script.sh
-
-# Skip tests for faster startup
-./scripts/script.sh --skip-tests
-
-# Skip tests and seed database
-./scripts/script.sh --skip-tests --seed
-```
-
-### Quick Start (After Initial Setup)
-
-Once you've run the setup script at least once:
-
-```bash
-# Quick run - just starts the services
-./scripts/quick-run.sh
-
-# Or use npm directly
-npm run dev
-```
-
-### Manual Start
-
-You can also run services individually:
-
-```bash
-# Terminal 1: Frontend
-npm run dev:frontend
-
-# Terminal 2: Backend
-cd backend && venv/bin/python run_server.py
-
-# Terminal 3: Worker (optional, requires Redis)
-cd backend && venv/bin/python -m rq.cli worker profiles --url redis://localhost:6379/0
-```
-
-Redis must be running locally before starting the worker. `scripts/script.sh`
-tries to launch Redis automatically using Docker Compose (`docker compose` or
-`docker-compose`) or `redis-server`. Ensure one of these tools is installed for
-the automatic startup to succeed. If the script cannot start Redis, it continues
-without the worker. Start Redis manually (for example with `docker compose up -d
-redis` or `docker-compose up -d redis`) and run `npm run worker` in a separate
-terminal to enable background tasks. You may also launch Redis yourself and
-rerun the script. If you use `redis-server`, copy `redis.conf.example` to
-`.redis.conf` and update the `pidfile` and `dir` paths to suit your environment.
-
-```bash
-docker compose up -d redis
-# or
-docker-compose up -d redis
-```
-
-Without Redis the worker exits with connection errors.
-
-The frontend runs on port 3000 and uses environment variables to reach the backend on port 8000.
-Copy `.env.local.example` to `.env.local` if it doesn't exist and set `NEXT_PUBLIC_API_BASE_URL` to the URL of the backend.
-For local development use:
-
-```bash
-NEXT_PUBLIC_API_BASE_URL=http://localhost:8000
-```
-
-To compute a profile asynchronously, send a request to `/profile/job`:
-
-```bash
-curl -X POST http://localhost:8000/profile/job \
-  -H "Content-Type: application/json" \
-  -d '{"date":"1990-01-01","time":"10:00","location":"New York"}'
-```
-
-This returns a job ID. Poll `/jobs/{id}` to retrieve the status:
-
-```bash
-curl http://localhost:8000/jobs/<job_id>
-```
-
-When the job completes, the response includes the generated profile data.
-
-### Common issues
-
-If you see `Cannot find module 'next-pwa'` when running `scripts/script.sh` or
-`npm run dev`, run `npm install --legacy-peer-deps` again to ensure all
-packages are installed.
-
-## Docker Compose
-
-You can run the backend together with Redis and Postgres using Docker
-Compose. Build and start all services with:
-
-```bash
-docker compose up --build
-# or
-docker-compose up --build
-```
-
-This starts three containers:
-
-- **backend** – FastAPI app from `backend/Dockerfile` on port 8000
-- **redis** – caching and RQ broker on port 6379
-- **db** – Postgres database on port 5432 stored in the `db_data` volume
-
-The backend container reads environment variables from `backend/.env` so
-adjust `DATABASE_URL` or `CACHE_URL` there as needed.
 
 ## Tests
 
-Install the extra Python packages used during testing:
-
 ```bash
-pip install -r backend/requirements-dev.txt
-source backend/venv/bin/activate
+npm run test:frontend   # Vitest + Testing Library
+npm run test:backend    # pytest via backend/venv; no network or API keys needed
+npm run test:all
+npx tsc --noEmit        # typecheck (next build fails on any type error)
 ```
 
-Use the following scripts to run the tests:
+CI ([.github/workflows/tests.yml](.github/workflows/tests.yml)) runs the following on every pull request:
 
-```bash
-npm run test:frontend   # frontend only
-npm run test:backend    # backend only
-npm run test:all        # both suites
+- both test suites
+- `next build`
+- the Netlify build itself, on Linux with Node 20
+
+## Configuration
+
+`backend/.env` is loaded automatically at startup, and real environment variables override it.
+
+| Variable | Default | Notes |
+|---|---|---|
+| `APP_ENV` | `production` | Anything except `development`/`test` refuses to start without a strong `SECRET_KEY`. |
+| `SECRET_KEY` | none | JWT signing key, 32+ random characters: `python -c "import secrets; print(secrets.token_urlsafe(48))"` |
+| `DATABASE_URL` | `sqlite:///./app.db` | SQLAlchemy URL. Postgres also needs a driver, such as `psycopg`, which isn't installed yet. |
+| `ACCESS_TOKEN_EXPIRE_MINUTES` | `30` | |
+| `FRONTEND_URL` / `CORS_ORIGINS` | `http://localhost:3000` | `CORS_ORIGINS` is comma-separated and replaces the default allow-list. |
+| `SMTP_SERVER`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`, `FROM_EMAIL` | unset | Password-reset emails. |
+| `GOOGLE_MAPS_API_KEY` | unset | Only takes effect if the `googlemaps` package is installed; otherwise OpenStreetMap is used. |
+| `CACHE_ENABLED`, `CACHE_TTL` | `true`, `3600` | In-memory chart cache. |
+
+The chart defaults (Yukteswar ayanamsa, mean node, whole-sign houses) are part of the API's request model, and
+each request can override them. The `AYANAMSA`, `NODE_TYPE` and `HOUSE_SYSTEM` keys in `config.yaml` are
+currently **not read**.
+
+Frontend (`.env.local`, or Netlify's environment settings):
+
+| Variable | Notes |
+|---|---|
+| `NEXT_PUBLIC_API_BASE_URL` | The API's origin, with no trailing slash and no `/api`. It's baked in at build time. |
+| `NEXT_PUBLIC_MAPBOX_TOKEN` | Optional. Switches place autocomplete from OpenStreetMap to Mapbox. |
+
+## How it fits together
+
+```
+pages/ + components/          Next.js UI; all API calls go through util/http.ts -> {API}/api/...
+backend/main.py               FastAPI app (routers mounted at /api and at /)
+backend/app/routes/           auth, profile (profile, panchanga, dasha, yogas, strengths), blog, admin
+backend/app/services/astro.py compute_vedic_profile(): geocode -> birth info -> planets -> every module
+backend/app/astrology/        the calculations (ayanamsa, lagna, dasha, vargas, yogas, shadbala, ...)
+tests/                        backend tests, including the reference charts
 ```
 
-Backend tests can also be run directly:
-
-```bash
-PYTHONPATH=. pytest -q
-```
-
-The `pytest.ini` file stores default options for `pytest` and Vitest outputs
-coverage reports to `coverage/` when the tests run.
-
-The backend tests stub all external dependencies so no API keys or internet access are required.
-
-To run the backend tests inside the Docker container, build the image and mount the test suite:
-
-```bash
-docker build -f backend/Dockerfile -t backend-tests .
-docker run --rm -v $(pwd)/tests:/tests backend-tests bash -c "pip install pytest && PYTHONPATH=/app pytest -q /tests"
-```
-
-## Continuous integration
-
-Automated tests run on GitHub Actions for every push and pull request. The workflow installs Node and Python dependencies and executes both the frontend and backend test suites.
-
-## Components
-
-The interface is composed of several reusable React components:
-
-- **ProfileForm** – collects your birth details. Tooltips guide each input.
-- **ProfileSummary** – highlights key chart insights, such as your nakshatra.
-- **BasicInfo** – confirms the birth data used in calculations.
-- **CoreElements** – shows the balance of Fire, Earth, Air and Water elements.
-- **PlanetTable** – lists the zodiac sign and degree of every planet.
-- **HouseAnalysis** – explains how each astrological house influences life areas.
-- **DashaTable** – lists major planetary periods with start and end dates.
-- **DashaChart** – visual timeline of those periods; hover to read descriptions.
+Chart jobs (`POST /api/profile/job`, then `GET /api/jobs/{id}`) and the chart cache live **in memory**. They
+work on a single server process and are lost on restart. There's no Redis.
 
 ## Deployment
 
-The frontend is deployed to Netlify while the FastAPI backend stays on Hostinger.
+The plan is to serve the frontend from **Netlify** (the project is connected and builds every pull request) and
+host the API separately, then point `cosmicdharma.app` at Netlify. That work is still in progress; see Phase 3
+in [PLAN.md](PLAN.md). The `Deploy` GitHub workflow is manual-only until it's rewritten for the chosen backend
+host.
 
-1. Set the `NEXT_PUBLIC_API_BASE_URL`, `CACHE_URL` and mail variables (`SMTP_SERVER`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`, `FROM_EMAIL`) in Netlify to match your backend configuration.
-2. Netlify reads `netlify.toml` for the build command and publish directory. Those variables can also be defined in that file.
-3. Connect this repository to Netlify so pushes to `main` trigger a build. Netlify installs dependencies, runs `npm run build` and uploads the `.next` directory.
-4. Point your `cosmicdharma.app` domain to Netlify and add it as a custom domain in the Netlify dashboard.
-5. GitHub Actions deploy the backend over SSH and trigger a Netlify deploy using the `NETLIFY_AUTH_TOKEN` and `NETLIFY_SITE_ID` secrets.
-6. On the server, copy `backend/.env.example` to `backend/.env` and provide the
-   production values before starting the FastAPI service.
+## Troubleshooting (Windows)
 
-## Progressive Web App
-
-The app is configured as a PWA using **next-pwa**. Metadata like the name,
-colors and icons live in `public/manifest.json`. Edit that file to customize
-how the app looks when installed. During a production build a service worker is
-created automatically. Run:
-
-```bash
-npm run build
-```
-
-and `service-worker.js` will be generated alongside the Next.js output. Static
-assets are cached with a Cache First strategy and API requests with Network
-First. Netlify deploys automatically serve the generated service worker.
-
-To install the app, open the site in Chrome or Safari on mobile and choose
-**Add to Home Screen** from the browser menu. On desktop browsers like Chrome or
-Edge an install button appears in the address bar; click it to create a
-standalone window.
+- **"DLL load failed … Application Control policy has blocked this file":** Windows Smart App Control is
+  blocking an unsigned Python extension. Turn it off under Windows Security → App & browser control, or develop
+  in WSL2.
+- **Backend changes don't show up:** uvicorn's `--reload` sometimes logs "Reloading…" but keeps the old worker
+  running. Run `npm run restart`.
+- The repo path can contain spaces (`git stuff`); the scripts quote everything.
 
 ## Contributing
 
-1. Install dependencies and set up the Python virtual environment as described above.
-2. Run `npm run test:all` and ensure all tests pass before opening a pull request.
-3. Format any new code consistently with the existing style.
-4. Write commit messages in the imperative mood, keep the subject under 72 characters and add a body if more context is needed.
-
-Repository structure
-
-    Backend (backend/)
-
-        FastAPI application with endpoints for astrology profile generation and blog post CRUD operations.
-        Key files: main.py, auth.py, models.py, services/astro.py, db.py.
-
-        User model includes `is_admin` for admin-only post management and `is_donor` for donor accounts.
-
-        SQLite or external DB configured via DATABASE_URL.
-
-        Provides /register, /login, /posts, /admin/posts, /admin/metrics, etc.
-
-    Frontend
-
-        Next.js app under pages/ with React components in components/.
-
-        Blog-related pages:
-
-            /posts (listing), [id].tsx (view post), editor.tsx (create Markdown post with React MDE), admin.tsx (manage posts and view metrics).
-
-            /login and /register pages for user auth.
-
-        Util functions for API calls in util/api.ts.
-
-        Global CSS styles in styles/.
-
-    Configuration and tooling
-
-        package.json with Next.js 15, React 19, React MDE for Markdown editing, and Vitest for tests.
-
-        Python requirements and virtual environment under backend/.
-
-        scripts/script.sh installs dependencies, runs tests and then starts both servers and the background worker.
-
-        CI workflows in .github/workflows/.
-
-        Netlify deploy configuration in netlify.toml.
-
-        Tests covering backend endpoints and astrology calculations in tests/.
+Read [CLAUDE.md](CLAUDE.md) for conventions, and [PLAN.md](PLAN.md) for the roadmap and its current status.
+Commit subjects use the imperative mood and stay under 72 characters. Run both test suites before opening a
+pull request.

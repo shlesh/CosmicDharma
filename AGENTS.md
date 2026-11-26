@@ -1,30 +1,25 @@
-# Guidelines for AI Contributions
+# Guidelines for AI contributions
 
-This project contains a NextJs frontend and a FastAPI backend. When the AI updates this repository, follow these instructions.
+[CLAUDE.md](CLAUDE.md) holds the full conventions (architecture, the single `app.*` import root,
+environments, calculation rules, Windows quirks). [PLAN.md](PLAN.md) is the roadmap. Read both first.
 
 ## Setup
-1. Install Node dependencies with `npm install --legacy-peer-deps` (requires Node 18+).
-2. Create a Python virtual environment under `backend/venv`, activate it, and install requirements:
-   ```bash
-   cd backend
-   python3 -m venv venv
-   source venv/bin/activate
-   pip install -r requirements.txt
-   cd ..
-   ```
+1. `npm install --legacy-peer-deps` (Node 20+).
+2. `python -m venv backend/venv`, then install `backend/requirements-dev.txt` into it (that file includes
+   requirements.txt, plus pytest).
+3. Copy `backend/.env.example` to `backend/.env` (it sets `APP_ENV=development`).
 
-## Running the application
-Use `npm run dev` to launch both the frontend and backend in development mode.
+## Running
+`npm run dev` runs both servers in the foreground. `npm run up` / `npm run down` run them detached.
 
-## Tests
-Activate the virtual environment and run all tests before committing:
+## Tests: run both before committing
 ```bash
-npm test
-PYTHONPATH=. pytest -q
+npm run test:frontend   # not `npm test`: that starts Vitest in watch mode and never exits
+npm run test:backend    # or: backend/venv/bin/python -m pytest  (pytest.ini sets the path)
+npx tsc --noEmit
 ```
-The backend tests stub external services so no API keys or internet access are required.
+The backend tests stub geocoding and the network, so no API keys or internet access are needed.
 
 ## Commit messages
-- Use the imperative mood in the subject line (e.g., "Add feature" or "Fix bug").
-- Keep the first line under 72 characters.
-- Provide additional context in a body if necessary.
+- Imperative mood in the subject line ("Add feature", "Fix bug"), under 72 characters.
+- Explain the why in the body when it isn't obvious.
