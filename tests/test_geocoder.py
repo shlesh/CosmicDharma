@@ -108,6 +108,9 @@ async def test_geocode_async(monkeypatch):
         )
 
     class DummyClient:
+        def __init__(self, headers=None, **kwargs):
+            # Nominatim rejects anonymous clients; the app must identify itself.
+            assert headers and headers.get("User-Agent") == geocoder.NOMINATIM_USER_AGENT
         async def __aenter__(self):
             return self
         async def __aexit__(self, exc_type, exc, tb):
@@ -123,3 +126,29 @@ async def test_geocode_async(monkeypatch):
     assert lat == 1.0
     assert lon == 2.0
     assert tz == "UTC"
+
+
+def test_nominatim_requests_are_spaced_out(monkeypatch):
+    # Nominatim's policy allows at most 1 request/second; geocode_location tries several
+    # candidate strings, so they must not go out back-to-back.
+    import time as _time
+    geocoder.geocode_location.cache_clear()
+    monkeypatch.setattr(geocoder, "gmaps", None)
+    monkeypatch.setattr(geocoder, "NOMINATIM_MIN_INTERVAL", 0.2)
+    calls = []
+
+    def fake_geocode(q, exactly_one=True):
+        calls.append(_time.monotonic())
+        return None  # force it through every candidate
+
+    monkeypatch.setattr(geocoder._geopy, "geocode", fake_geocode)
+    with pytest.raises(ValueError):
+        geocoder.geocode_location("A, B, C")
+    assert len(calls) >= 3
+    gaps = [b - a for a, b in zip(calls, calls[1:])]
+    assert min(gaps) >= 0.15  # 0.2 s minus Windows timer granularity (~16 ms)
+
+
+def test_nominatim_gets_an_identifying_user_agent():
+    assert geocoder._geopy.headers["User-Agent"] == geocoder.NOMINATIM_USER_AGENT
+    assert "python" not in geocoder.NOMINATIM_USER_AGENT.lower()

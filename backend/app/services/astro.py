@@ -132,7 +132,7 @@ class ProfileRequest(BaseModel):
     birth_time: dt_time = Field(..., alias="time")
     location: str
     ayanamsa: Literal[
-        "yukteswar", "yukteshwar", "lahiri", "raman", "kp", "yukteswar_swiss"
+        "yukteswar", "yukteshwar", "lahiri", "raman", "kp", "yukteswar_swiss", "fagan_bradley"
     ] = Field(default="yukteswar")
     node_type: Literal["mean", "true"] = Field(default="mean", alias="lunar_node")
     house_system: Literal["whole_sign", "equal", "sripati"] = Field(default="whole_sign")

@@ -86,6 +86,7 @@ CI ([.github/workflows/tests.yml](.github/workflows/tests.yml)) runs the followi
 | `SMTP_SERVER`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`, `FROM_EMAIL` | unset | Password-reset emails. |
 | `GOOGLE_MAPS_API_KEY` | unset | Only takes effect if the `googlemaps` package is installed; otherwise OpenStreetMap is used. |
 | `CACHE_ENABLED`, `CACHE_TTL` | `true`, `3600` | In-memory chart cache. |
+| `NOMINATIM_USER_AGENT` | `CosmicDharma/2.1` | Sent to OpenStreetMap's geocoder, whose policy asks apps to identify themselves; add a contact URL or e-mail in production. Requests are throttled to 1 per second. |
 
 The chart defaults (Yukteswar ayanamsa, mean node, whole-sign houses) are part of the API's request model, and
 each request can override them. The `AYANAMSA`, `NODE_TYPE` and `HOUSE_SYSTEM` keys in `config.yaml` are

@@ -163,3 +163,26 @@ def test_every_nakshatra_has_its_classical_lord():
     for i, name in enumerate(NAKSHATRAS):
         nak = get_nakshatra([{"name": "Moon", "longitude": i * SPAN + SPAN / 2}])
         assert (nak["nakshatra"], nak["ruling_planet"]) == (name, LORDS[i % 9])
+
+
+@pytest.mark.parametrize("ayanamsa", ["lahiri", "raman", "kp", "fagan_bradley", "yukteswar"])
+def test_every_documented_ayanamsa_is_accepted_by_the_api(test_app, monkeypatch, ayanamsa):
+    # LINEAGE.md promises these are selectable; the request model used to reject fagan_bradley.
+    from app.services import astro
+    monkeypatch.setattr(astro, "timezone_at", lambda lat, lon: "Asia/Kolkata")
+    astro.clear_profile_cache()
+    client, _ = test_app
+    body = {"date": "1990-01-01", "time": "10:00", "location": "Mumbai", "lat": 19.076, "lon": 72.8777,
+            "ayanamsa": ayanamsa}
+    resp = client.post("/api/profile", json=body)
+    assert resp.status_code == 200, resp.text
+    assert resp.json()["birthInfo"]["ayanamsa"]["id"] == ("yukteswar" if ayanamsa == "yukteswar" else ayanamsa)
+
+
+def test_fagan_bradley_sits_about_0_88_deg_from_lahiri():
+    # Fagan/Bradley's ayanamsa runs ~0°53' larger than Lahiri's in the modern era (a property of the two
+    # definitions), so a mix-up between them shows up immediately.
+    d, t, lat, lon, tz = CASES["honolulu_1961"]
+    lahiri = get_birth_info(d, t, lat, lon, tz, ayanamsha="lahiri")["sidereal_offset"]
+    fagan = get_birth_info(d, t, lat, lon, tz, ayanamsha="fagan_bradley")["sidereal_offset"]
+    assert 0.8 < fagan - lahiri < 0.95
