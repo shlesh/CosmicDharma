@@ -1,155 +1,63 @@
 import React from 'react';
-import { motion } from 'framer-motion';
-import { cn } from '../../util/cn';
+import { cn } from '@/util/cn';
 
-// framer-motion redefines drag/animation handlers with its own signatures.
-type MotionConflicts = 'onDrag' | 'onDragStart' | 'onDragEnd' | 'onAnimationStart';
-
-interface CardProps extends Omit<React.HTMLAttributes<HTMLDivElement>, MotionConflicts> {
-  variant?: 'default' | 'glass' | 'gradient' | 'cosmic';
-  hover?: boolean;
+interface CardProps extends React.HTMLAttributes<HTMLDivElement> {
+  /** Adds a lift-and-glow on hover, for cards that are links or buttons. */
+  interactive?: boolean;
   padding?: 'none' | 'sm' | 'md' | 'lg';
-  rounded?: 'none' | 'sm' | 'md' | 'lg' | 'xl' | '2xl';
+  as?: 'div' | 'section' | 'article' | 'aside';
 }
 
-const Card = React.forwardRef<HTMLDivElement, CardProps>(({
-  children,
-  className,
-  variant = 'default',
-  hover = false,
-  padding = 'md',
-  rounded = 'xl',
-  ...props
-}, ref) => {
-  const baseStyles = 'relative overflow-hidden transition-all duration-300';
+const paddings = {
+  none: '',
+  sm: 'p-4',
+  md: 'p-5 sm:p-6',
+  lg: 'p-6 sm:p-8',
+};
 
-  const variants = {
-    default: `
-      bg-white dark:bg-gray-900
-      border border-gray-200 dark:border-gray-800
-      shadow-sm hover:shadow-md
-    `,
-    glass: `
-      glass
-      border border-white/10
-      shadow-xl
-    `,
-    gradient: `
-      bg-gradient-to-br from-purple-500/10 to-blue-500/10
-      backdrop-blur-md
-      border border-purple-500/20
-      shadow-xl shadow-purple-500/10
-    `,
-    cosmic: `
-      bg-gradient-to-br from-purple-900/50 via-blue-900/50 to-pink-900/50
-      backdrop-blur-xl
-      border border-purple-500/30
-      shadow-2xl shadow-purple-500/20
-      before:absolute before:inset-0
-      before:bg-gradient-to-br before:from-purple-600/20 before:via-transparent before:to-blue-600/20
-      before:opacity-0 hover:before:opacity-100
-      before:transition-opacity before:duration-500
-      before:pointer-events-none
-    `
-  };
-
-  const hoverStyles = hover ? `
-    hover:shadow-2xl hover:scale-[1.02]
-    hover:border-purple-500/50
-    cursor-pointer
-  ` : '';
-
-  const paddings = {
-    none: '',
-    sm: 'p-3 sm:p-4',
-    md: 'p-4 sm:p-6',
-    lg: 'p-6 sm:p-8'
-  };
-
-  const roundings = {
-    none: '',
-    sm: 'rounded-lg',
-    md: 'rounded-xl',
-    lg: 'rounded-2xl',
-    xl: 'rounded-3xl',
-    '2xl': 'rounded-[2rem]'
-  };
-
-  const MotionDiv = motion.div;
-
-  return (
-    <MotionDiv
-      ref={ref}
+const Card = React.forwardRef<HTMLDivElement, CardProps>(
+  ({ className, interactive, padding = 'md', as: Tag = 'div', ...props }, ref) => (
+    <Tag
+      ref={ref as any}
       className={cn(
-        baseStyles,
-        variants[variant],
-        hoverStyles,
+        'panel relative',
         paddings[padding],
-        roundings[rounded],
-        className
+        interactive &&
+          'transition-[transform,box-shadow,border-color] duration-300 ease-out-expo hover:-translate-y-0.5 hover:border-accent/30 hover:shadow-lift',
+        className,
       )}
-      whileHover={hover ? { y: -4 } : undefined}
-      transition={{ type: "spring", stiffness: 300, damping: 20 }}
       {...props}
-    >
-      {children}
-    </MotionDiv>
-  );
-});
-
+    />
+  ),
+);
 Card.displayName = 'Card';
 
-// Export Card as default and also named export
+export function CardHeader({
+  title,
+  description,
+  action,
+  eyebrow,
+  className,
+  as: Heading = 'h2',
+}: {
+  title: React.ReactNode;
+  description?: React.ReactNode;
+  action?: React.ReactNode;
+  eyebrow?: React.ReactNode;
+  className?: string;
+  as?: 'h2' | 'h3';
+}) {
+  return (
+    <div className={cn('mb-5 flex flex-wrap items-start justify-between gap-3', className)}>
+      <div className="min-w-0">
+        {eyebrow && <p className="eyebrow mb-1.5">{eyebrow}</p>}
+        <Heading className="font-display text-2xl font-semibold leading-tight sm:text-[1.7rem]">{title}</Heading>
+        {description && <p className="mt-1.5 max-w-2xl text-sm text-muted">{description}</p>}
+      </div>
+      {action && <div className="shrink-0">{action}</div>}
+    </div>
+  );
+}
+
 export default Card;
 export { Card };
-
-// Also export the other card components
-export const CardHeader: React.FC<React.HTMLAttributes<HTMLDivElement>> = ({
-  className,
-  children,
-  ...props
-}) => (
-  <div className={cn('pb-4', className)} {...props}>
-    {children}
-  </div>
-);
-
-export const CardTitle: React.FC<React.HTMLAttributes<HTMLHeadingElement>> = ({
-  className,
-  children,
-  ...props
-}) => (
-  <h3 className={cn('text-xl sm:text-2xl font-bold gradient-text', className)} {...props}>
-    {children}
-  </h3>
-);
-
-export const CardDescription: React.FC<React.HTMLAttributes<HTMLParagraphElement>> = ({
-  className,
-  children,
-  ...props
-}) => (
-  <p className={cn('text-gray-600 dark:text-gray-400 mt-2 text-sm sm:text-base', className)} {...props}>
-    {children}
-  </p>
-);
-
-export const CardContent: React.FC<React.HTMLAttributes<HTMLDivElement>> = ({
-  className,
-  children,
-  ...props
-}) => (
-  <div className={cn('', className)} {...props}>
-    {children}
-  </div>
-);
-
-export const CardFooter: React.FC<React.HTMLAttributes<HTMLDivElement>> = ({
-  className,
-  children,
-  ...props
-}) => (
-  <div className={cn('pt-4 mt-4 border-t border-gray-200 dark:border-gray-800', className)} {...props}>
-    {children}
-  </div>
-);

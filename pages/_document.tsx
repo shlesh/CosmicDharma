@@ -1,24 +1,26 @@
-import { Html, Head, Main, NextScript } from "next/document";
+import { Html, Head, Main, NextScript } from 'next/document';
+
+// Runs before first paint so the page never flashes the wrong theme. Mirrors ThemeProvider:
+// a saved choice wins; otherwise follow the operating system.
+const themeScript = `(function(){try{var t=localStorage.getItem('theme');if(t!=='light'&&t!=='dark'){t=window.matchMedia('(prefers-color-scheme: light)').matches?'light':'dark'}var c=document.documentElement.classList;c.remove('light','dark');c.add(t)}catch(e){document.documentElement.classList.add('dark')}})();`;
 
 export default function Document() {
   return (
-    <Html lang="en" className="dark">
+    <Html lang="en" className="dark" suppressHydrationWarning>
       <Head>
-        <link rel="manifest" href="/manifest.json" />
-        <link rel="icon" href="/favicon.svg" />
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="" />
-        <link
-          href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;0,700;1,500&family=Inter:wght@400;500;600&display=swap"
-          rel="stylesheet"
-        />
         <meta charSet="utf-8" />
-        <meta
-          name="description"
-          content="Cosmic Dharma — Vedic charts in the Yukteswar Revati frame, under an open night sky."
-        />
-        <meta name="theme-color" content="#05080d" />
-        <meta property="og:title" content="Cosmic Dharma" />
+        <script dangerouslySetInnerHTML={{ __html: themeScript }} />
+        <link rel="manifest" href="/manifest.json" />
+        <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+        <link rel="apple-touch-icon" href="/icon-192x192.svg" />
+        <meta name="theme-color" content="#06080f" media="(prefers-color-scheme: dark)" />
+        <meta name="theme-color" content="#f7f4ed" media="(prefers-color-scheme: light)" />
+        <meta name="application-name" content="Cosmic Dharma" />
+        <meta name="apple-mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-title" content="Cosmic Dharma" />
+        <meta property="og:site_name" content="Cosmic Dharma" />
+        <meta property="og:type" content="website" />
+        <meta name="twitter:card" content="summary" />
       </Head>
       <body>
         <Main />

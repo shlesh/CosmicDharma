@@ -1,24 +1,14 @@
-// pages/posts/[slug].tsx
-import React from 'react';
-import { GetServerSideProps } from 'next';
-import BlogPostDetail from '../../components/blog/BlogPostDetail';
+import type { GetServerSideProps } from 'next';
+import BlogPostDetail from '@/components/blog/BlogPostDetail';
 
-interface BlogPostPageProps {
-  slug: string;
+export default function BlogPostPage({ slug }: { slug: string }) {
+  return (
+    <div className="container py-10 sm:py-14">
+      <BlogPostDetail slug={slug} />
+    </div>
+  );
 }
 
-const BlogPostPage: React.FC<BlogPostPageProps> = ({ slug }) => {
-  return <BlogPostDetail slug={slug} />;
-};
-
-export const getServerSideProps: GetServerSideProps = async (context) => {
-  const { slug } = context.params!;
-  
-  return {
-    props: {
-      slug: slug as string,
-    },
-  };
-};
-
-export default BlogPostPage;
+export const getServerSideProps: GetServerSideProps = async ({ params }) => ({
+  props: { slug: String(params?.slug ?? '') },
+});

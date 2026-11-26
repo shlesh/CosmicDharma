@@ -1,32 +1,31 @@
 import React, { useState } from 'react';
-import { useRouter } from 'next/router';
 import Link from 'next/link';
-import Head from 'next/head';
-import { apiFetch } from '../util/api';
-import { useToast } from '../components/ui/ToastProvider';
-import Card from '../components/ui/Card';
-import Button from '../components/ui/Button';
-import { motion } from 'framer-motion';
+import { useRouter } from 'next/router';
+import AuthLayout, { PasswordInput } from '@/components/layout/AuthLayout';
+import Button from '@/components/ui/Button';
+import { Field, Input, FormError } from '@/components/ui/Field';
+import { useToast } from '@/components/ui/ToastProvider';
+import { useAuth } from '@/hooks/useAuth';
+import { apiFetch } from '@/util/api';
 
-interface LoginForm {
-  username: string;
-  password: string;
+/** Only follow same-site relative paths after sign-in (never an open redirect). */
+function safeNext(next: unknown): string {
+  return typeof next === 'string' && next.startsWith('/') && !next.startsWith('//') ? next : '/dashboard';
 }
-
-const fieldClass =
-  'w-full px-4 py-3 rounded-xl border border-amber-200/20 bg-black/25 text-amber-50 focus:border-amber-300 focus:ring-2 focus:ring-amber-300/20';
 
 export default function LoginPage() {
   const router = useRouter();
   const toast = useToast();
-  const [form, setForm] = useState<LoginForm>({ username: '', password: '' });
+  const { signIn } = useAuth();
+  const [form, setForm] = useState({ username: '', password: '' });
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) =>
-    setForm({ ...form, [e.target.name]: e.target.value });
+  const onChange = (e: React.ChangeEvent<HTMLInputElement>) => setForm({ ...form, [e.target.name]: e.target.value });
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setError(null);
     setLoading(true);
     try {
       const data = await apiFetch<{ access_token: string }>('/login', {
@@ -34,47 +33,43 @@ export default function LoginPage() {
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
         body: new URLSearchParams({ ...form }),
       });
-      localStorage.setItem('token', data.access_token);
+      signIn(data.access_token);
       toast('Welcome back.', 'success');
-      router.push('/dashboard');
+      router.push(safeNext(router.query?.next));
     } catch (err: any) {
-      toast(err.message || 'Network error. Please try again.');
+      setError(err?.message || 'Could not sign in. Please try again.');
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="container max-w-md mx-auto py-16 page-shell">
-      <Head><title>Enter — Cosmic Dharma</title></Head>
-      <motion.div initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }}>
-        <p className="text-center help-text mb-3">The gate is quiet after dusk.</p>
-        <Card variant="cosmic" className="p-8">
-          <h2 className="text-3xl font-display text-center mb-6 text-amber-50">Enter</h2>
-          <form onSubmit={handleSubmit} className="space-y-6">
-            <div>
-              <label htmlFor="username" className="block text-sm mb-2">Username</label>
-              <input id="username" name="username" type="text" autoComplete="username" required value={form.username} onChange={handleChange} className={fieldClass} />
-            </div>
-            <div>
-              <label htmlFor="password" className="block text-sm mb-2">Password</label>
-              <input id="password" name="password" type="password" autoComplete="current-password" required value={form.password} onChange={handleChange} className={fieldClass} />
-            </div>
-            <Button type="submit" variant="cosmic" size="lg" loading={loading} disabled={loading} className="w-full">
-              {loading ? 'Opening…' : 'Sign in'}
-            </Button>
-          </form>
-          <div className="mt-6 text-center space-y-2 help-text">
-            <p>
-              New here?{' '}
-              <Link href="/register" className="text-amber-200 hover:text-amber-100">Register</Link>
-            </p>
-            <p>
-              <Link href="/request-reset" className="text-sm text-amber-200/80">Forgot password?</Link>
-            </p>
-          </div>
-        </Card>
-      </motion.div>
-    </div>
+    <AuthLayout
+      seoTitle="Sign in"
+      title="Welcome back"
+      description="Sign in to see your saved chart and dashboard."
+      footer={
+        <>
+          New to Cosmic Dharma?{' '}
+          <Link href="/register" className="font-medium text-accent hover:underline">Create an account</Link>
+        </>
+      }
+    >
+      <form onSubmit={onSubmit} className="space-y-5" noValidate>
+        <Field label="Username" id="username">
+          {(p) => <Input {...p} name="username" autoComplete="username" autoCapitalize="none" required value={form.username} onChange={onChange} />}
+        </Field>
+        <Field label="Password" id="password">
+          {(p) => <PasswordInput {...p} name="password" autoComplete="current-password" required value={form.password} onChange={onChange} />}
+        </Field>
+        <div className="-mt-2 text-right">
+          <Link href="/request-reset" className="text-sm text-muted hover:text-accent">Forgot your password?</Link>
+        </div>
+        <FormError>{error}</FormError>
+        <Button type="submit" size="lg" className="w-full" loading={loading}>
+          {loading ? 'Signing in…' : 'Sign in'}
+        </Button>
+      </form>
+    </AuthLayout>
   );
 }

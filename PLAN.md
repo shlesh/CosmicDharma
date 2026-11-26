@@ -112,7 +112,7 @@ locally. CI is green on GitHub too.
 - [x] Postgres driver: psycopg 3 is in requirements; CI runs the backend suite on Postgres 16 too.
 - [ ] Decide between /api and root mounting, keep one, and drop the other (the frontend uses /api).
 - [x] Pruned every merged or abandoned branch (21, including the old `codex/*` ones); closed PRs keep their commits.
-- [ ] The dashboard page still uses the old gray/white theme, not the night-sky one.
+- [x] One design system across every page (2026-11-26 redesign); the old gray dashboard is gone.
 
 ## Phase 3: product
 
@@ -146,3 +146,8 @@ Pick a direction before building. Candidates:
 - 2026-11-26: The API is live on Render (cosmicdharma-api.onrender.com), backed by Neon in Singapore. Nominatim
   refuses Render's IPs and so does Photon, so server-side geocoding ends with Open-Meteo's geocoder. Netlify's
   NEXT_PUBLIC_API_BASE_URL and GitHub's API_URL are set.
+- 2026-11-26: UI redesign. One token-based design system (dark + light, tokens in styles/globals.css), new
+  primitives in components/ui, rewritten copy, and a mobile-first layout checked with Playwright screenshots
+  at 390px and 1440px. Chart page: North/South Indian SVG chart, dasha timeline with the running period,
+  vargas, yogas, shadbala and ashtakavarga (the API keys SAV by sign; the UI converts to houses). New /about
+  page. Removed Chart.js, three duplicate post editors, the old dashboard viewer and /admin/posts/*.

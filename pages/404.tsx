@@ -1,15 +1,19 @@
-import React from 'react';
-import Link from 'next/link';
+import Seo from '@/components/layout/Seo';
+import { ButtonLink } from '@/components/ui/Button';
+import { LogoMark } from '@/components/ui/Logo';
 
 export default function NotFoundPage() {
   return (
-    <main className="page-shell flex flex-col items-center justify-center gap-4 py-24 text-center px-4">
-      <p className="text-amber-200/70 text-sm tracking-[0.3em] uppercase">Lost on the path</p>
-      <h1 className="font-display text-amber-50">This clearing is empty</h1>
-      <p className="help-text max-w-md">The page is not here. Walk back to the fire.</p>
-      <Link href="/" className="text-amber-200 underline underline-offset-4">
-        Return home
-      </Link>
-    </main>
+    <div className="container flex min-h-[70vh] flex-col items-center justify-center py-20 text-center">
+      <Seo title="Page not found" noindex />
+      <LogoMark className="h-12 w-12 text-accent/70" />
+      <p className="mt-8 font-mono text-sm tracking-widest text-subtle">404</p>
+      <h1 className="mt-3 font-display text-display-lg font-semibold">This page is empty</h1>
+      <p className="mt-4 max-w-md text-muted">The link may be broken, or the page may have moved.</p>
+      <div className="mt-8 flex flex-col gap-3 sm:flex-row">
+        <ButtonLink href="/">Return home</ButtonLink>
+        <ButtonLink href="/profile" variant="secondary">Cast a birth chart</ButtonLink>
+      </div>
+    </div>
   );
 }

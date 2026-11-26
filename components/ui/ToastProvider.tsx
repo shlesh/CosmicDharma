@@ -1,4 +1,7 @@
-import React, { createContext, useContext, useState } from 'react';
+import React, { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
+import { AnimatePresence, motion } from 'framer-motion';
+import { CheckCircle2, AlertCircle, X } from 'lucide-react';
+import { cn } from '@/util/cn';
 
 export type ToastKind = 'error' | 'success';
 
@@ -6,10 +9,9 @@ interface Toast {
   id: number;
   message: string;
   kind: ToastKind;
-  visible: boolean;
 }
 
-// Default kind is 'error' so existing toast(msg) calls keep their meaning; pass 'success' for good news.
+// The default kind is 'error' so a bare toast(msg) keeps its meaning; pass 'success' for good news.
 type ToastFn = (message: string, kind?: ToastKind) => void;
 
 const ToastContext = createContext<ToastFn>(() => {});
@@ -18,44 +20,84 @@ export function useToast() {
   return useContext(ToastContext);
 }
 
-const STYLES: Record<ToastKind, string> = {
-  error: 'bg-red-600 text-white',
-  success: 'bg-emerald-600 text-white',
-};
-
+const DURATION_MS = 4500;
 let nextId = 0;
 
 export default function ToastProvider({ children }: { children: React.ReactNode }) {
   const [toasts, setToasts] = useState<Toast[]>([]);
+  const timers = useRef(new Map<number, ReturnType<typeof setTimeout>>());
 
-  const addToast: ToastFn = (message, kind = 'error') => {
-    const id = ++nextId; // Date.now() collided when two toasts fired in the same millisecond
-    setToasts(t => [...t, { id, message, kind, visible: true }]);
-    setTimeout(() => {
-      setToasts(t => t.map(toast => toast.id === id ? { ...toast, visible: false } : toast));
-    }, 2500);
-    setTimeout(() => {
-      setToasts(t => t.filter(toast => toast.id !== id));
-    }, 3000);
-  };
+  const dismiss = useCallback((id: number) => {
+    setToasts((all) => all.filter((t) => t.id !== id));
+    const timer = timers.current.get(id);
+    if (timer) clearTimeout(timer);
+    timers.current.delete(id);
+  }, []);
+
+  const addToast: ToastFn = useCallback(
+    (message, kind = 'error') => {
+      const id = ++nextId; // a counter, so two toasts in the same millisecond don't collide
+      setToasts((all) => [...all.slice(-3), { id, message, kind }]);
+      timers.current.set(id, setTimeout(() => dismiss(id), DURATION_MS));
+    },
+    [dismiss],
+  );
+
+  useEffect(() => {
+    const all = timers.current;
+    return () => all.forEach(clearTimeout);
+  }, []);
 
   return (
     <ToastContext.Provider value={addToast}>
       {children}
-      <div className="fixed bottom-0 right-0 p-4 space-y-2 z-50">
-        {toasts.map(t => (
-          <div
-            key={t.id}
-            // Errors interrupt screen readers; successes are announced politely.
-            role={t.kind === 'error' ? 'alert' : 'status'}
-            aria-live={t.kind === 'error' ? 'assertive' : 'polite'}
-            data-kind={t.kind}
-            className={`${STYLES[t.kind]} px-3 py-2 rounded shadow transition-all duration-500 transform ${t.visible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-2'}`}
-          >
-            {t.message}
-          </div>
-        ))}
-      </div>
+      <ol
+        aria-label="Notifications"
+        className="pointer-events-none fixed inset-x-0 bottom-0 z-[90] flex flex-col items-center gap-2 p-4 pb-[max(1rem,env(safe-area-inset-bottom))] sm:items-end"
+      >
+        <AnimatePresence initial={false}>
+          {toasts.map((t) => {
+            const Icon = t.kind === 'success' ? CheckCircle2 : AlertCircle;
+            return (
+              <motion.li
+                key={t.id}
+                layout
+                data-kind={t.kind}
+                initial={{ opacity: 0, y: 16, scale: 0.96 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, y: 8, scale: 0.96, transition: { duration: 0.15 } }}
+                transition={{ type: 'spring', stiffness: 500, damping: 34 }}
+                className={cn(
+                  'pointer-events-auto flex w-full max-w-sm items-start gap-3 rounded-2xl border px-4 py-3 shadow-lift backdrop-blur-xl',
+                  'bg-surface/95',
+                  t.kind === 'success' ? 'border-success/30' : 'border-danger/30',
+                )}
+              >
+                <Icon
+                  className={cn('mt-0.5 h-5 w-5 shrink-0', t.kind === 'success' ? 'text-success' : 'text-danger')}
+                  aria-hidden="true"
+                />
+                {/* Errors interrupt screen readers; successes are announced politely. */}
+                <p
+                  role={t.kind === 'error' ? 'alert' : 'status'}
+                  aria-live={t.kind === 'error' ? 'assertive' : 'polite'}
+                  className="flex-1 text-sm text-fg"
+                >
+                  {t.message}
+                </p>
+                <button
+                  type="button"
+                  onClick={() => dismiss(t.id)}
+                  className="-mr-1 rounded-full p-1 text-subtle transition-colors hover:bg-line/10 hover:text-fg"
+                  aria-label="Dismiss notification"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </motion.li>
+            );
+          })}
+        </AnimatePresence>
+      </ol>
     </ToastContext.Provider>
   );
 }

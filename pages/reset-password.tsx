@@ -1,51 +1,73 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import Link from 'next/link';
 import { useRouter } from 'next/router';
-import { apiFetch } from '../util/api';
-import { useToast } from '../components/ui/ToastProvider';
+import AuthLayout, { PasswordInput } from '@/components/layout/AuthLayout';
+import Button from '@/components/ui/Button';
+import { Field, Input, FormError } from '@/components/ui/Field';
+import { useToast } from '@/components/ui/ToastProvider';
+import { apiFetch } from '@/util/api';
+
+const MIN_PASSWORD = 8;
 
 export default function ResetPasswordPage() {
   const router = useRouter();
   const toast = useToast();
   const [form, setForm] = useState({ token: '', new_password: '' });
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) =>
-    setForm({ ...form, [e.target.name]: e.target.value });
+  // A link like /reset-password?token=... fills the code in.
+  useEffect(() => {
+    const t = router.query?.token;
+    if (typeof t === 'string') setForm((f) => ({ ...f, token: t }));
+  }, [router.query?.token]);
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setError(null);
+    if (form.new_password.length < MIN_PASSWORD) {
+      setError(`Use at least ${MIN_PASSWORD} characters for your password`);
+      return;
+    }
+    setLoading(true);
     try {
       await apiFetch('/reset-password', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(form)
+        body: JSON.stringify({ token: form.token.trim(), new_password: form.new_password }),
       });
+      toast('Password updated. Sign in with your new password.', 'success');
       router.push('/login');
-    } catch (e) {
-      toast('Reset failed');
+    } catch (err: any) {
+      setError(err?.message || 'That code is invalid or has expired.');
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
-    <form onSubmit={handleSubmit} className="flex flex-col gap-2">
-      <h2 className="text-xl font-semibold">Set New Password</h2>
-      <input
-        name="token"
-        value={form.token}
-        onChange={handleChange}
-        placeholder="Token"
-        className="border rounded p-2"
-      />
-      <input
-        name="new_password"
-        type="password"
-        value={form.new_password}
-        onChange={handleChange}
-        placeholder="New Password"
-        className="border rounded p-2"
-      />
-      <button type="submit" className="rounded bg-blue-600 p-2 text-white">
-        Reset Password
-      </button>
-    </form>
+    <AuthLayout
+      seoTitle="Choose a new password"
+      title="Choose a new password"
+      description="Enter the code from your email and a new password."
+      footer={<Link href="/request-reset" className="font-medium text-accent hover:underline">Send a new code</Link>}
+    >
+      <form onSubmit={onSubmit} className="space-y-5" noValidate>
+        <Field label="Reset code" id="token">
+          {(p) => (
+            <Input {...p} name="token" autoComplete="one-time-code" autoCapitalize="none" spellCheck={false} required value={form.token}
+              onChange={(e) => setForm({ ...form, token: e.target.value })} />
+          )}
+        </Field>
+        <Field label="New password" id="new_password" hint={`At least ${MIN_PASSWORD} characters.`}>
+          {(p) => (
+            <PasswordInput {...p} name="new_password" autoComplete="new-password" required value={form.new_password}
+              onChange={(e) => setForm({ ...form, new_password: e.target.value })} />
+          )}
+        </Field>
+        <FormError>{error}</FormError>
+        <Button type="submit" size="lg" className="w-full" loading={loading}>Update password</Button>
+      </form>
+    </AuthLayout>
   );
 }

@@ -36,7 +36,14 @@ export function useProfileJob() {
     return Math.min(95, (elapsed / 10_000) * 100);
   }, [polling.data?.status, jobId, startedAt]);
 
+  const reset = () => {
+    setJobId(null);
+    setStartedAt(0);
+    start.reset();
+  };
+
   return {
+    reset,
     startJob: start.mutate,
     starting: start.isPending,
     startError: (start.error as Error)?.message,

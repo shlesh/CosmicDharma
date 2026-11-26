@@ -1,60 +1,41 @@
-import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
-import Head from 'next/head';
-import BlogEditor from '../components/blog/BlogEditor';
-import { getCurrentUser } from '../util/api';
+import { ShieldAlert } from 'lucide-react';
+import Seo from '@/components/layout/Seo';
+import BlogEditor from '@/components/blog/BlogEditor';
+import Card from '@/components/ui/Card';
+import EmptyState from '@/components/ui/EmptyState';
+import Skeleton from '@/components/ui/Skeleton';
+import { ButtonLink } from '@/components/ui/Button';
+import { useAuth } from '@/hooks/useAuth';
 
-const EditorPage: React.FC = () => {
-  const [user, setUser] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
+export default function EditorPage() {
   const router = useRouter();
-  const { edit } = router.query;
+  const { token, ready, user, loadingUser } = useAuth();
+  const edit = router.query.edit;
+  const postId = typeof edit === 'string' && /^\d+$/.test(edit) ? Number(edit) : undefined;
 
-  useEffect(() => {
-    checkUser();
-  }, []);
-
-  const checkUser = async () => {
-    try {
-      const userData = await getCurrentUser();
-      setUser(userData);
-    } catch (err) {
-      router.push('/login');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  if (loading) {
-    return <div>Loading...</div>;
-  }
-
-  if (!user) {
-    return <div>Unauthorized</div>;
-  }
-
-  // Mirrors the API: only admins can create posts (POST /posts returns 403 otherwise).
-  if (!user.is_admin) {
-    return <div className="p-8 text-center">Only admins can write posts.</div>;
-  }
+  let body: React.ReactNode;
+  if (!ready || loadingUser) body = <Skeleton className="h-[560px]" />;
+  // Mirrors the API: only admins can write posts (POST /posts returns 403 otherwise).
+  else if (!token || !user?.is_admin)
+    body = (
+      <Card className="mx-auto max-w-lg">
+        <EmptyState
+          icon={<ShieldAlert className="h-5 w-5" />}
+          title="Only admins can write posts"
+          description={token ? 'Your account doesn’t have editor access.' : 'Sign in with an admin account to write.'}
+          action={!token ? <ButtonLink href="/login?next=/editor">Sign in</ButtonLink> : <ButtonLink href="/posts" variant="secondary">Read the journal</ButtonLink>}
+        />
+      </Card>
+    );
+  else body = <BlogEditor postId={postId} />;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-100 to-pink-100">
-      <Head>
-        <title>{edit ? 'Edit Post' : 'New Post'} - Cosmic Dharma</title>
-      </Head>
-
-      <div className="container mx-auto px-4 py-8">
-        <div className="max-w-4xl mx-auto">
-          <h1 className="text-3xl font-bold text-gray-900 mb-6">
-            {edit ? 'Edit Post' : 'Create New Post'}
-          </h1>
-          
-          <BlogEditor postId={edit ? parseInt(edit as string) : undefined} />
-        </div>
-      </div>
+    <div className="container py-10 sm:py-14">
+      <Seo title={postId ? 'Edit post' : 'New post'} noindex />
+      <p className="eyebrow">Journal</p>
+      <h1 className="mb-8 mt-2 font-display text-display-md font-semibold">{postId ? 'Edit post' : 'New post'}</h1>
+      {body}
     </div>
   );
-};
-
-export default EditorPage;
+}

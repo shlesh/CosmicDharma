@@ -6,6 +6,10 @@ export const apiFetch = http;
 
 export type JobStatus = 'queued' | 'pending' | 'running' | 'complete' | 'error';
 
+export type Ayanamsa = 'yukteswar' | 'lahiri' | 'raman' | 'kp' | 'fagan_bradley';
+export type NodeType = 'mean' | 'true';
+export type HouseSystem = 'whole_sign' | 'equal' | 'sripati';
+
 export interface StartProfileJobRequest {
   name?: string;
   birthDate: string;
@@ -13,6 +17,9 @@ export interface StartProfileJobRequest {
   location: string;
   lat?: number;
   lon?: number;
+  ayanamsa?: Ayanamsa;
+  nodeType?: NodeType;
+  houseSystem?: HouseSystem;
 }
 
 type BackendProfilePayload = {
@@ -22,6 +29,9 @@ type BackendProfilePayload = {
   location: string;
   lat?: number;
   lon?: number;
+  ayanamsa?: Ayanamsa;
+  lunar_node?: NodeType;
+  house_system?: HouseSystem;
 };
 
 export interface StartProfileJobResponse { job_id: string; status?: JobStatus; message?: string; }
@@ -105,6 +115,10 @@ export const profileApi = {
       location: body.location,
       lat: body.lat,
       lon: body.lon,
+      // Only sent when chosen, so the API's defaults (Yukteswar, mean node, whole sign) apply.
+      ...(body.ayanamsa ? { ayanamsa: body.ayanamsa } : {}),
+      ...(body.nodeType ? { lunar_node: body.nodeType } : {}),
+      ...(body.houseSystem ? { house_system: body.houseSystem } : {}),
     } as BackendProfilePayload),
 
   jobStatus: (jobId: string) => get<JobStatusResponse>(`/jobs/${jobId}`),

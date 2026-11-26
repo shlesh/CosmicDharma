@@ -31,13 +31,13 @@ beforeEach(() => {
 
 test('registers, stores the token and continues to the profile page', async () => {
   fetchMock.mockResolvedValue({ access_token: 'new' });
-  renderAndFill('secret1', 'secret1');
+  renderAndFill('secret123', 'secret123');
 
   await waitFor(() => expect(push).toHaveBeenCalledWith('/profile'));
   const [path, init] = fetchMock.mock.calls[0];
   expect(path).toBe('/register');
   const body = JSON.parse(init.body);
-  expect(body).toEqual({ username: 'u', email: 'u@example.com', password: 'secret1' });
+  expect(body).toEqual({ username: 'u', email: 'u@example.com', password: 'secret123' });
   expect(body).not.toHaveProperty('is_donor'); // donor status is granted by an admin
 
   expect(localStorage.getItem('token')).toBe('new');
@@ -54,7 +54,7 @@ test('offers no way to self-select donor access', () => {
 });
 
 test('refuses mismatched passwords without calling the API', async () => {
-  renderAndFill('secret1', 'secret2');
+  renderAndFill('secret123', 'secret2');
   expect((await screen.findByRole('alert')).textContent).toBe('Passwords do not match');
   expect(fetchMock).not.toHaveBeenCalled();
 });

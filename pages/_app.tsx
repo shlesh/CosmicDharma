@@ -1,63 +1,78 @@
-// pages/_app.tsx
 import '../styles/globals.css';
 import type { AppProps } from 'next/app';
-import Head from 'next/head';
-import Header from '../components/layout/Header';
-import Footer from '../components/layout/Footer';
-import ToastProvider from '../components/ui/ToastProvider';
-import { StarryBackground } from '../components/ui/StarryBackground';
-import ThemeProvider from '../components/ui/ThemeProvider';
-import { AnimatePresence, motion } from 'framer-motion';
+import { useState } from 'react';
 import { useRouter } from 'next/router';
-import { useEffect } from 'react';
+import { Inter, Cormorant_Garamond } from 'next/font/google';
+import { MotionConfig, motion } from 'framer-motion';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import Header from '@/components/layout/Header';
+import Footer from '@/components/layout/Footer';
+import Seo from '@/components/layout/Seo';
+import ToastProvider from '@/components/ui/ToastProvider';
+import StarryBackground from '@/components/ui/StarryBackground';
+import ThemeProvider from '@/components/ui/ThemeProvider';
+import { AuthProvider } from '@/hooks/useAuth';
 
-const queryClient = new QueryClient({
-  defaultOptions: {
-    queries: {
-      refetchOnWindowFocus: false,
-      staleTime: 30_000,
-      retry: 1,
-    },
-  },
+// Self-hosted at build time by next/font: no request to Google at runtime, no layout shift.
+const sans = Inter({ subsets: ['latin', 'latin-ext'], variable: '--font-sans', display: 'swap' });
+const display = Cormorant_Garamond({
+  subsets: ['latin', 'latin-ext'],
+  weight: ['500', '600', '700'],
+  style: ['normal', 'italic'],
+  variable: '--font-display',
+  display: 'swap',
 });
 
-export default function MyApp({ Component, pageProps }: AppProps) {
+export default function App({ Component, pageProps }: AppProps) {
   const router = useRouter();
-
-  useEffect(() => {
-    // Close any open toasts on route change, etc. (Optional)
-  }, [router.pathname]);
+  const [queryClient] = useState(
+    () =>
+      new QueryClient({
+        defaultOptions: { queries: { refetchOnWindowFocus: false, staleTime: 30_000, retry: 1 } },
+      }),
+  );
 
   return (
     <>
-      <Head>
-        <meta name="viewport" content="width=device-width, initial-scale=1" />
-        <title>Cosmic Dharma</title>
-      </Head>
-      <ThemeProvider>
-        <ToastProvider>
-          <StarryBackground />
-          <Header />
-
+      {/* The font variables live on :root so portals and toasts get them too. */}
+      <style jsx global>{`
+        :root {
+          --font-sans: ${sans.style.fontFamily};
+          --font-display: ${display.style.fontFamily};
+        }
+      `}</style>
+      <Seo />
+      <MotionConfig reducedMotion="user">
+        <ThemeProvider>
           <QueryClientProvider client={queryClient}>
-            <AnimatePresence mode="wait" initial={false}>
-              <motion.main
-                key={router.route}
-                initial={{ opacity: 0, y: 8 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -8 }}
-                transition={{ duration: 0.3 }}
-                className="relative z-10 pt-24 min-h-screen"
-              >
-                <Component {...pageProps} />
-              </motion.main>
-            </AnimatePresence>
+            <AuthProvider>
+              <ToastProvider>
+                <a
+                  href="#main"
+                  className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[100] focus:rounded-lg focus:bg-accent focus:px-4 focus:py-2 focus:text-accent-fg"
+                >
+                  Skip to content
+                </a>
+                <StarryBackground />
+                <div className="relative z-10 flex min-h-dvh flex-col">
+                  <Header />
+                  <motion.main
+                    id="main"
+                    key={router.asPath.split('?')[0]}
+                    initial={{ opacity: 0, y: 6 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
+                    className="flex-1 pt-[var(--header-h)]"
+                  >
+                    <Component {...pageProps} />
+                  </motion.main>
+                  <Footer />
+                </div>
+              </ToastProvider>
+            </AuthProvider>
           </QueryClientProvider>
-
-          <Footer />
-        </ToastProvider>
-      </ThemeProvider>
+        </ThemeProvider>
+      </MotionConfig>
     </>
   );
 }

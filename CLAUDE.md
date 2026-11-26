@@ -26,9 +26,10 @@ backend/
   app/services/astro.py   compute_vedic_profile(): the whole calculation pipeline + cache + job store
   app/astrology/          pure calculation modules (ayanamsa, birth_info, planets, dasha, yogas, shadbala, ...)
 pages/                    Next.js routes (dashboard/, panchanga, profile, posts/, admin/, auth pages)
-components/<area>/        astrology, blog, admin, dashboard, layout, ui
+components/<area>/        astrology, blog, admin, home, layout, ui (ui = the design system primitives)
 util/http.ts              THE fetch wrapper (prefixes `${NEXT_PUBLIC_API_BASE_URL}/api`)
 util/api.ts               typed API surface (profileApi, panchangaApi, blogApi) on top of http.ts
+util/astro.ts             display helpers: signs, planets, nakshatras, degree format, current dasha
 tests/                    backend pytest suite (imports `app.*`; pytest.ini puts backend/ on sys.path)
 scripts/dev-ctl.cjs       npm run up/down/status/logs (Windows-aware); logs go to ./logs
 ```
@@ -57,9 +58,22 @@ There is exactly **one** import root for backend code: `app.*`, resolved from `b
 inside `backend/` (`uvicorn main:app`), and pytest.ini adds `backend` to `pythonpath`. Never import
 `backend.app.*`: a second root loads every module twice, and monkeypatches silently miss.
 
-Frontend tests: Vitest 0.34 + jsdom, with the `@/` alias and automatic JSX set in vitest.config.js, and RTL
+Frontend tests: Vitest 5 + jsdom, with the `@/` alias and automatic JSX set in vitest.config.js, and RTL
 cleanup in vitest.setup.ts. Mock `@/util/api` by named export (`apiFetch`, `fetchJson`, `blogApi`, ...).
 Wrap components that use React Query or SWR in their providers (see DashboardPage.test.tsx).
+
+## Frontend conventions
+
+- Colours are CSS variables ("R G B") in styles/globals.css, mapped to Tailwind names (`bg-surface`, `text-muted`,
+  `border-line/10`, `text-accent`). Never hard-code gray-*, purple-* or amber-*; light mode comes free with tokens.
+- Build from components/ui (Button/ButtonLink, Card/CardHeader, Field/Input/Select, Badge, Tabs/TabPanel,
+  Skeleton, EmptyState, SectionHeading) and give every page a `<Seo title=...>`.
+- Sign-in state comes from `useAuth()` (hooks/useAuth.tsx), not from reading localStorage in components.
+- Planet colours are pastel: render planet text with `.planet-label` / `.planet-glyph` (ink in light mode).
+- Avoid `whileInView` for data bars (they stay empty in print and in screenshots); use `animate`.
+- A `position: fixed` child of an element with `backdrop-filter` is positioned inside that element. Render
+  overlays (e.g. the mobile menu) outside the blurred header.
+- Check UI changes at phone width (390px) as well as desktop.
 
 ## Config and environments
 

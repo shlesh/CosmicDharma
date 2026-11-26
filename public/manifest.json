@@ -1,25 +1,16 @@
 {
   "short_name": "Cosmic Dharma",
-  "name": "Cosmic Dharma",
-  "description": "An astrological companion for cosmic insights",
+  "name": "Cosmic Dharma: Vedic astrology",
+  "description": "Vedic birth charts, dashas and a daily panchanga in Sri Yukteswar's sidereal frame.",
   "start_url": "/?source=pwa",
   "scope": "/",
   "display": "standalone",
-  "orientation": "portrait",
-  "theme_color": "#310c4b",
-  "background_color": "#12091d",
+  "theme_color": "#06080f",
+  "background_color": "#06080f",
   "lang": "en",
   "categories": ["education", "lifestyle"],
   "icons": [
-    {
-      "src": "/icon-192x192.svg",
-      "sizes": "192x192",
-      "type": "image/svg+xml"
-    },
-    {
-      "src": "/icon-512x512.svg",
-      "sizes": "512x512",
-      "type": "image/svg+xml"
-    }
+    { "src": "/icon-192x192.svg", "sizes": "192x192", "type": "image/svg+xml", "purpose": "any" },
+    { "src": "/icon-512x512.svg", "sizes": "512x512", "type": "image/svg+xml", "purpose": "any maskable" }
   ]
 }

@@ -1,28 +1,20 @@
-import React from 'react';
-import Head from 'next/head';
-import BlogList from '../../components/blog/BlogList';
+import Seo from '@/components/layout/Seo';
+import SectionHeading from '@/components/ui/SectionHeading';
+import BlogList from '@/components/blog/BlogList';
 
-const BlogPage: React.FC = () => {
+export default function JournalPage() {
   return (
-    <div className="page-shell">
-      <Head>
-        <title>Journal — Cosmic Dharma</title>
-        <meta name="description" content="Notes on Vedic astrology, yuga, and practice." />
-      </Head>
-
-      <div className="container mx-auto px-4 py-8">
-        <div className="max-w-4xl mx-auto">
-          <header className="text-center mb-10">
-            <h1 className="font-display text-amber-50 mb-3">Journal</h1>
-            <p className="help-text text-lg">
-              Notes from under the same sky the charts are cast in.
-            </p>
-          </header>
-          <BlogList showPagination={true} />
-        </div>
+    <div className="container py-10 sm:py-14">
+      <Seo title="Journal" description="Essays on Vedic astrology, the yugas and Sri Yukteswar’s Holy Science." />
+      <SectionHeading
+        as="h1"
+        eyebrow="Journal"
+        title="Notes on Jyotisha"
+        description="Essays on reading charts, the yugas, and the astronomy behind the calendar."
+      />
+      <div className="mt-10">
+        <BlogList showPagination />
       </div>
     </div>
   );
-};
-
-export default BlogPage;
+}

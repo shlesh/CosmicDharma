@@ -10,7 +10,7 @@ const sample = {
 
 test('renders house analysis heading and first entry', () => {
   render(<HouseAnalysis houses={sample} />);
-  expect(screen.getByText(/houses/i)).toBeDefined();
+  expect(screen.getByRole('heading', { name: 'Houses' })).toBeDefined();
   expect(screen.getByText(/House 1: Self expression/)).toBeDefined();
 });
 
@@ -30,6 +30,7 @@ test('renders structured bhava cards without smashing sign into the title', () =
           },
         },
       }}
+      points={{ 1: 31 }}
     />
   );
   expect(screen.getByRole('heading', { level: 4 }).textContent).toMatch(/^House 1/);
@@ -37,5 +38,6 @@ test('renders structured bhava cards without smashing sign into the title', () =
   expect(screen.getAllByText(/Taurus/).length).toBeGreaterThan(0);
   expect(screen.getByText(/lord Venus/)).toBeDefined();
   expect(screen.getByText(/Mercury: witty face/)).toBeDefined();
+  expect(screen.getByText('31 pts')).toBeDefined();
   expect(screen.queryByText(/House 1Taurus/)).toBeNull();
 });
