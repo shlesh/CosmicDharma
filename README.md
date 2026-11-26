@@ -68,7 +68,7 @@ npx tsc --noEmit        # typecheck (next build fails on any type error)
 
 CI ([.github/workflows/tests.yml](.github/workflows/tests.yml)) runs the following on every pull request:
 
-- both test suites
+- both test suites, with the backend suite run twice: once on SQLite and once on a real Postgres
 - `next build`
 - the Netlify build itself, on Linux with Node 20
 
@@ -80,7 +80,7 @@ CI ([.github/workflows/tests.yml](.github/workflows/tests.yml)) runs the followi
 |---|---|---|
 | `APP_ENV` | `production` | Anything except `development`/`test` refuses to start without a strong `SECRET_KEY`. |
 | `SECRET_KEY` | none | JWT signing key, 32+ random characters: `python -c "import secrets; print(secrets.token_urlsafe(48))"` |
-| `DATABASE_URL` | `sqlite:///./app.db` | SQLAlchemy URL. Postgres also needs a driver, such as `psycopg`, which isn't installed yet. |
+| `DATABASE_URL` | `sqlite:///./app.db` | SQLAlchemy URL. Production uses Postgres (Neon): `postgres://` and `postgresql://` URLs go through psycopg 3. |
 | `ACCESS_TOKEN_EXPIRE_MINUTES` | `30` | |
 | `FRONTEND_URL` / `CORS_ORIGINS` | `http://localhost:3000` | `CORS_ORIGINS` is comma-separated and replaces the default allow-list. |
 | `SMTP_SERVER`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`, `FROM_EMAIL` | unset | Password-reset emails. |
@@ -115,10 +115,27 @@ work on a single server process and are lost on restart. There's no Redis.
 
 ## Deployment
 
-The plan is to serve the frontend from **Netlify** (the project is connected and builds every pull request) and
-host the API separately, then point `cosmicdharma.app` at Netlify. That work is still in progress; see Phase 3
-in [PLAN.md](PLAN.md). The `Deploy` GitHub workflow is manual-only until it's rewritten for the chosen backend
-host.
+| Part | Host | How it deploys |
+|---|---|---|
+| Frontend | **Netlify** (`cosmicdharma.app`, DNS on Netlify) | Netlify's git integration builds every push to `main` (and a preview for every PR), using `netlify.toml`. |
+| API | **Render**, free web service ([render.yaml](render.yaml)) | Render deploys `main` once the GitHub checks pass. |
+| Database | **Neon**, free Postgres | `DATABASE_URL` on Render. `postgres://` URLs are rewritten to the psycopg 3 driver. |
+
+First-time API setup:
+
+1. In **Neon**, create a project in AWS Singapore (`ap-southeast-1`) and copy the connection string.
+2. In **Render**, choose New → Blueprint, pick this repo, and paste the string as `DATABASE_URL`. Render
+   generates `SECRET_KEY`.
+3. In Render, open the service's Settings → Custom Domains and add `api.cosmicdharma.app`. In **Netlify DNS**, add
+   the CNAME record Render shows.
+4. In **Netlify**, open Site configuration → Environment variables and set
+   `NEXT_PUBLIC_API_BASE_URL=https://api.cosmicdharma.app`, then redeploy. The value is baked in at build time.
+5. In **GitHub**, open Settings → Secrets and variables → Actions → Variables and set
+   `API_URL=https://api.cosmicdharma.app`. This turns on [keep-alive.yml](.github/workflows/keep-alive.yml).
+
+Render's free tier sleeps after 15 minutes without traffic, and the first request after that waits about a
+minute. The keep-alive ping avoids that. Tables are created on startup (`create_all`); there are no migrations
+yet.
 
 ## Troubleshooting (Windows)
 
