@@ -104,5 +104,6 @@ Wrap components that use React Query or SWR in their providers (see DashboardPag
 - uvicorn `--reload` on Windows can log "Reloading..." and never start the new worker, leaving the
   **old code** serving requests. If live behaviour doesn't match the code, check backend.err.log for a
   "Started server process" line after the last reload, and restart the backend if it's missing.
-- `npm run up` currently hangs on Windows after starting the backend (see PLAN.md). Until that's fixed, start
-  the frontend with `npm run dev:frontend` or by running `scripts/start-frontend.cmd` through Start-Process.
+- dev-ctl launches Windows processes through PowerShell `Start-Process` with `stdio: 'ignore'`, and the pid
+  comes back through a temp file. Don't go back to reading it from piped stdout: Next.js inherits the pipe
+  and `spawnSync` then waits forever.

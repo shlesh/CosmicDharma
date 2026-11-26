@@ -56,11 +56,9 @@ Smart App Control was blocking unsigned native Python extensions (h3, tzfpy), so
 resolve timezones. The user turned SAC off, no restart was needed, and a full live chart now computes
 locally. CI is green on GitHub too.
 
-- [ ] `npm run up` hangs on Windows: `startProcessWin` uses `spawnSync(powershell)` to launch
-      start-frontend.cmd, and it never returns, so the pid file isn't written and the frontend never binds.
-      Running the same Start-Process by hand works, and Next binds in about 25 s. Fix by spawning PowerShell
-      detached with `stdio: 'ignore'` and reading the pid from a temp file, or by making start-frontend.cmd
-      write its own pid.
+- [x] `npm run up` hung on Windows (Next inherited the PowerShell stdout pipe that spawnSync read the pid
+      from). The pid now comes back through a temp file with `stdio: 'ignore'`. Verified: start returns in
+      about 10 s, and status, stop, and start all work.
 
 ## Phase 1: correctness and security
 
