@@ -116,7 +116,7 @@ export interface PostInput { title: string; slug?: string; excerpt?: string; con
 export const blogApi = {
   getPosts: (qs: string = '') => get<BlogPostMeta[]>(`/posts${qs ? `?${qs}` : ''}`),
   getPostBySlug: (slug: string) => get<BlogPost>(`/posts/${slug}`),
-  getPostById: (id: number) => get<BlogPost>(`/posts/${id}`),
+  getPostById: (id: number) => get<BlogPost>(`/posts/id/${id}`), // `/posts/{x}` is the slug route
   getFeaturedPosts: (limit = 5) => get<BlogPostMeta[]>(`/featured?limit=${limit}`),
   getTags: () => get<{ tags: string[] }>(`/tags`),
   createPost: (data: PostInput) => post<BlogPostMeta>('/posts', data),

@@ -1,43 +1,71 @@
-import React from 'react';
-import { render, screen, fireEvent } from '@testing-library/react';
-import { expect, test, vi } from 'vitest';
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { SWRConfig } from 'swr';
+import { beforeEach, expect, test, vi } from 'vitest';
 import AdminDashboard from './AdminDashboard';
-import apiFetch, { fetchJson } from '../util/api';
+import { apiFetch, fetchJson } from '@/util/api';
+import ToastProvider from '@/components/ui/ToastProvider';
 
-vi.mock('../util/api', () => ({
-  default: vi.fn(),
-  fetchJson: vi.fn()
+vi.mock('@/util/api', () => ({
+  fetchJson: vi.fn(async () => []),
+  apiFetch: vi.fn(async () => ({})),
 }));
 
-// Chart.js requires canvas which isn't available in jsdom
-HTMLCanvasElement.prototype.getContext = vi.fn();
+// The rich editor and Chart.js need browser APIs jsdom lacks; stand-ins are enough.
+vi.mock('@mdxeditor/editor', () => {
+  const plugin = () => ({});
+  const Nothing = () => null;
+  return {
+    MDXEditor: ({ markdown, onChange }: { markdown: string; onChange: (v: string) => void }) => (
+      <textarea aria-label="Content" value={markdown} onChange={(e) => onChange(e.target.value)} />
+    ),
+    headingsPlugin: plugin, listsPlugin: plugin, quotePlugin: plugin, thematicBreakPlugin: plugin,
+    markdownShortcutPlugin: plugin, linkPlugin: plugin, linkDialogPlugin: plugin, imagePlugin: plugin,
+    tablePlugin: plugin, codeBlockPlugin: plugin, codeMirrorPlugin: plugin, toolbarPlugin: plugin,
+    UndoRedo: Nothing, BoldItalicUnderlineToggles: Nothing, CreateLink: Nothing, InsertImage: Nothing,
+    InsertTable: Nothing, InsertThematicBreak: Nothing, ListsToggle: Nothing,
+  };
+});
+vi.mock('@mdxeditor/editor/style.css', () => ({}));
+vi.mock('react-chartjs-2', () => ({ Bar: () => null }));
 
-test('renders admin dashboard heading', async () => {
-  const fetchJsonMock = fetchJson as any;
-  fetchJsonMock.mockResolvedValueOnce([]);
-  fetchJsonMock.mockResolvedValueOnce([]);
-  window.localStorage.setItem('token', 't');
-  render(<AdminDashboard />);
-  expect(await screen.findByText(/admin dashboard/i)).toBeDefined();
+const fetchJsonMock = fetchJson as unknown as ReturnType<typeof vi.fn>;
+const apiFetchMock = apiFetch as unknown as ReturnType<typeof vi.fn>;
+
+function renderAdmin() {
+  return render(
+    <SWRConfig value={{ provider: () => new Map(), dedupingInterval: 0 }}>
+      <ToastProvider>
+        <AdminDashboard />
+      </ToastProvider>
+    </SWRConfig>
+  );
+}
+
+beforeEach(() => {
+  fetchJsonMock.mockClear();
+  apiFetchMock.mockClear();
+  localStorage.setItem('token', 't');
 });
 
-test('creates a new post', async () => {
-  const fetchJsonMock = fetchJson as any;
-  const fetchMock = apiFetch as any;
-  fetchJsonMock.mockResolvedValueOnce([]); // posts
-  fetchJsonMock.mockResolvedValueOnce([]); // users
-  fetchMock.mockResolvedValueOnce({ ok: true, json: () => Promise.resolve({ id: 1, title: 'New', content: 'C' }) }); // create
-  fetchJsonMock.mockResolvedValueOnce([{ id: 1, title: 'New', content: 'C' }]); // posts after create
-  fetchJsonMock.mockResolvedValueOnce([]); // users after create
+test('loads posts and users for the admin', async () => {
+  renderAdmin();
+  expect(await screen.findByRole('heading', { name: 'Admin Dashboard' })).toBeDefined();
+  await waitFor(() => {
+    const urls = fetchJsonMock.mock.calls.map((c) => c[0]);
+    expect(urls).toEqual(expect.arrayContaining(['admin/posts', 'admin/users']));
+  });
+});
 
-  window.localStorage.setItem('token', 't');
-  render(<AdminDashboard />);
-  await screen.findAllByText(/posts/i);
-  fireEvent.click(screen.getAllByText('New Post')[0]);
-  await screen.findByText('Save');
-  const input = document.querySelector('input[name="title"]') as HTMLInputElement;
-  fireEvent.change(input, { target: { value: 'New' } });
-  fireEvent.click(screen.getByText('Save'));
-  await screen.findAllByText(/admin dashboard/i);
-  expect(fetchMock).toHaveBeenCalledWith('admin/posts', expect.any(Object));
+test('creates a new post through POST /posts (there is no POST /admin/posts)', async () => {
+  renderAdmin();
+  fireEvent.click(await screen.findByRole('button', { name: 'New Post' }));
+  fireEvent.change(screen.getByPlaceholderText('Post title...'), { target: { value: 'New' } });
+  fireEvent.change(screen.getByLabelText('Content'), { target: { value: 'Body' } });
+  fireEvent.click(screen.getByRole('button', { name: 'Save' }));
+
+  await waitFor(() => expect(apiFetchMock).toHaveBeenCalled());
+  const [url, init] = apiFetchMock.mock.calls[0];
+  expect(url).toBe('posts');
+  expect(init.method).toBe('POST');
+  expect(JSON.parse(init.body)).toMatchObject({ title: 'New', content: 'Body' });
 });

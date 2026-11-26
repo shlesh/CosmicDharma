@@ -38,18 +38,28 @@ export async function http<T>(path: string, init: RequestInit = {}): Promise<T> 
       signal: userSignal ?? controller.signal,
     });
 
-    const ctype = res.headers.get('content-type') || '';
-    const isJSON = ctype.includes('application/json');
-    const body = isJSON
-      ? await res.json().catch(() => null)
-      : await res.text().catch(() => '');
+    // Parse by content, not by header: some proxies mislabel JSON, and a
+    // non-JSON 2xx (e.g. an HTML error page) must not be handed back as data.
+    const text = await res.text().catch(() => '');
+    let body: any = null;
+    let parsed = false;
+    if (text) {
+      try {
+        body = JSON.parse(text);
+        parsed = true;
+      } catch {
+        /* not JSON */
+      }
+    }
 
     if (!res.ok) {
-      const raw = isJSON && body ? (body.detail || body.message || body.error) : null;
+      const raw = parsed && body ? (body.detail || body.message || body.error) : null;
       throw new Error(raw ? formatDetail(raw) : `${res.status} ${res.statusText}`);
     }
 
-    return (body ?? ({} as unknown)) as T;
+    if (!text) return {} as T; // e.g. 204 No Content
+    if (!parsed) throw new Error('Invalid JSON response');
+    return body as T;
   } finally {
     if (timeoutId) clearTimeout(timeoutId as any);
   }

@@ -1,53 +1,51 @@
-import React from 'react';
-import { render, screen, fireEvent } from '@testing-library/react';
-import { expect, test, vi } from 'vitest';
-import LoginPage from '../pages/login';
-import apiFetch from '../util/api';
-import ToastProvider from './ToastProvider';
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { beforeEach, expect, test, vi } from 'vitest';
+import LoginPage from '@/pages/login';
+import { apiFetch } from '@/util/api';
+import ToastProvider from '@/components/ui/ToastProvider';
 
-vi.mock('../util/api', () => ({
-  default: vi.fn()
-}));
+vi.mock('@/util/api', () => ({ apiFetch: vi.fn() }));
 
-vi.mock('next/router', () => ({
-  useRouter: () => ({ push: vi.fn() })
-}));
+const push = vi.fn();
+vi.mock('next/router', () => ({ useRouter: () => ({ push }) }));
 
-test('renders labels for inputs', () => {
+const fetchMock = apiFetch as unknown as ReturnType<typeof vi.fn>;
+
+function renderLogin() {
   render(
     <ToastProvider>
       <LoginPage />
     </ToastProvider>
   );
-  expect(screen.getByLabelText(/username/i)).toBeDefined();
-  expect(screen.getByLabelText(/password/i)).toBeDefined();
+  fireEvent.change(screen.getByLabelText('Username'), { target: { value: 'u' } });
+  fireEvent.change(screen.getByLabelText('Password'), { target: { value: 'p' } });
+  fireEvent.click(screen.getByRole('button', { name: /sign in/i }));
+}
+
+beforeEach(() => {
+  fetchMock.mockReset();
+  push.mockReset();
+  localStorage.clear();
 });
 
-test('submits credentials via apiFetch', async () => {
-  const fetchMock = apiFetch as any;
-  fetchMock.mockResolvedValue({ ok: true, json: () => Promise.resolve({ access_token: 't' }) });
-  render(
-    <ToastProvider>
-      <LoginPage />
-    </ToastProvider>
-  );
-  fireEvent.change(screen.getAllByPlaceholderText(/username/i)[0], { target: { value: 'u' } });
-  fireEvent.change(screen.getAllByPlaceholderText(/password/i)[0], { target: { value: 'p' } });
-  fireEvent.click(screen.getAllByRole('button', { name: /login/i })[0]);
-  expect(apiFetch).toHaveBeenCalledWith('login', expect.any(Object));
+test('posts form-encoded credentials, stores the token and goes to the dashboard', async () => {
+  fetchMock.mockResolvedValue({ access_token: 't0k' });
+  renderLogin();
+
+  await waitFor(() => expect(push).toHaveBeenCalledWith('/dashboard'));
+  const [path, init] = fetchMock.mock.calls[0];
+  expect(path).toBe('/login');
+  expect(init.method).toBe('POST');
+  expect(String(init.body)).toBe('username=u&password=p');
+  expect(localStorage.getItem('token')).toBe('t0k');
 });
 
-test('shows error toast on failed login', async () => {
-  const fetchMock = apiFetch as any;
-  fetchMock.mockResolvedValue({ ok: false });
-  render(
-    <ToastProvider>
-      <LoginPage />
-    </ToastProvider>
-  );
-  fireEvent.change(screen.getAllByPlaceholderText(/username/i)[0], { target: { value: 'u' } });
-  fireEvent.change(screen.getAllByPlaceholderText(/password/i)[0], { target: { value: 'p' } });
-  fireEvent.click(screen.getAllByRole('button', { name: /login/i })[0]);
+test('shows the server error and stays on the page when login fails', async () => {
+  fetchMock.mockRejectedValue(new Error('Incorrect username or password'));
+  renderLogin();
+
   const alert = await screen.findByRole('alert');
-  expect(alert.textContent).toMatch(/login failed/i);
+  expect(alert.textContent).toBe('Incorrect username or password');
+  expect(push).not.toHaveBeenCalled();
+  expect(localStorage.getItem('token')).toBeNull();
 });

@@ -32,9 +32,9 @@ test('renders structured bhava cards without smashing sign into the title', () =
       }}
     />
   );
-  expect(screen.getByText(/House 1/)).toBeDefined();
-  expect(screen.getByText(/Tanu/)).toBeDefined();
-  expect(screen.getByText(/Taurus/)).toBeDefined();
+  expect(screen.getByRole('heading', { level: 4 }).textContent).toMatch(/^House 1/);
+  expect(screen.getAllByText(/Tanu/).length).toBeGreaterThan(0);
+  expect(screen.getAllByText(/Taurus/).length).toBeGreaterThan(0);
   expect(screen.getByText(/lord Venus/)).toBeDefined();
   expect(screen.getByText(/Mercury: witty face/)).toBeDefined();
   expect(screen.queryByText(/House 1Taurus/)).toBeNull();

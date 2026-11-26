@@ -92,7 +92,8 @@ export default function AdminDashboard() {
     setForm({ ...form, content: markdown });
 
   const handleSave = async () => {
-    const url = editingId ? `admin/posts/${editingId}` : 'admin/posts';
+    // There is no POST /admin/posts; new posts go through the regular blog route.
+    const url = editingId ? `admin/posts/${editingId}` : 'posts';
     const method = editingId ? 'PUT' : 'POST';
     try {
       await apiFetch(url, {
