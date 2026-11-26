@@ -1,6 +1,5 @@
 import type { NextConfig } from 'next';
-import withPWA from 'next-pwa';
-import runtimeCaching from 'next-pwa/cache';
+import withSerwistInit from '@serwist/next';
 
 const nextConfig: NextConfig = {
   reactStrictMode: true,
@@ -21,21 +20,12 @@ const nextConfig: NextConfig = {
   },
 };
 
-export default withPWA({
-  dest: 'public',
+// Service worker (installable app + offline fallback). The worker source is worker/sw.ts.
+const withSerwist = withSerwistInit({
+  swSrc: 'worker/sw.ts',
+  swDest: 'public/sw.js',
   disable: process.env.NODE_ENV !== 'production',
-  runtimeCaching: [
-    ...runtimeCaching,
-    {
-      urlPattern: ({ url }: { url: URL }) => url.pathname.startsWith('/api'),
-      handler: 'NetworkFirst',
-      method: 'GET', // ✅ Do NOT cache non-GET
-      options: {
-        cacheName: 'api-cache',
-        networkTimeoutSeconds: 10,
-        expiration: { maxEntries: 50, maxAgeSeconds: 24 * 60 * 60 },
-        cacheableResponse: { statuses: [0, 200] },
-      },
-    },
-  ],
-})(nextConfig);
+  additionalPrecacheEntries: [{ url: '/offline.html', revision: '1' }],
+});
+
+export default withSerwist(nextConfig);

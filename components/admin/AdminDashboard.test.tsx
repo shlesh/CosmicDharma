@@ -11,21 +11,12 @@ vi.mock('@/util/api', () => ({
 }));
 
 // The rich editor and Chart.js need browser APIs jsdom lacks; stand-ins are enough.
-vi.mock('@mdxeditor/editor', () => {
-  const plugin = () => ({});
-  const Nothing = () => null;
-  return {
-    MDXEditor: ({ markdown, onChange }: { markdown: string; onChange: (v: string) => void }) => (
-      <textarea aria-label="Content" value={markdown} onChange={(e) => onChange(e.target.value)} />
-    ),
-    headingsPlugin: plugin, listsPlugin: plugin, quotePlugin: plugin, thematicBreakPlugin: plugin,
-    markdownShortcutPlugin: plugin, linkPlugin: plugin, linkDialogPlugin: plugin, imagePlugin: plugin,
-    tablePlugin: plugin, codeBlockPlugin: plugin, codeMirrorPlugin: plugin, toolbarPlugin: plugin,
-    UndoRedo: Nothing, BoldItalicUnderlineToggles: Nothing, CreateLink: Nothing, InsertImage: Nothing,
-    InsertTable: Nothing, InsertThematicBreak: Nothing, ListsToggle: Nothing,
-  };
-});
-vi.mock('@mdxeditor/editor/style.css', () => ({}));
+vi.mock('@uiw/react-md-editor', () => ({
+  default: ({ value, onChange }: { value: string; onChange: (v?: string) => void }) => (
+    <textarea aria-label="Content" value={value} onChange={(e) => onChange(e.target.value)} />
+  ),
+}));
+vi.mock('@uiw/react-md-editor/markdown-editor.css', () => ({}));
 vi.mock('react-chartjs-2', () => ({ Bar: () => null }));
 
 const fetchJsonMock = fetchJson as unknown as ReturnType<typeof vi.fn>;
