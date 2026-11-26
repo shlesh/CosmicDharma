@@ -37,9 +37,8 @@ Goal: both suites pass locally, CI passes on the branch, and `next build` succee
 - [x] `tsc --noEmit` clean (26 errors fixed); `components/ui/Index.ts` → `index.ts`, which broke Linux builds.
 - [x] `next build` passes (16 routes). It was failing on @uiw/react-md-editor's global CSS (now in
       transpilePackages) and on `pages/profile.test.tsx`, which Next treated as a route. CI now runs the build.
-- [ ] Commit `package-lock.json`. It's gitignored today, so CI and Netlify resolve fresh versions on every
-      install (the same drift that broke the backend). Regenerate it on Linux (CI or WSL) so it includes Linux
-      optional deps, then switch CI to `npm ci` with `cache: npm`.
+- [x] `package-lock.json` is committed (the lockfile that produced the tested local node_modules; it includes
+      the Linux SWC binaries). CI uses `npm ci` with the npm cache.
 - [ ] Bundle size: /dashboard and /admin each load ~650 KB up front (MDXEditor + Chart.js). Lazy-load them.
       There are also two markdown editors (MDXEditor and @uiw/react-md-editor); keep one.
 - [ ] Confirm CI passes on GitHub after the next push.
@@ -56,11 +55,9 @@ Smart App Control was blocking unsigned native Python extensions (h3, tzfpy), so
 resolve timezones. The user turned SAC off, no restart was needed, and a full live chart now computes
 locally. CI is green on GitHub too.
 
-- [ ] `npm run up` hangs on Windows: `startProcessWin` uses `spawnSync(powershell)` to launch
-      start-frontend.cmd, and it never returns, so the pid file isn't written and the frontend never binds.
-      Running the same Start-Process by hand works, and Next binds in about 25 s. Fix by spawning PowerShell
-      detached with `stdio: 'ignore'` and reading the pid from a temp file, or by making start-frontend.cmd
-      write its own pid.
+- [x] `npm run up` hung on Windows (Next inherited the PowerShell stdout pipe that spawnSync read the pid
+      from). The pid now comes back through a temp file with `stdio: 'ignore'`. Verified: start returns in
+      about 10 s, and status, stop, and start all work.
 
 ## Phase 1: correctness and security
 
@@ -91,27 +88,28 @@ locally. CI is green on GitHub too.
 - [x] The register page's "support as a donor" checkbox is gone.
 - [x] The custom 422 handler crashed on ValueError-based validators, so "birth date cannot be in the
       future" showed users "Internal server error". It now uses `jsonable_encoder`.
-- [ ] `PUT /posts/{id}` sets the title before checking whether it changed, so the slug never updates.
+- [x] `PUT /posts/{id}` set the title before checking whether it changed, so the slug never updated. Fixed.
 - [ ] Shadbala kala bala is partial (nathonnata, paksha, and vara only; no tribhaga, abda, masa, hora, ayana,
       or yuddha). Complete it or label it as approximate in the UI.
 - [ ] `GOOGLE_MAPS_API_KEY` does nothing: the `googlemaps` package isn't in requirements.
-- [ ] ProfileForm labels aren't linked to their inputs (no htmlFor/id), so screen readers can't announce them.
-- [ ] Toasts are always red, success included.
+- [x] ProfileForm labels are linked to their inputs, and field errors are tied to their fields (aria-invalid + aria-describedby).
+- [x] Toasts have kinds: success (green, role=status) and error (red, role=alert, the default).
 
 ## Phase 2: cleanup
 
-- [ ] Delete the dead frontend layer (client.ts, types/index.ts, unused components and hooks) and pick one
-      `types` source.
-- [ ] Collapse the scripts to `dev-ctl.cjs` + `dev-backend.cjs` + `test-backend.cjs` (+ one bash setup script
-      for Linux/CI).
-- [ ] Rewrite the README and merge in SETUP.md and RUN.md; document the real architecture.
+- [x] Deleted the dead frontend layer: client.ts, types/index.ts, Navbar, LandingPage, ErrorBoundary,
+      GlassCard, LocationSearch, DashboardLayout, PageHead, DatePicker, TimePicker, LoadingStates, and
+      hooks/useForm.
+- [x] Scripts are down to `dev-ctl.cjs`, `dev-backend.cjs`, `test-backend.cjs`, `start-frontend.cmd`, and
+      `dev.ps1`. Removed: script.sh (1,250 lines, which called a seed module that doesn't exist), quick-*,
+      fix-backend, test-setup, .run-*.sh (including the RQ worker), start-backend.cmd, and redis.conf.example.
+- [x] Rewrote the README (it absorbed SETUP.md and RUN.md, which are deleted) and corrected AGENTS.md
+      (`npm test` starts Vitest in watch mode, so an agent following it would hang).
+- [ ] `AYANAMSA` / `NODE_TYPE` / `HOUSE_SYSTEM` in config.yaml and .env are never read; the defaults are hard-coded
+      in `ProfileRequest`. Wire them up or delete them.
+- [ ] docker-compose runs Postgres, but no Postgres driver is in requirements.txt.
 - [ ] Decide between /api and root mounting, keep one, and drop the other (the frontend uses /api).
 - [ ] Prune the stale `codex/*` remote branches.
-- [ ] Still-unused frontend files: LocationSearch, DashboardLayout, PageHead, DatePicker, TimePicker,
-      LoadingStates, hooks/useForm. (Navbar, LandingPage, ErrorBoundary, GlassCard, util/api/client.ts,
-      and types/index.ts are already deleted.)
-- [ ] scripts/script.sh (1,100+ lines) calls a `scripts.seed_db` module that doesn't exist; seeding is
-      `backend/seed_demo.py`.
 - [ ] The dashboard page still uses the old gray/white theme, not the night-sky one.
 
 ## Phase 3: product

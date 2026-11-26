@@ -76,3 +76,19 @@ test('shows a format error for a malformed date', async () => {
   fireEvent.change(screen.getByPlaceholderText('YYYY-MM-DD'), { target: { value: '01/01/2000' } });
   expect(await screen.findByText('Use YYYY-MM-DD')).toBeDefined();
 });
+
+test('every field is reachable by its label (screen readers)', () => {
+  render(<ProfileForm onSubmit={vi.fn()} />);
+  for (const label of ['Name (optional)', 'Birth Date', 'Birth Time']) {
+    expect(screen.getByLabelText(label).tagName).toBe('INPUT');
+  }
+});
+
+test('a field error is announced on the field itself', async () => {
+  render(<ProfileForm onSubmit={vi.fn()} />);
+  const date = screen.getByLabelText('Birth Date');
+  fireEvent.change(date, { target: { value: 'tomorrow' } });
+  await screen.findByText('Use YYYY-MM-DD');
+  expect(date.getAttribute('aria-invalid')).toBe('true');
+  expect(document.getElementById(date.getAttribute('aria-describedby')!)!.textContent).toBe('Use YYYY-MM-DD');
+});

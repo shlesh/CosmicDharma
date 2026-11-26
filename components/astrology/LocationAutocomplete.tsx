@@ -2,8 +2,11 @@ import { useEffect, useRef, useState } from 'react';
 import { useGeocode } from '@/hooks/useGeocode';
 import type { PlaceSuggestion } from '@/util/geocode';
 
-export default function LocationAutocomplete({ value, onChange, onSelect, placeholder }: {
+export default function LocationAutocomplete({ value, onChange, onSelect, placeholder, id, invalid, describedBy }: {
   value: string;
+  id?: string; // lets a <label htmlFor> point at the input
+  invalid?: boolean;
+  describedBy?: string;
   onChange: (v: string) => void;
   onSelect: (item: PlaceSuggestion) => void;
   placeholder?: string;
@@ -21,6 +24,9 @@ export default function LocationAutocomplete({ value, onChange, onSelect, placeh
   return (
     <div className="relative" ref={wrapRef}>
       <input
+        id={id}
+        aria-invalid={invalid || undefined}
+        aria-describedby={describedBy}
         className="border rounded p-2 w-full"
         placeholder={placeholder || 'City, Country'}
         value={value}

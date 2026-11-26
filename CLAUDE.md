@@ -8,14 +8,13 @@ not a bug, so don't "fix" it to Lahiri.
 The roadmap and its current status live in [PLAN.md](PLAN.md). Read it at the start of a session and update it
 when a phase item lands. [AGENTS.md](AGENTS.md) holds the older shared rules (commit style, test commands).
 
-## Read this first: the docs are partly stale
+## Read this first
 
-Much of this repo was written by earlier AI agents, and README.md / SETUP.md describe things that no longer exist:
+Much of this repo was written by earlier AI agents. README.md was rewritten against the code on 2026-11-26,
+but trust the code over any markdown, and when a doc is wrong, fix it.
 - **No Redis or RQ.** Jobs (`/profile/job`, `/jobs/{id}`) run in-process via FastAPI `BackgroundTasks`, and the
   profile cache is an in-memory TTL dict ([backend/app/services/astro.py](backend/app/services/astro.py)). Both are
-  lost on restart and are not shared across workers. `tests/test_jobs.py` and `tests/test_cache.py` still target RQ
-  and fakeredis.
-- Trust the code over the markdown. When you find a doc that lies, fix it or note it in PLAN.md.
+  lost on restart and are not shared across workers.
 
 ## Layout
 
@@ -104,5 +103,6 @@ Wrap components that use React Query or SWR in their providers (see DashboardPag
 - uvicorn `--reload` on Windows can log "Reloading..." and never start the new worker, leaving the
   **old code** serving requests. If live behaviour doesn't match the code, check backend.err.log for a
   "Started server process" line after the last reload, and restart the backend if it's missing.
-- `npm run up` currently hangs on Windows after starting the backend (see PLAN.md). Until that's fixed, start
-  the frontend with `npm run dev:frontend` or by running `scripts/start-frontend.cmd` through Start-Process.
+- dev-ctl launches Windows processes through PowerShell `Start-Process` with `stdio: 'ignore'`, and the pid
+  comes back through a temp file. Don't go back to reading it from piped stdout: Next.js inherits the pipe
+  and `spawnSync` then waits forever.

@@ -62,7 +62,7 @@ export default function DashboardPage() {
     if (job?.status === 'complete' && job.result) {
       setProfileData(job.result);
       localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(job.result));
-      toast('Chart calculation complete!');
+      toast('Chart calculation complete!', 'success');
     } else if (job?.status === 'error') {
       toast(job.error || 'Calculation failed');
     }
