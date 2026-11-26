@@ -55,7 +55,7 @@ export default function RegisterPage() {
       });
 
       localStorage.setItem('token', data.access_token);
-      toast('Registration successful!');
+      toast('Registration successful!', 'success');
       router.push('/profile');
     } catch (err: any) {
       console.error('Registration error:', err);

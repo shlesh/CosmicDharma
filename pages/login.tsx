@@ -35,7 +35,7 @@ export default function LoginPage() {
         body: new URLSearchParams({ ...form }),
       });
       localStorage.setItem('token', data.access_token);
-      toast('Welcome back.');
+      toast('Welcome back.', 'success');
       router.push('/dashboard');
     } catch (err: any) {
       toast(err.message || 'Network error. Please try again.');

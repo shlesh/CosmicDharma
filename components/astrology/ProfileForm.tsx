@@ -51,29 +51,44 @@ export default function ProfileForm({
         className="grid gap-4 md:grid-cols-2"
       >
         <div className="md:col-span-2">
-          <label className="block text-sm font-medium mb-1">Name (optional)</label>
-          <Input placeholder="Your name" {...register('name')} />
+          <label htmlFor="pf-name" className="block text-sm font-medium mb-1">Name (optional)</label>
+          <Input id="pf-name" placeholder="Your name" {...register('name')} />
         </div>
 
         <div>
-          <label className="block text-sm font-medium mb-1">Birth Date</label>
-          <Input placeholder="YYYY-MM-DD" {...register('birthDate')} />
+          <label htmlFor="pf-date" className="block text-sm font-medium mb-1">Birth Date</label>
+          <Input
+            id="pf-date"
+            placeholder="YYYY-MM-DD"
+            aria-invalid={!!errors.birthDate || undefined}
+            aria-describedby={errors.birthDate ? 'pf-date-error' : undefined}
+            {...register('birthDate')}
+          />
           {errors.birthDate && (
-            <p className="text-red-600 text-sm mt-1">{errors.birthDate.message}</p>
+            <p id="pf-date-error" className="text-red-600 text-sm mt-1">{errors.birthDate.message}</p>
           )}
         </div>
 
         <div>
-          <label className="block text-sm font-medium mb-1">Birth Time</label>
-          <Input placeholder="HH:MM" {...register('birthTime')} />
+          <label htmlFor="pf-time" className="block text-sm font-medium mb-1">Birth Time</label>
+          <Input
+            id="pf-time"
+            placeholder="HH:MM"
+            aria-invalid={!!errors.birthTime || undefined}
+            aria-describedby={errors.birthTime ? 'pf-time-error' : undefined}
+            {...register('birthTime')}
+          />
           {errors.birthTime && (
-            <p className="text-red-600 text-sm mt-1">{errors.birthTime.message}</p>
+            <p id="pf-time-error" className="text-red-600 text-sm mt-1">{errors.birthTime.message}</p>
           )}
         </div>
 
         <div className="md:col-span-2">
-          <label className="block text-sm font-medium mb-1">Birth Place</label>
+          <label htmlFor="pf-place" className="block text-sm font-medium mb-1">Birth Place</label>
           <LocationAutocomplete
+            id="pf-place"
+            invalid={!!errors.location}
+            describedBy={errors.location ? 'pf-place-error' : undefined}
             value={watch('location')}
             onChange={(v: string) => {
               setValue('location', v, { shouldValidate: true });
@@ -85,12 +100,12 @@ export default function ProfileForm({
             }}
           />
           {errors.location && (
-            <p className="text-red-600 text-sm mt-1">{errors.location.message}</p>
+            <p id="pf-place-error" className="text-red-600 text-sm mt-1">{errors.location.message}</p>
           )}
         </div>
 
         {serverError && (
-          <p className="md:col-span-2 text-red-600 text-sm">{serverError}</p>
+          <p role="alert" className="md:col-span-2 text-red-600 text-sm">{serverError}</p>
         )}
 
         <div className="md:col-span-2 flex gap-3">
