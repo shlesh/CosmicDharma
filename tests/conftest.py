@@ -41,3 +41,10 @@ def test_app():
     finally:
         main.app.dependency_overrides = overrides
 
+
+
+@pytest.fixture(autouse=True)
+def _no_nominatim_throttle(monkeypatch):
+    """The 1 req/s Nominatim throttle would slow every test that geocodes; it has its own test."""
+    from app.core import geocoder
+    monkeypatch.setattr(geocoder, "NOMINATIM_MIN_INTERVAL", 0.0)

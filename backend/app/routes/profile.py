@@ -90,7 +90,7 @@ def _profile_from_panchanga(request: PanchangaRequest) -> ProfileRequest:
         lat=request.lat,
         lon=request.lon,
         ayanamsa=request.ayanamsa if request.ayanamsa in {
-            "yukteswar", "yukteshwar", "lahiri", "raman", "kp", "yukteswar_swiss"
+            "yukteswar", "yukteshwar", "lahiri", "raman", "kp", "yukteswar_swiss", "fagan_bradley"
         } else "yukteswar",
         node_type=request.node_type if request.node_type in {"mean", "true"} else "mean",
         house_system=request.house_system if request.house_system in {

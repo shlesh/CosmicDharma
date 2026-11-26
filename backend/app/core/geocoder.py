@@ -2,6 +2,7 @@ import os
 import time
 import logging
 import asyncio
+import threading
 from functools import lru_cache
 
 from geopy.geocoders import Nominatim
@@ -15,7 +16,25 @@ except ImportError:  # pragma: no cover - googlemaps optional
     gmaps = None
 
 logger = logging.getLogger(__name__)
-_geopy = Nominatim(user_agent="vedic-astrology-geocoder")
+
+# OpenStreetMap's Nominatim usage policy (https://operations.osmfoundation.org/policies/nominatim/):
+# identify the application in the User-Agent and send at most 1 request per second, or the server
+# gets blocked. Put contact details (a URL or e-mail) in NOMINATIM_USER_AGENT in production.
+NOMINATIM_USER_AGENT = os.getenv("NOMINATIM_USER_AGENT", "CosmicDharma/2.1")
+NOMINATIM_MIN_INTERVAL = 1.0  # seconds between requests; tests set this to 0
+_geopy = Nominatim(user_agent=NOMINATIM_USER_AGENT, timeout=10)
+_nominatim_lock = threading.Lock()
+_nominatim_last = 0.0
+
+
+def _nominatim_throttle():
+    """Block until at least NOMINATIM_MIN_INTERVAL has passed since the previous request."""
+    global _nominatim_last
+    with _nominatim_lock:
+        wait = _nominatim_last + NOMINATIM_MIN_INTERVAL - time.monotonic()
+        if wait > 0:
+            time.sleep(wait)
+        _nominatim_last = time.monotonic()
 
 
 def timezone_at(lat: float, lon: float) -> str:
@@ -50,6 +69,7 @@ def _geocode_once(query: str, locale: str | None = None):
 
     if lat is None or lon is None:
         try:
+            _nominatim_throttle()
             if locale:
                 geo = _geopy.geocode(query, exactly_one=True, language=locale)
             else:
@@ -89,7 +109,7 @@ async def _async_geocode_once(query: str, locale: str | None = None):
         if locale:
             params["accept-language"] = locale
         try:
-            async with httpx.AsyncClient() as client:
+            async with httpx.AsyncClient(headers={"User-Agent": NOMINATIM_USER_AGENT}, timeout=10) as client:
                 resp = await client.get("https://nominatim.openstreetmap.org/search", params=params)
                 resp.raise_for_status()
                 data = resp.json()

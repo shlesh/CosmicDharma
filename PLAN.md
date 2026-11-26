@@ -80,9 +80,10 @@ locally. CI is green on GitHub too.
 - [x] #7: only admins can create posts (POST /posts returns 403 otherwise); the /editor page says so.
 - [x] #8: 500s return generic messages (details only in the log). Routes no longer turn our own 4xx errors
       into 500s, and the job status no longer sends Python tracebacks to the browser.
-- [ ] Geocoder: a real Nominatim user agent, rate limiting, and caching results to the DB instead of only an
-      `lru_cache`.
-- [ ] Accept `fagan_bradley` in `ProfileRequest`, or drop it from LINEAGE.md.
+- [x] Geocoder: Nominatim gets an identifying User-Agent (`NOMINATIM_USER_AGENT`) and requests are throttled to
+      1 per second, per OSM policy.
+- [ ] Geocoder: cache results in the DB instead of only an in-process `lru_cache`.
+- [x] `fagan_bradley` is accepted by the API, as LINEAGE.md promises (tested for every documented ayanamsa).
 - [x] **Use the coordinates the user picked.** Profile and panchanga requests now accept `lat`/`lon`
       (validated, both or neither). When present, geocoding is skipped, and the cache keys on the
       coordinates. The panchanga page now sends them too.
