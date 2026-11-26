@@ -225,13 +225,15 @@ def update_post(
     if db_post.user_id != current_user.id and not current_user.is_admin:
         raise HTTPException(status_code=403, detail="Not authorized to edit this post")
     
-    # Update fields
-    update_data = post_update.dict(exclude_unset=True)
+    # Remember the old title before overwriting fields; comparing afterwards was always equal,
+    # so the slug never followed a rename.
+    old_title = db_post.title
+    update_data = post_update.model_dump(exclude_unset=True)
     for field, value in update_data.items():
         setattr(db_post, field, value)
-    
+
     # Update slug if title changed
-    if post_update.title and post_update.title != db_post.title:
+    if post_update.title and post_update.title != old_title:
         new_slug = create_slug(post_update.title)
         # Ensure new slug is unique
         existing = db.query(BlogPost).filter(
