@@ -39,7 +39,8 @@ Goal: both suites pass locally, CI passes on the branch, and `next build` succee
       transpilePackages) and on `pages/profile.test.tsx`, which Next treated as a route. CI now runs the build.
 - [x] `package-lock.json` is committed (the lockfile that produced the tested local node_modules; it includes
       the Linux SWC binaries). CI uses `npm ci` with the npm cache.
-- [ ] Bundle size: /dashboard and /admin each load ~650 KB up front (MDXEditor + Chart.js). Lazy-load them.
+- [x] Bundle size: the admin tools, editor, and Chart.js are lazy-loaded. /dashboard went from 683 to 320 KB of
+      first-load JS, and /admin from 627 to 187 KB.
       There are also two markdown editors (MDXEditor and @uiw/react-md-editor); keep one.
 - [ ] Confirm CI passes on GitHub after the next push.
 

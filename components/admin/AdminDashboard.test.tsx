@@ -77,7 +77,8 @@ test('creates a new post through POST /posts (there is no POST /admin/posts)', a
   renderAdmin();
   fireEvent.click(await screen.findByRole('button', { name: 'New Post' }));
   fireEvent.change(screen.getByPlaceholderText('Post title...'), { target: { value: 'New' } });
-  fireEvent.change(screen.getByLabelText('Content'), { target: { value: 'Body' } });
+  // The editor is lazy-loaded (next/dynamic), so wait for it to appear.
+  fireEvent.change(await screen.findByLabelText('Content'), { target: { value: 'Body' } });
   fireEvent.click(screen.getByRole('button', { name: 'Save' }));
 
   await waitFor(() => expect(apiFetchMock).toHaveBeenCalled());

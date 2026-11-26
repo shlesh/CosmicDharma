@@ -2,8 +2,14 @@ import React, { useEffect, useState } from 'react';
 import useSWR from 'swr';
 import { fetchJson, apiFetch } from '../../util/api';
 import { useToast } from '../ui/ToastProvider';
-import { MDXEditor, headingsPlugin, listsPlugin, quotePlugin, thematicBreakPlugin, markdownShortcutPlugin, linkPlugin, linkDialogPlugin, imagePlugin, tablePlugin, codeBlockPlugin, codeMirrorPlugin, toolbarPlugin, UndoRedo, BoldItalicUnderlineToggles, CreateLink, InsertImage, InsertTable, InsertThematicBreak, ListsToggle } from '@mdxeditor/editor';
-import '@mdxeditor/editor/style.css';
+import dynamic from 'next/dynamic';
+
+// Heavy and only needed on demand: loaded on first use, not with the page.
+const MarkdownEditor = dynamic(() => import('./MarkdownEditor'), {
+  ssr: false,
+  loading: () => <p className="p-4 text-sm text-gray-500">Loading editor…</p>,
+});
+const CountsChart = dynamic(() => import('./CountsChart'), { ssr: false });
 
 interface Post {
   id: number;
@@ -19,17 +25,6 @@ interface User {
   is_donor: boolean;
 }
 
-import { Bar } from 'react-chartjs-2';
-import {
-  Chart,
-  BarElement,
-  CategoryScale,
-  LinearScale,
-  Tooltip,
-  Legend,
-} from 'chart.js';
-
-Chart.register(BarElement, CategoryScale, LinearScale, Tooltip, Legend);
 
 export default function AdminDashboard() {
   const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
@@ -148,29 +143,13 @@ export default function AdminDashboard() {
   if (!mounted) return null;
   if (!token) return <p>Please login.</p>;
 
-  const data = {
-    labels: ['Posts', 'Users'],
-    datasets: [
-      {
-        label: 'Count',
-        data: [posts.length, users.length],
-        backgroundColor: ['rgba(75,192,192,0.5)', 'rgba(153,102,255,0.5)'],
-      },
-    ],
-  };
-
-  const options = {
-    responsive: true,
-    plugins: { legend: { display: false } },
-  };
-
   return (
     <div className="p-6 max-w-6xl mx-auto">
       <h2 className="text-2xl font-bold mb-6">Admin Dashboard</h2>
 
       {((posts || []).length > 0 || (users || []).length > 0) && (
         <div className="mb-8 bg-white p-4 rounded-lg shadow">
-          <Bar data={data} options={options} />
+          <CountsChart posts={posts.length} users={users.length} />
         </div>
       )}
 
@@ -253,37 +232,7 @@ export default function AdminDashboard() {
               />
 
               <div className="border rounded-lg">
-                <MDXEditor
-                  markdown={form.content}
-                  onChange={handleContentChange}
-                  plugins={[
-                    headingsPlugin(),
-                    listsPlugin(),
-                    quotePlugin(),
-                    thematicBreakPlugin(),
-                    markdownShortcutPlugin(),
-                    linkPlugin(),
-                    linkDialogPlugin(),
-                    imagePlugin(),
-                    tablePlugin(),
-                    codeBlockPlugin({ defaultCodeBlockLanguage: 'js' }),
-                    codeMirrorPlugin({ codeBlockLanguages: { js: 'JavaScript', css: 'CSS', txt: 'text' } }),
-                    toolbarPlugin({
-                      toolbarContents: () => (
-                        <>
-                          <UndoRedo />
-                          <BoldItalicUnderlineToggles />
-                          <CreateLink />
-                          <InsertImage />
-                          <InsertTable />
-                          <InsertThematicBreak />
-                          <ListsToggle />
-                        </>
-                      )
-                    })
-                  ]}
-                  className="min-h-[300px]"
-                />
+                <MarkdownEditor markdown={form.content} onChange={handleContentChange} />
               </div>
             </div>
 
