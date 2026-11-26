@@ -21,7 +21,7 @@ export default function EditPostPage() {
         <main className="container mx-auto p-6">
             <h1 className="text-2xl font-bold mb-4">Edit Post</h1>
             <AdminPostForm
-                initial={{ title: post.title, slug: post.slug, summary: post.summary || '', content: post.content, tags: post.tags || '', published: post.published }}
+                initial={{ title: post.title, slug: post.slug, excerpt: post.excerpt || '', content: post.content, tags: post.tags || '', published: post.published }}
                 submitting={update.isPending}
                 onSubmit={(values: PostInput) => update.mutate(values)}
             />

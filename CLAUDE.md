@@ -30,12 +30,12 @@ pages/                    Next.js routes (dashboard/, panchanga, profile, posts/
 components/<area>/        astrology, blog, admin, dashboard, layout, ui
 util/http.ts              THE fetch wrapper (prefixes `${NEXT_PUBLIC_API_BASE_URL}/api`)
 util/api.ts               typed API surface (profileApi, panchangaApi, blogApi) on top of http.ts
-tests/                    backend pytest suite (imports as `backend.app...`)
+tests/                    backend pytest suite (imports `app.*`; pytest.ini puts backend/ on sys.path)
 scripts/dev-ctl.cjs       npm run up/down/status/logs (Windows-aware); logs go to ./logs
 ```
 
-`util/api/client.ts` and `types/index.ts` are a dead parallel API layer, and about a dozen components are
-never imported (see PLAN.md, Phase 2). Don't build on them.
+Several components and hooks are still never imported (see PLAN.md, Phase 2). Check that something
+imports a component before building on it.
 
 ## Commands (Windows, Git Bash or PowerShell)
 
@@ -47,13 +47,20 @@ npm run dev                                      # foreground, both servers via 
 
 npx vitest run                                   # frontend tests (vitest 0.34, jsdom)
 npx vitest run path/to/file.test.tsx             # single file
-npm run test:backend                             # pytest via backend/venv (sets PYTHONPATH=repo root)
-PYTHONPATH=. backend/venv/Scripts/python.exe -m pytest -q tests/test_planets.py
+npm run test:backend                             # pytest via backend/venv
+backend/venv/Scripts/python.exe -m pytest -q tests/test_planets.py
+npx tsc --noEmit                                 # typecheck; `next build` fails on any type error
 ```
 
-The backend venv is at `backend/venv` (Python 3.11, `Scripts/` on Windows, `bin/` in CI).
-The backend runs **from inside `backend/`** (`uvicorn main:app`), which is why `main.py` imports `app.*`,
-while the tests import `backend.app.*`. Keep both import roots working.
+The backend venv is at `backend/venv` (Python 3.11, `Scripts/` on Windows). CI installs
+`backend/requirements-dev.txt` into a plain Python, with no venv.
+There is exactly **one** import root for backend code: `app.*`, resolved from `backend/`. The server runs from
+inside `backend/` (`uvicorn main:app`), and pytest.ini adds `backend` to `pythonpath`. Never import
+`backend.app.*`: a second root loads every module twice, and monkeypatches silently miss.
+
+Frontend tests: Vitest 0.34 + jsdom, with the `@/` alias and automatic JSX set in vitest.config.js, and RTL
+cleanup in vitest.setup.ts. Mock `@/util/api` by named export (`apiFetch`, `fetchJson`, `blogApi`, ...).
+Wrap components that use React Query or SWR in their providers (see DashboardPage.test.tsx).
 
 ## Calculation conventions
 
@@ -64,7 +71,8 @@ while the tests import `backend.app.*`. Keep both import roots working.
   `yukteswar_swiss`, `fagan_bradley`. `ProfileRequest.ayanamsa` currently doesn't accept `fagan_bradley`.
 - Any change to astrology output must be checked against a reference chart (see the golden-chart tests in
   PLAN.md). Don't change numbers just because a test expects different ones; find out which side is right.
-- Bump the cache key prefix (`profile:v4:`) in `astro.py` when the response shape or math changes.
+- Bump the cache key prefix (currently `profile:v5:`) in `astro.py` when the response shape or math changes.
+- Timezones come from `geocoder.timezone_at()` (tzfpy, which takes **lon, lat**), imported lazily.
 
 ## Rules for working here
 
@@ -77,6 +85,11 @@ while the tests import `backend.app.*`. Keep both import roots working.
 - Don't commit `backend/.env`, `.env.local`, `backend/app.db`, or `logs/`.
 - Commit messages: imperative mood, subject under 72 chars (see AGENTS.md).
 - Windows quirks: the repo path contains a space (`git stuff`), so quote paths. Spawned servers must be
-  detached (see dev-ctl.cjs history). Windows Application Control has been seen blocking the `h3` DLL that
-  `timezonefinder` imports. If imports fail with "Application Control policy has blocked this file",
-  that is the OS, not the code.
+  detached (see dev-ctl.cjs history). `python3` is the Microsoft Store stub and hangs, so use
+  `backend/venv/Scripts/python.exe`. SQLite URLs need Windows or relative paths, not `/c/...`.
+  Console output is cp1252, so keep `print()` text ASCII in scripts.
+- **Smart App Control is ON (enforcing) on this machine.** It blocks unsigned native Python extensions
+  (`.pyd`) one file at a time and unpredictably: `h3` and `tzfpy` were both blocked, while older installs like
+  `pydantic_core` still load. Error: "DLL load failed ... An Application Control policy has blocked this
+  file". That's the OS, not the code. It means a live geocode→timezone lookup can't run locally.
+  Tests stub it, so they still pass. Don't burn time on per-package workarounds; see PLAN.md.

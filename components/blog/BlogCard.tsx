@@ -39,9 +39,9 @@ const BlogCard: React.FC<BlogCardProps> = ({ post }) => {
         </div>
       </div>
 
-      {post.summary && (
+      {post.excerpt && (
         <p className="text-gray-600 mb-4 line-clamp-3">
-          {post.summary}
+          {post.excerpt}
         </p>
       )}
 

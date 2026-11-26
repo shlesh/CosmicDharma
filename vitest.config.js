@@ -12,8 +12,8 @@ export default defineConfig({
     environment: 'jsdom',
     setupFiles: ['./vitest.setup.ts'],
     include: [
+      // Never put tests under pages/: Next turns every file there into a route and the build fails.
       'components/**/*.test.{js,jsx,ts,tsx}',
-      'pages/**/*.test.{js,jsx,ts,tsx}',
       'util/**/*.test.{js,jsx,ts,tsx}'
     ],
     coverage: {

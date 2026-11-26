@@ -26,18 +26,37 @@ JWT auth, and the Windows `npm run up/down` tooling.
 | 12 | Dead code: `util/api/client.ts`, `types/index.ts`, ~12 unused components and hooks, 8 overlapping start scripts, and README/SETUP/RUN docs that describe Redis | various |
 | 13 | No reference-chart tests, so nobody has verified that the numbers match established software | tests/ |
 
-## Phase 0: get green (start here)
+## Phase 0: get green (done 2026-11-26)
 
-Goal: `npm run test:all` passes locally and CI passes on the branch.
+Goal: both suites pass locally, CI passes on the branch, and `next build` succeeds.
 
-- [ ] Make the backend importable both ways (`app.*` from inside backend/, `backend.app.*` from the repo root).
-      Simplest fix: conftest inserts `backend/` on `sys.path` before importing.
-- [ ] Clean the requirements: drop the `swisseph` placeholder and duplicate lines, add `pyyaml`, and decide
-      whether redis/rq/fakeredis stay.
-- [ ] Rewrite `test_jobs.py` / `test_cache.py` against the in-memory job store and cache, or delete them.
-- [ ] Fix the frontend test import paths, then fix or delete each stale assertion (one at a time; decide
-      whether the test or the component is right).
-- [ ] CI: the Node and Python versions match local, and pip installs requirements-dev.
+- [x] Single backend import root (`app.*`, via pytest.ini `pythonpath = backend`). Items 1 and 3 are fixed.
+- [x] Requirements cleaned and pinned; redis/rq/fakeredis dropped; timezonefinder → tzfpy. Item 4 is fixed.
+- [x] Frontend tests repaired (27 pass); backend 89 pass. Item 2 is fixed.
+- [x] CI split into frontend and backend jobs on Node 20 / Python 3.11.
+- [x] `tsc --noEmit` clean (26 errors fixed); `components/ui/Index.ts` → `index.ts`, which broke Linux builds.
+- [x] `next build` passes (16 routes). It was failing on @uiw/react-md-editor's global CSS (now in
+      transpilePackages) and on `pages/profile.test.tsx`, which Next treated as a route. CI now runs the build.
+- [ ] Bundle size: /dashboard and /admin each load ~650 KB up front (MDXEditor + Chart.js). Lazy-load them.
+      There are also two markdown editors (MDXEditor and @uiw/react-md-editor); keep one.
+- [ ] Confirm CI passes on GitHub after the next push.
+
+Real bugs fixed along the way: Saturn's ashtakavarga had an extra bindu (40, should be 39); admin edit-post
+always returned 500; admin new-post POSTed to a route that doesn't exist; getPostById hit the slug route;
+`/admin/posts/new` declared `create` twice, so it couldn't compile; `/editor` imported a missing
+`getCurrentUser`, so it always bounced to /login; the post excerpt was sent as `summary` and dropped;
+the seed script was broken three ways.
+
+## Blocker: local backend on this PC
+
+Smart App Control is enforcing, and it blocks unsigned native Python extensions, unpredictably (h3 and
+tzfpy so far). Tests pass because they stub geocoding, but a real chart request can't resolve a timezone
+locally. Options, in the user's hands:
+1. **WSL2 (recommended):** develop inside Ubuntu, where SAC doesn't apply and the setup matches the
+   Linux hosting. Keep the repo in the WSL filesystem.
+2. Turn SAC off (Windows Security → App & browser control). This is one-way: re-enabling needs a Windows
+   reset.
+3. Docker / the existing .devcontainer (Docker Desktop runs on WSL2 anyway).
 
 ## Phase 1: correctness and security
 
@@ -49,6 +68,17 @@ Goal: `npm run test:all` passes locally and CI passes on the branch.
 - [ ] Geocoder: a real Nominatim user agent, rate limiting, and caching results to the DB instead of only an
       `lru_cache`.
 - [ ] Accept `fagan_bradley` in `ProfileRequest`, or drop it from LINEAGE.md.
+- [ ] **Use the coordinates the user picked.** ProfileForm sends lat/lon from autocomplete, but
+      ProfileRequest has no such fields, so the backend re-geocodes the label text and can land on a
+      different place.
+- [ ] The register page has an "I want to support as a donor" checkbox that grants donor status for free
+      (this is item 5 seen from the UI). Remove it; donor status should come from an actual payment or admin.
+- [ ] `PUT /posts/{id}` sets the title before checking whether it changed, so the slug never updates.
+- [ ] Shadbala kala bala is partial (nathonnata, paksha, and vara only; no tribhaga, abda, masa, hora, ayana,
+      or yuddha). Complete it or label it as approximate in the UI.
+- [ ] `GOOGLE_MAPS_API_KEY` does nothing: the `googlemaps` package isn't in requirements.
+- [ ] ProfileForm labels aren't linked to their inputs (no htmlFor/id), so screen readers can't announce them.
+- [ ] Toasts are always red, success included.
 
 ## Phase 2: cleanup
 
@@ -59,6 +89,12 @@ Goal: `npm run test:all` passes locally and CI passes on the branch.
 - [ ] Rewrite the README and merge in SETUP.md and RUN.md; document the real architecture.
 - [ ] Decide between /api and root mounting, keep one, and drop the other (the frontend uses /api).
 - [ ] Prune the stale `codex/*` remote branches.
+- [ ] Still-unused frontend files: LocationSearch, DashboardLayout, PageHead, DatePicker, TimePicker,
+      LoadingStates, hooks/useForm. (Navbar, LandingPage, ErrorBoundary, GlassCard, util/api/client.ts,
+      and types/index.ts are already deleted.)
+- [ ] scripts/script.sh (1,100+ lines) calls a `scripts.seed_db` module that doesn't exist; seeding is
+      `backend/seed_demo.py`.
+- [ ] The dashboard page still uses the old gray/white theme, not the night-sky one.
 
 ## Phase 3: product
 
@@ -67,9 +103,15 @@ Pick a direction before building. Candidates:
 - **Readable report:** a narrative reading assembled from the existing interpretations, exportable as a PDF.
   This could be the donor perk, since today the donor "prompts/reports" endpoints just store text.
 - **Daily panchanga** for a saved location, as the home screen for returning users.
-- **Deploy:** a Netlify Next runtime build through the git integration (fixes #11), Postgres on the API host,
-  and Alembic migrations instead of `create_all`.
+- **Deploy (direction agreed 2026-11-26):** frontend on Netlify through its git integration and Next runtime
+  (fixes #11), at `cosmicdharma.app`; the domain stays registered at Hostinger, with DNS pointed at Netlify.
+  The backend can't run on Hostinger's cheapest (shared) tier, so host it on Render, Railway, or Fly.io at
+  `api.cosmicdharma.app` via CNAME, with managed Postgres (Neon or Supabase), since those hosts usually wipe
+  the local disk on redeploy. Check current free-tier limits first; free tiers sleep when idle. Alembic
+  migrations instead of `create_all`. Rewrite deploy.yml, which assumes SSH + systemctl on a VPS.
 
 ## Log
 
 - 2026-11-26: repo audit; CLAUDE.md and this plan created.
+- 2026-11-26: Phase 0. Both suites green (89 backend, 27 frontend), tsc clean, 9 real bugs fixed, and the
+  Smart App Control blocker found.

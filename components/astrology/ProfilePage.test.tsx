@@ -1,6 +1,6 @@
 import { render, screen } from '@testing-library/react';
 import { beforeEach, expect, test, vi } from 'vitest';
-import ProfilePage from './profile';
+import ProfilePage from '@/pages/profile';
 
 // The page is a thin view over useProfileJob; drive it through the hook's states.
 const hookState: Record<string, any> = {};

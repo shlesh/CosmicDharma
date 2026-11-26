@@ -17,6 +17,8 @@ jobs:
           cache: npm
       - run: npm install --legacy-peer-deps
       - run: npm run test:frontend
+      # Same build Netlify runs; it fails on any type error or bad import.
+      - run: npm run build
 
   backend:
     runs-on: ubuntu-latest

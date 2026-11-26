@@ -2,7 +2,10 @@ import React from 'react';
 import { motion } from 'framer-motion';
 import { cn } from '../../util/cn';
 
-interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
+// framer-motion redefines drag/animation handlers with its own signatures.
+type MotionConflicts = 'onDrag' | 'onDragStart' | 'onDragEnd' | 'onAnimationStart';
+
+interface ButtonProps extends Omit<React.ButtonHTMLAttributes<HTMLButtonElement>, MotionConflicts> {
   variant?: 'primary' | 'secondary' | 'ghost' | 'glass' | 'cosmic';
   size?: 'sm' | 'md' | 'lg';
   loading?: boolean;

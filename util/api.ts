@@ -52,7 +52,13 @@ export interface ProfileResult {
   yogas?: Record<string, any>;
   shadbala?: Record<string, any>;
   bhavaBala?: Record<string, any>;
+  vargottamaPlanets?: string[];
 }
+
+export interface CurrentUser { username: string; email: string; is_admin: boolean; is_donor: boolean }
+
+/** The logged-in user (http() attaches the stored bearer token). Throws if not logged in. */
+export const getCurrentUser = () => get<CurrentUser>('/users/me');
 
 export interface JobStatusResponse {
   job_id: string;

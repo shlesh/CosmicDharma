@@ -3,7 +3,6 @@ import { useCreatePost } from '@/hooks/useBlog';
 
 export default function NewPostPage() {
     const create = useCreatePost();
-    const create = useCreatePost();
 
     return (
         <main className="container mx-auto p-6">

@@ -5,6 +5,8 @@ import runtimeCaching from 'next-pwa/cache';
 const nextConfig: NextConfig = {
   reactStrictMode: true,
   output: 'standalone',
+  // These import their own global CSS, which the pages router only allows for transpiled packages.
+  transpilePackages: ['@uiw/react-md-editor', '@uiw/react-markdown-preview'],
   allowedDevOrigins: [
     'http://127.0.0.1:3000',
     'http://localhost:3000',
@@ -25,7 +27,7 @@ export default withPWA({
   runtimeCaching: [
     ...runtimeCaching,
     {
-      urlPattern: ({ url }) => url.pathname.startsWith('/api'),
+      urlPattern: ({ url }: { url: URL }) => url.pathname.startsWith('/api'),
       handler: 'NetworkFirst',
       method: 'GET', // ✅ Do NOT cache non-GET
       options: {
