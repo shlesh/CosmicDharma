@@ -1,7 +1,7 @@
 [build]
-  command = "rm -rf .next node_modules/.cache && npm run build"
+  command = "npm run build"
   publish = ".next"
-  # Node 20: Node 18 is end-of-life and current Next.js runtimes need a newer Node.
+  # Node 20: Node 18 is end-of-life.
   environment = { NODE_VERSION = "20", NPM_FLAGS = "--legacy-peer-deps" }
 
 # Netlify's Next.js runtime (OpenNext). Normally auto-installed, but deploys showed
