@@ -14,7 +14,8 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
-      - run: npm install --legacy-peer-deps
+          cache: npm
+      - run: npm ci --legacy-peer-deps   # exact versions from package-lock.json
       - run: npm run test:frontend
       # Same build Netlify runs; it fails on any type error or bad import.
       - run: npm run build
