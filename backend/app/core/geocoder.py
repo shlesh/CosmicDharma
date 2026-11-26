@@ -27,6 +27,52 @@ _nominatim_lock = threading.Lock()
 _nominatim_last = 0.0
 
 
+# Photon (https://photon.komoot.io, by Komoot) is a second free OpenStreetMap geocoder. Nominatim
+# blocks many shared cloud IP ranges (Render's included), so a server-side lookup that Nominatim
+# refuses falls back to Photon. Photon only knows a few UI languages; others use its default.
+PHOTON_URL = "https://photon.komoot.io/api/"
+_PHOTON_LANGS = {"en", "de", "fr"}
+
+
+def _photon_params(query: str, locale: str | None) -> dict:
+    params = {"q": query, "limit": 1}
+    lang = (locale or "").split("-")[0].lower()
+    if lang in _PHOTON_LANGS:
+        params["lang"] = lang
+    return params
+
+
+def _photon_point(data: dict):
+    """(lat, lon) from a Photon GeoJSON response; Photon gives coordinates as [lon, lat]."""
+    features = (data or {}).get("features") or []
+    if not features:
+        return None, None
+    lon, lat = features[0]["geometry"]["coordinates"][:2]
+    return float(lat), float(lon)
+
+
+def _photon_geocode(query: str, locale: str | None = None):
+    try:
+        with httpx.Client(headers={"User-Agent": NOMINATIM_USER_AGENT}, timeout=10) as client:
+            resp = client.get(PHOTON_URL, params=_photon_params(query, locale))
+            resp.raise_for_status()
+            return _photon_point(resp.json())
+    except Exception as ex:  # pragma: no cover - network
+        logger.warning("Photon geocode failed: %s", ex)
+        return None, None
+
+
+async def _photon_geocode_async(query: str, locale: str | None = None):
+    try:
+        async with httpx.AsyncClient(headers={"User-Agent": NOMINATIM_USER_AGENT}, timeout=10) as client:
+            resp = await client.get(PHOTON_URL, params=_photon_params(query, locale))
+            resp.raise_for_status()
+            return _photon_point(resp.json())
+    except Exception as ex:  # pragma: no cover - network
+        logger.warning("Photon geocode failed: %s", ex)
+        return None, None
+
+
 def _nominatim_throttle():
     """Block until at least NOMINATIM_MIN_INTERVAL has passed since the previous request."""
     global _nominatim_last
@@ -79,6 +125,9 @@ def _geocode_once(query: str, locale: str | None = None):
         except Exception as ex:  # pragma: no cover - network
             logger.warning("Geopy geocode failed: %s", ex)
 
+    if lat is None or lon is None:
+        lat, lon = _photon_geocode(query, locale)
+
     return lat, lon, tz
 
 
@@ -118,6 +167,9 @@ async def _async_geocode_once(query: str, locale: str | None = None):
                     lon = float(data[0]["lon"])
         except Exception as ex:  # pragma: no cover - network
             logger.warning("Async geocode failed: %s", ex)
+
+    if lat is None or lon is None:
+        lat, lon = await _photon_geocode_async(query, locale)
 
     return lat, lon, tz
 

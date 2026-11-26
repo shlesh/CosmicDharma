@@ -121,6 +121,10 @@ work on a single server process and are lost on restart. There's no Redis.
 | API | **Render**, free web service ([render.yaml](render.yaml)) | Render deploys `main` once the GitHub checks pass. |
 | Database | **Neon**, free Postgres | `DATABASE_URL` on Render. `postgres://` URLs are rewritten to the psycopg 3 driver. |
 
+Live now: the API is at `https://cosmicdharma-api.onrender.com` (`NEXT_PUBLIC_API_BASE_URL` on Netlify and
+`API_URL` on GitHub both point there). Moving it to `api.cosmicdharma.app` is optional (step 3), and then both
+variables change to match.
+
 First-time API setup:
 
 1. In **Neon**, create a project in AWS Singapore (`ap-southeast-1`) and copy the connection string.

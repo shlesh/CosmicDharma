@@ -152,3 +152,58 @@ def test_nominatim_requests_are_spaced_out(monkeypatch):
 def test_nominatim_gets_an_identifying_user_agent():
     assert geocoder._geopy.headers["User-Agent"] == geocoder.NOMINATIM_USER_AGENT
     assert "python" not in geocoder.NOMINATIM_USER_AGENT.lower()
+
+
+
+PHOTON_VARANASI = {"features": [{"geometry": {"type": "Point", "coordinates": [83.0076, 25.3356]}}]}
+
+
+def test_photon_point_swaps_lon_lat():
+    assert geocoder._photon_point(PHOTON_VARANASI) == (25.3356, 83.0076)
+    assert geocoder._photon_point({"features": []}) == (None, None)
+
+
+def test_photon_params_only_pass_supported_languages():
+    assert geocoder._photon_params("x", "en-IN") == {"q": "x", "limit": 1, "lang": "en"}
+    assert "lang" not in geocoder._photon_params("x", "hi")
+    assert "lang" not in geocoder._photon_params("x", None)
+
+
+def test_falls_back_to_photon_when_nominatim_refuses(monkeypatch):
+    """Nominatim blocks many cloud IPs (it refused Render's); Photon then answers."""
+    geocoder.geocode_location.cache_clear()
+    monkeypatch.setattr(geocoder, "gmaps", None)
+
+    def refused(q, exactly_one=True, **kw):
+        raise RuntimeError("403 Forbidden")
+
+    monkeypatch.setattr(geocoder._geopy, "geocode", refused)
+    calls = []
+
+    def photon(query, locale=None):
+        calls.append(query)
+        return 25.3356, 83.0076
+
+    monkeypatch.setattr(geocoder, "_photon_geocode", photon)
+    monkeypatch.setattr(geocoder, "timezone_at", lambda lat, lon: "Asia/Kolkata")
+    assert geocoder.geocode_location("Varanasi, India") == (25.3356, 83.0076, "Asia/Kolkata")
+    assert calls == ["Varanasi, India"]
+
+
+@pytest.mark.asyncio
+async def test_async_falls_back_to_photon(monkeypatch):
+    monkeypatch.setattr(geocoder, "gmaps", None)
+
+    class FailingClient:
+        def __init__(self, *a, **kw): pass
+        async def __aenter__(self): return self
+        async def __aexit__(self, *exc): return False
+        async def get(self, *a, **kw): raise RuntimeError("403 Forbidden")
+
+    async def photon(query, locale=None):
+        return 25.3356, 83.0076
+
+    monkeypatch.setattr(geocoder.httpx, "AsyncClient", FailingClient)
+    monkeypatch.setattr(geocoder, "_photon_geocode_async", photon)
+    monkeypatch.setattr(geocoder, "timezone_at", lambda lat, lon: "Asia/Kolkata")
+    assert await geocoder.geocode_location_async("Varanasi, India") == (25.3356, 83.0076, "Asia/Kolkata")

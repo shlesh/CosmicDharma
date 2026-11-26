@@ -143,3 +143,6 @@ Pick a direction before building. Candidates:
   Railway/Fly/Koyeb no longer have real free tiers. Fixed password reset on Postgres (aware vs naive
   datetimes raised TypeError). keep-alive.yml pings /health every 10 min once the API_URL variable is set.
   deploy.yml (SSH/systemctl) deleted. Remaining for go-live: the user creates the Neon and Render accounts.
+- 2026-11-26: The API is live on Render (cosmicdharma-api.onrender.com), backed by Neon in Singapore. Nominatim
+  refuses Render's IPs, so server-side geocoding falls back to Photon (photon.komoot.io). Netlify's
+  NEXT_PUBLIC_API_BASE_URL and GitHub's API_URL are set.
