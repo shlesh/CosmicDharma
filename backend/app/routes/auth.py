@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from secrets import token_urlsafe
 
 from fastapi import APIRouter, Depends, HTTPException, Response
@@ -84,6 +84,12 @@ def logout():
     return {"message": "Logged out"}
 
 
+def _as_utc(moment: datetime) -> datetime:
+    """Postgres returns timezone-aware datetimes and SQLite naive ones (stored as UTC).
+    Comparing the two raises TypeError, so make both aware before comparing."""
+    return moment if moment.tzinfo else moment.replace(tzinfo=timezone.utc)
+
+
 @router.post("/request-reset")
 def request_password_reset(
     payload: ResetRequest,
@@ -93,7 +99,7 @@ def request_password_reset(
     if not user:
         return {"message": "If the email exists, a reset link was sent."}
     token = token_urlsafe(32)
-    expires = datetime.utcnow() + timedelta(hours=1)
+    expires = datetime.now(timezone.utc) + timedelta(hours=1)
     db_token = PasswordResetToken(user_id=user.id, token=token, expires_at=expires)
     db.add(db_token)
     db.commit()
@@ -114,7 +120,7 @@ def reset_password(
         )
         .first()
     )
-    if not db_token or db_token.expires_at < datetime.utcnow():
+    if not db_token or _as_utc(db_token.expires_at) < datetime.now(timezone.utc):
         raise HTTPException(status_code=400, detail="Invalid or expired token")
     user = db.get(User, db_token.user_id)
     user.hashed_password = get_password_hash(payload.new_password)

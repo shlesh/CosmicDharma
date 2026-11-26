@@ -9,6 +9,7 @@ pytz>=2024.1
 geopy~=2.5.0
 httpx~=0.24.1            # <0.25 keeps starlette's TestClient working
 SQLAlchemy~=2.0.54
+psycopg[binary]~=3.3.9      # Postgres driver (production DB); db.py rewrites postgres:// URLs to use it
 passlib[bcrypt]~=1.7.4
 bcrypt<4.0               # passlib 1.7 breaks on bcrypt 4's removed __about__
 python-jose[cryptography]~=3.5.0

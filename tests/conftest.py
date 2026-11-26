@@ -15,13 +15,27 @@ from app import models
 from app.core import auth
 
 
-@pytest.fixture
-def test_app():
-    engine = create_engine(
+# CI also runs the suite against a real Postgres (see .github/workflows/tests.yml) by setting
+# TEST_DATABASE_URL. Locally it's unset, and each test gets a fresh in-memory SQLite.
+TEST_DATABASE_URL = os.getenv("TEST_DATABASE_URL")
+
+
+def _make_test_engine():
+    if TEST_DATABASE_URL:
+        from app.core.db import make_engine
+        engine = make_engine(TEST_DATABASE_URL)
+        models.Base.metadata.drop_all(bind=engine)
+        return engine
+    return create_engine(
         "sqlite:///:memory:",
         connect_args={"check_same_thread": False},
         poolclass=sqlalchemy.pool.StaticPool,
     )
+
+
+@pytest.fixture
+def test_app():
+    engine = _make_test_engine()
     TestingSession = sessionmaker(bind=engine)
     models.Base.metadata.create_all(bind=engine)
 
@@ -40,6 +54,9 @@ def test_app():
         yield client, TestingSession
     finally:
         main.app.dependency_overrides = overrides
+        if TEST_DATABASE_URL:
+            models.Base.metadata.drop_all(bind=engine)
+        engine.dispose()
 
 
 

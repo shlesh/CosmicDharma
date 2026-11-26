@@ -1,0 +1,17 @@
+# Render's free web services sleep after 15 minutes without traffic, and the first request after
+# that waits about a minute. Pinging /health keeps the API awake (750 free hours/month covers one
+# service around the clock). Set the repository variable API_URL (Settings -> Secrets and variables
+# -> Actions -> Variables), e.g. https://api.cosmicdharma.app. Without it this does nothing.
+name: keep-alive
+
+on:
+  schedule:
+    - cron: '*/10 * * * *'
+  workflow_dispatch:
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    if: vars.API_URL != ''
+    steps:
+      - run: curl -fsS --max-time 90 --retry 2 "${{ vars.API_URL }}/health"

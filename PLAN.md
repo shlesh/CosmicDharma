@@ -109,7 +109,7 @@ locally. CI is green on GitHub too.
       (`npm test` starts Vitest in watch mode, so an agent following it would hang).
 - [ ] `AYANAMSA` / `NODE_TYPE` / `HOUSE_SYSTEM` in config.yaml and .env are never read; the defaults are hard-coded
       in `ProfileRequest`. Wire them up or delete them.
-- [ ] docker-compose runs Postgres, but no Postgres driver is in requirements.txt.
+- [x] Postgres driver: psycopg 3 is in requirements; CI runs the backend suite on Postgres 16 too.
 - [ ] Decide between /api and root mounting, keep one, and drop the other (the frontend uses /api).
 - [x] Pruned every merged or abandoned branch (21, including the old `codex/*` ones); closed PRs keep their commits.
 - [ ] The dashboard page still uses the old gray/white theme, not the night-sky one.
@@ -137,3 +137,7 @@ Pick a direction before building. Candidates:
   because Netlify refuses to upload a server function built with a Next.js version that has CVE-2025-55182
   (15.3.4), so Next was upgraded to 15.5.29. DNS for cosmicdharma.app is on Netlify DNS; the HTTPS
   certificate still has to be issued. Still open: hosting the backend, then setting `NEXT_PUBLIC_API_BASE_URL`.
+- 2026-11-26: Backend hosting chosen: Render free web service (render.yaml, Singapore) + Neon free Postgres.
+  Railway/Fly/Koyeb no longer have real free tiers. Fixed password reset on Postgres (aware vs naive
+  datetimes raised TypeError). keep-alive.yml pings /health every 10 min once the API_URL variable is set.
+  deploy.yml (SSH/systemctl) deleted. Remaining for go-live: the user creates the Neon and Render accounts.

@@ -68,6 +68,8 @@ Wrap components that use React Query or SWR in their providers (see DashboardPag
   (dev-ctl, dev-backend, run_server.py) set `APP_ENV=development`; tests/conftest.py sets `test`, which also
   skips loading `.env`. If you run `uvicorn` by hand, have `APP_ENV=development` in `backend/.env`.
 - Demo data: `backend/seed_demo.py` (development only; it creates admin/admin, user/password, donor/donor).
+- Production DB is Neon Postgres. Keep models portable: tests run on SQLite locally and on Postgres in CI
+  (`TEST_DATABASE_URL`). Compare datetimes as timezone-aware (Postgres returns aware values).
 - Error responses: 4xx carry our own messages; 500s are generic and the details go to the log. In routes,
   always `except HTTPException: raise` before a catch-all `except Exception`.
 
@@ -86,7 +88,7 @@ Wrap components that use React Query or SWR in their providers (see DashboardPag
 ## Rules for working here
 
 - Branches: work on a short-lived branch, open a PR, merge it when CI passes, then delete the branch. `main` is
-  the only long-lived branch. Pushing to main triggers a Netlify deploy (the SSH `Deploy` workflow is manual-only).
+  the only long-lived branch. Pushing to main deploys the frontend (Netlify) and, once checks pass, the API (Render, render.yaml).
   The user has OK'd merging green PRs; ask before anything touching DNS, Netlify settings or other accounts.
 - Run both test suites before committing. If a test is wrong rather than the code, fix the test and say so in
   the commit body.
