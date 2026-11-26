@@ -37,6 +37,9 @@ Goal: both suites pass locally, CI passes on the branch, and `next build` succee
 - [x] `tsc --noEmit` clean (26 errors fixed); `components/ui/Index.ts` → `index.ts`, which broke Linux builds.
 - [x] `next build` passes (16 routes). It was failing on @uiw/react-md-editor's global CSS (now in
       transpilePackages) and on `pages/profile.test.tsx`, which Next treated as a route. CI now runs the build.
+- [ ] Commit `package-lock.json`. It's gitignored today, so CI and Netlify resolve fresh versions on every
+      install (the same drift that broke the backend). Regenerate it on Linux (CI or WSL) so it includes Linux
+      optional deps, then switch CI to `npm ci` with `cache: npm`.
 - [ ] Bundle size: /dashboard and /admin each load ~650 KB up front (MDXEditor + Chart.js). Lazy-load them.
       There are also two markdown editors (MDXEditor and @uiw/react-md-editor); keep one.
 - [ ] Confirm CI passes on GitHub after the next push.
