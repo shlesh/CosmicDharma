@@ -136,3 +136,17 @@ def test_4xx_from_the_service_is_not_turned_into_a_500(test_app, monkeypatch):
         resp = client.post(path, json=body)
         assert resp.status_code == 400, path
         assert "Atlantis" in resp.text, path
+
+
+def test_renaming_a_post_updates_its_slug(test_app):
+    client, Session = test_app
+    _users(Session)
+    created = client.post("/api/posts", json={"title": "Old Name", "content": "c"}, headers=_bearer("boss")).json()
+    assert created["slug"] == "old-name"
+    resp = client.put(f"/api/posts/{created['id']}", json={"title": "New Name"}, headers=_bearer("boss"))
+    assert resp.status_code == 200
+    assert resp.json()["slug"] == "new-name"
+    assert client.get("/api/posts/new-name").status_code == 200
+    # Editing other fields keeps the slug.
+    resp = client.put(f"/api/posts/{created['id']}", json={"content": "updated"}, headers=_bearer("boss"))
+    assert resp.json()["slug"] == "new-name"

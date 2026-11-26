@@ -91,7 +91,7 @@ locally. CI is green on GitHub too.
 - [x] The register page's "support as a donor" checkbox is gone.
 - [x] The custom 422 handler crashed on ValueError-based validators, so "birth date cannot be in the
       future" showed users "Internal server error". It now uses `jsonable_encoder`.
-- [ ] `PUT /posts/{id}` sets the title before checking whether it changed, so the slug never updates.
+- [x] `PUT /posts/{id}` set the title before checking whether it changed, so the slug never updated. Fixed.
 - [ ] Shadbala kala bala is partial (nathonnata, paksha, and vara only; no tribhaga, abda, masa, hora, ayana,
       or yuddha). Complete it or label it as approximate in the UI.
 - [ ] `GOOGLE_MAPS_API_KEY` does nothing: the `googlemaps` package isn't in requirements.
