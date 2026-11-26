@@ -65,3 +65,15 @@ def _no_nominatim_throttle(monkeypatch):
     """The 1 req/s Nominatim throttle would slow every test that geocodes; it has its own test."""
     from app.core import geocoder
     monkeypatch.setattr(geocoder, "NOMINATIM_MIN_INTERVAL", 0.0)
+
+
+@pytest.fixture(autouse=True)
+def _no_photon(monkeypatch):
+    """Keep tests off the network: the Photon fallback finds nothing unless a test says otherwise."""
+    from app.core import geocoder
+
+    async def _none_async(query, locale=None):
+        return None, None
+
+    monkeypatch.setattr(geocoder, "_photon_geocode", lambda query, locale=None: (None, None))
+    monkeypatch.setattr(geocoder, "_photon_geocode_async", _none_async)
