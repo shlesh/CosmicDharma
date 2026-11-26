@@ -12,7 +12,6 @@ interface RegisterForm {
   email: string;
   password: string;
   confirmPassword: string;
-  is_donor: boolean;
 }
 
 export default function RegisterPage() {
@@ -23,17 +22,11 @@ export default function RegisterPage() {
     email: '',
     password: '',
     confirmPassword: '',
-    is_donor: false
   });
   const [loading, setLoading] = useState(false);
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value, type, checked } = e.target;
-    setForm({
-      ...form,
-      [name]: type === 'checkbox' ? checked : value
-    });
-  };
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) =>
+    setForm({ ...form, [e.target.name]: e.target.value });
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -57,8 +50,7 @@ export default function RegisterPage() {
         body: JSON.stringify({
           username: form.username,
           email: form.email,
-          password: form.password,
-          is_donor: form.is_donor
+          password: form.password
         })
       });
 
@@ -158,22 +150,6 @@ export default function RegisterPage() {
                          bg-white dark:bg-gray-900 
                          focus:border-purple-600 focus:ring-2 focus:ring-purple-600/20"
               />
-            </div>
-
-            <div className="flex items-center">
-              <input
-                id="is_donor"
-                name="is_donor"
-                type="checkbox"
-                checked={form.is_donor}
-                onChange={handleChange}
-                className="w-4 h-4 text-purple-600 bg-gray-100 border-gray-300 rounded 
-                         focus:ring-purple-500 dark:focus:ring-purple-600 dark:ring-offset-gray-800 
-                         focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
-              />
-              <label htmlFor="is_donor" className="ml-2 text-sm text-gray-700 dark:text-gray-300">
-                I want to support as a donor (access to premium features)
-              </label>
             </div>
 
             <Button

@@ -36,8 +36,21 @@ test('registers, stores the token and continues to the profile page', async () =
   await waitFor(() => expect(push).toHaveBeenCalledWith('/profile'));
   const [path, init] = fetchMock.mock.calls[0];
   expect(path).toBe('/register');
-  expect(JSON.parse(init.body)).toMatchObject({ username: 'u', email: 'u@example.com', password: 'secret1' });
+  const body = JSON.parse(init.body);
+  expect(body).toEqual({ username: 'u', email: 'u@example.com', password: 'secret1' });
+  expect(body).not.toHaveProperty('is_donor'); // donor status is granted by an admin
+
   expect(localStorage.getItem('token')).toBe('new');
+});
+
+test('offers no way to self-select donor access', () => {
+  render(
+    <ToastProvider>
+      <RegisterPage />
+    </ToastProvider>
+  );
+  expect(screen.queryByRole('checkbox')).toBeNull();
+  expect(screen.queryByText(/donor/i)).toBeNull();
 });
 
 test('refuses mismatched passwords without calling the API', async () => {

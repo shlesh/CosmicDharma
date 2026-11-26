@@ -11,9 +11,12 @@ interface Post {
   content: string;
 }
 
+// Shape of GET /admin/users (UserOut); there is no id, so username is the key.
 interface User {
-  id: number;
   username: string;
+  email: string;
+  is_admin: boolean;
+  is_donor: boolean;
 }
 
 import { Bar } from 'react-chartjs-2';
@@ -124,6 +127,21 @@ export default function AdminDashboard() {
     }
   };
 
+  // Donor status is only ever granted here, never self-selected at registration.
+  const handleToggleDonor = async (user: User) => {
+    try {
+      await apiFetch(`admin/users/${encodeURIComponent(user.username)}/donor`, {
+        method: 'PATCH',
+        headers,
+        body: JSON.stringify({ is_donor: !user.is_donor }),
+      });
+      mutateUsers();
+      toast(user.is_donor ? `${user.username} is no longer a donor` : `${user.username} is now a donor`);
+    } catch (e) {
+      toast('Could not update donor status');
+    }
+  };
+
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
 
@@ -199,8 +217,18 @@ export default function AdminDashboard() {
           <h3 className="text-xl font-semibold mb-4">Users</h3>
           <div className="space-y-2">
             {(Array.isArray(users) ? users : []).map(u => (
-              <div key={u.id} className="p-2 border rounded">
-                {u.username}
+              <div key={u.username} className="flex items-center justify-between p-2 border rounded">
+                <span>
+                  {u.username}
+                  {u.is_admin && <span className="ml-2 text-xs text-gray-500">admin</span>}
+                  {u.is_donor && <span className="ml-2 text-xs text-amber-600">donor</span>}
+                </span>
+                <button
+                  onClick={() => handleToggleDonor(u)}
+                  className="text-sm text-blue-600 hover:text-blue-800"
+                >
+                  {u.is_donor ? 'Remove donor' : 'Make donor'}
+                </button>
               </div>
             ))}
           </div>
