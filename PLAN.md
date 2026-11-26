@@ -98,18 +98,19 @@ locally. CI is green on GitHub too.
 
 ## Phase 2: cleanup
 
-- [ ] Delete the dead frontend layer (client.ts, types/index.ts, unused components and hooks) and pick one
-      `types` source.
-- [ ] Collapse the scripts to `dev-ctl.cjs` + `dev-backend.cjs` + `test-backend.cjs` (+ one bash setup script
-      for Linux/CI).
-- [ ] Rewrite the README and merge in SETUP.md and RUN.md; document the real architecture.
+- [x] Deleted the dead frontend layer: client.ts, types/index.ts, Navbar, LandingPage, ErrorBoundary,
+      GlassCard, LocationSearch, DashboardLayout, PageHead, DatePicker, TimePicker, LoadingStates, and
+      hooks/useForm.
+- [x] Scripts are down to `dev-ctl.cjs`, `dev-backend.cjs`, `test-backend.cjs`, `start-frontend.cmd`, and
+      `dev.ps1`. Removed: script.sh (1,250 lines, which called a seed module that doesn't exist), quick-*,
+      fix-backend, test-setup, .run-*.sh (including the RQ worker), start-backend.cmd, and redis.conf.example.
+- [x] Rewrote the README (it absorbed SETUP.md and RUN.md, which are deleted) and corrected AGENTS.md
+      (`npm test` starts Vitest in watch mode, so an agent following it would hang).
+- [ ] `AYANAMSA` / `NODE_TYPE` / `HOUSE_SYSTEM` in config.yaml and .env are never read; the defaults are hard-coded
+      in `ProfileRequest`. Wire them up or delete them.
+- [ ] docker-compose runs Postgres, but no Postgres driver is in requirements.txt.
 - [ ] Decide between /api and root mounting, keep one, and drop the other (the frontend uses /api).
 - [ ] Prune the stale `codex/*` remote branches.
-- [ ] Still-unused frontend files: LocationSearch, DashboardLayout, PageHead, DatePicker, TimePicker,
-      LoadingStates, hooks/useForm. (Navbar, LandingPage, ErrorBoundary, GlassCard, util/api/client.ts,
-      and types/index.ts are already deleted.)
-- [ ] scripts/script.sh (1,100+ lines) calls a `scripts.seed_db` module that doesn't exist; seeding is
-      `backend/seed_demo.py`.
 - [ ] The dashboard page still uses the old gray/white theme, not the night-sky one.
 
 ## Phase 3: product
