@@ -50,16 +50,17 @@ always returned 500; admin new-post POSTed to a route that doesn't exist; getPos
 `getCurrentUser`, so it always bounced to /login; the post excerpt was sent as `summary` and dropped;
 the seed script was broken three ways.
 
-## Blocker: local backend on this PC
+## Local environment (resolved 2026-11-26)
 
-Smart App Control is enforcing, and it blocks unsigned native Python extensions, unpredictably (h3 and
-tzfpy so far). Tests pass because they stub geocoding, but a real chart request can't resolve a timezone
-locally. Options, in the user's hands:
-1. **WSL2 (recommended):** develop inside Ubuntu, where SAC doesn't apply and the setup matches the
-   Linux hosting. Keep the repo in the WSL filesystem.
-2. Turn SAC off (Windows Security → App & browser control). This is one-way: re-enabling needs a Windows
-   reset.
-3. Docker / the existing .devcontainer (Docker Desktop runs on WSL2 anyway).
+Smart App Control was blocking unsigned native Python extensions (h3, tzfpy), so the backend couldn't
+resolve timezones. The user turned SAC off, no restart was needed, and a full live chart now computes
+locally. CI is green on GitHub too.
+
+- [ ] `npm run up` hangs on Windows: `startProcessWin` uses `spawnSync(powershell)` to launch
+      start-frontend.cmd, and it never returns, so the pid file isn't written and the frontend never binds.
+      Running the same Start-Process by hand works, and Next binds in about 25 s. Fix by spawning PowerShell
+      detached with `stdio: 'ignore'` and reading the pid from a temp file, or by making start-frontend.cmd
+      write its own pid.
 
 ## Phase 1: correctness and security
 

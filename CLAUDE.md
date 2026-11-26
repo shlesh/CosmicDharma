@@ -88,8 +88,8 @@ Wrap components that use React Query or SWR in their providers (see DashboardPag
   detached (see dev-ctl.cjs history). `python3` is the Microsoft Store stub and hangs, so use
   `backend/venv/Scripts/python.exe`. SQLite URLs need Windows or relative paths, not `/c/...`.
   Console output is cp1252, so keep `print()` text ASCII in scripts.
-- **Smart App Control is ON (enforcing) on this machine.** It blocks unsigned native Python extensions
-  (`.pyd`) one file at a time and unpredictably: `h3` and `tzfpy` were both blocked, while older installs like
-  `pydantic_core` still load. Error: "DLL load failed ... An Application Control policy has blocked this
-  file". That's the OS, not the code. It means a live geocode→timezone lookup can't run locally.
-  Tests stub it, so they still pass. Don't burn time on per-package workarounds; see PLAN.md.
+- Smart App Control was turned **off** on 2026-11-26, after it blocked unsigned `.pyd` files (h3, tzfpy).
+  If "DLL load failed ... An Application Control policy has blocked this file" ever comes back, it's the OS
+  policy, not the code.
+- `npm run up` currently hangs on Windows after starting the backend (see PLAN.md). Until that's fixed, start
+  the frontend with `npm run dev:frontend` or by running `scripts/start-frontend.cmd` through Start-Process.
