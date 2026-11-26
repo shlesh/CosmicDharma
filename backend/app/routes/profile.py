@@ -5,7 +5,7 @@ from typing import Optional, Dict, Any
 import time as pytime
 
 from fastapi import APIRouter, BackgroundTasks, HTTPException, Query
-from pydantic import BaseModel, Field, field_validator, ConfigDict
+from pydantic import BaseModel, Field, field_validator, model_validator, ConfigDict
 
 from ..services.astro import (
     ProfileRequest,
@@ -59,6 +59,14 @@ class PanchangaRequest(BaseModel):
     ayanamsa: str = "yukteswar"
     node_type: str = Field(default="mean", alias="lunar_node")
     house_system: str = "whole_sign"
+    lat: Optional[float] = Field(default=None, ge=-90, le=90)
+    lon: Optional[float] = Field(default=None, ge=-180, le=180)
+
+    @model_validator(mode="after")
+    def _coords_together(self):
+        if (self.lat is None) != (self.lon is None):
+            raise ValueError("lat and lon must be given together")
+        return self
 
     @field_validator("birth_time", mode="before")
     @classmethod
@@ -79,6 +87,8 @@ def _profile_from_panchanga(request: PanchangaRequest) -> ProfileRequest:
         birth_date=request.birth_date,
         birth_time=request.birth_time.replace(second=0, microsecond=0),
         location=request.location,
+        lat=request.lat,
+        lon=request.lon,
         ayanamsa=request.ayanamsa if request.ayanamsa in {
             "yukteswar", "yukteshwar", "lahiri", "raman", "kp", "yukteswar_swiss"
         } else "yukteswar",

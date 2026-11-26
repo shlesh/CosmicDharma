@@ -7,7 +7,7 @@ from typing import Literal, Optional
 from datetime import date as dt_date, time as dt_time, datetime
 
 from fastapi import BackgroundTasks, HTTPException
-from pydantic import BaseModel, Field, ConfigDict, field_validator
+from pydantic import BaseModel, Field, ConfigDict, field_validator, model_validator
 import swisseph as swe
 import time
 import threading
@@ -15,7 +15,7 @@ import uuid
 import traceback
 
 from ..core.config import load_config
-from ..core.geocoder import geocode_location
+from ..core.geocoder import geocode_location, timezone_at
 from ..astrology.birth_info import get_birth_info
 from ..astrology.planets import calculate_planets
 from ..astrology.dasha import calculate_vimshottari_dasha
@@ -131,6 +131,16 @@ class ProfileRequest(BaseModel):
     ] = Field(default="yukteswar")
     node_type: Literal["mean", "true"] = Field(default="mean", alias="lunar_node")
     house_system: Literal["whole_sign", "equal", "sripati"] = Field(default="whole_sign")
+    # Coordinates of the place the user picked in autocomplete. When present they are
+    # used as-is; re-geocoding the label could resolve to a different town.
+    lat: Optional[float] = Field(default=None, ge=-90, le=90)
+    lon: Optional[float] = Field(default=None, ge=-180, le=180)
+
+    @model_validator(mode="after")
+    def _coords_together(self):
+        if (self.lat is None) != (self.lon is None):
+            raise ValueError("lat and lon must be given together")
+        return self
 
     @field_validator("birth_date")
     @classmethod
@@ -171,11 +181,33 @@ class ProfileResponse(BaseModel):
     vargottamaPlanets: Optional[list] = None
 
 
+def resolve_place(request: ProfileRequest) -> tuple[float, float, str]:
+    """(lat, lon, tz) for the request: the user's picked coordinates if sent, else geocode the label."""
+    lat, lon = getattr(request, "lat", None), getattr(request, "lon", None)
+    try:
+        if lat is not None and lon is not None:
+            return float(lat), float(lon), timezone_at(lat, lon)
+        logger.info("Geocoding '%s'", request.location.strip())
+        return geocode_location(request.location.strip())
+    except ValueError as ex:
+        raise HTTPException(status_code=400, detail=str(ex))
+    except Exception as ex:
+        logger.exception("Place resolution failed")
+        raise HTTPException(status_code=500, detail="Geocoding failed") from ex
+
+
+def _place_key(request: ProfileRequest) -> str:
+    lat, lon = getattr(request, "lat", None), getattr(request, "lon", None)
+    if lat is not None and lon is not None:
+        return f"@{float(lat):.4f},{float(lon):.4f}"  # ~11 m; same spot, same chart
+    return request.location.strip().lower()
+
+
 def compute_vedic_profile(request: ProfileRequest) -> dict:
     key = (
         request.birth_date.isoformat(),
         request.birth_time.isoformat(),
-        request.location.strip().lower(),
+        _place_key(request),
         request.ayanamsa,
         request.house_system,
         request.node_type,
@@ -188,14 +220,7 @@ def compute_vedic_profile(request: ProfileRequest) -> dict:
             return json.loads(cached)
 
     loc_str = request.location.strip()
-    logger.info("Geocoding '%s'", loc_str)
-    try:
-        lat, lon, tz = geocode_location(loc_str)
-    except ValueError as ex:
-        raise HTTPException(status_code=400, detail=str(ex))
-    except Exception as ex:
-        logger.exception("Geocoding failed")
-        raise HTTPException(status_code=500, detail="Geocoding failed") from ex
+    lat, lon, tz = resolve_place(request)
 
     try:
         binfo = get_birth_info(
@@ -358,14 +383,7 @@ def compute_vedic_profile(request: ProfileRequest) -> dict:
 
 
 def compute_panchanga(request: ProfileRequest) -> dict:
-    loc_str = request.location.strip()
-    try:
-        lat, lon, tz = geocode_location(loc_str)
-    except ValueError as ex:
-        raise HTTPException(status_code=400, detail=str(ex))
-    except Exception as ex:
-        logger.exception("Geocoding failed")
-        raise HTTPException(status_code=500, detail="Geocoding failed") from ex
+    lat, lon, tz = resolve_place(request)
 
     try:
         binfo = get_birth_info(

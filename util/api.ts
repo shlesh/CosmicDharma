@@ -80,7 +80,7 @@ export interface PanchangaLimb {
   ruling_planet?: string;
 }
 
-export interface PanchangaRequest { date: string; time: string; location: string; }
+export interface PanchangaRequest { date: string; time: string; location: string; lat?: number; lon?: number }
 export interface PanchangaResponse {
   vaara?: string;
   vaara_lord?: string;

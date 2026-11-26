@@ -67,16 +67,18 @@ locally. CI is green on GitHub too.
 - [ ] **Golden charts:** 3-5 known birth data sets with planet and lagna longitudes, nakshatra, and dasha dates
       checked against Jagannatha Hora (or similar) using Lahiri, plus the same charts using Yukteswar.
       Tolerance about 1 arcminute. This is the most valuable test the project can have.
-- [ ] Fix #5 (server sets `is_donor`), #6 (fail hard on a missing SECRET_KEY when not in dev; no admin/admin
-      outside dev), #7, and #8.
+- [x] #5: `/register` ignores privilege fields; admins grant donor status via
+      `PATCH /admin/users/{username}/donor` (the Make/Remove donor button in the admin users list).
+- [ ] #6 (fail hard on a missing SECRET_KEY when not in dev; no admin/admin outside dev), #7, and #8.
 - [ ] Geocoder: a real Nominatim user agent, rate limiting, and caching results to the DB instead of only an
       `lru_cache`.
 - [ ] Accept `fagan_bradley` in `ProfileRequest`, or drop it from LINEAGE.md.
-- [ ] **Use the coordinates the user picked.** ProfileForm sends lat/lon from autocomplete, but
-      ProfileRequest has no such fields, so the backend re-geocodes the label text and can land on a
-      different place.
-- [ ] The register page has an "I want to support as a donor" checkbox that grants donor status for free
-      (this is item 5 seen from the UI). Remove it; donor status should come from an actual payment or admin.
+- [x] **Use the coordinates the user picked.** Profile and panchanga requests now accept `lat`/`lon`
+      (validated, both or neither). When present, geocoding is skipped, and the cache keys on the
+      coordinates. The panchanga page now sends them too.
+- [x] The register page's "support as a donor" checkbox is gone.
+- [x] The custom 422 handler crashed on ValueError-based validators, so "birth date cannot be in the
+      future" showed users "Internal server error". It now uses `jsonable_encoder`.
 - [ ] `PUT /posts/{id}` sets the title before checking whether it changed, so the slug never updates.
 - [ ] Shadbala kala bala is partial (nathonnata, paksha, and vara only; no tribhaga, abda, masa, hora, ayana,
       or yuddha). Complete it or label it as approximate in the UI.
