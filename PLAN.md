@@ -133,3 +133,7 @@ Pick a direction before building. Candidates:
 - 2026-11-26: repo audit; CLAUDE.md and this plan created.
 - 2026-11-26: Phase 0. Both suites green (89 backend, 27 frontend), tsc clean, 9 real bugs fixed, and the
   Smart App Control blocker found.
+- 2026-11-26: Netlify is live. The frontend deploys from `main` with the Next runtime. Every deploy had failed
+  because Netlify refuses to upload a server function built with a Next.js version that has CVE-2025-55182
+  (15.3.4), so Next was upgraded to 15.5.29. DNS for cosmicdharma.app is on Netlify DNS; the HTTPS
+  certificate still has to be issued. Still open: hosting the backend, then setting `NEXT_PUBLIC_API_BASE_URL`.

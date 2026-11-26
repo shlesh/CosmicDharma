@@ -107,3 +107,7 @@ Wrap components that use React Query or SWR in their providers (see DashboardPag
 - dev-ctl launches Windows processes through PowerShell `Start-Process` with `stdio: 'ignore'`, and the pid
   comes back through a temp file. Don't go back to reading it from piped stdout: Next.js inherits the pipe
   and `spawnSync` then waits forever.
+- Netlify: the site is `cosmicdharma` (id 40148065-47a4-4af2-8a05-92f39946c1fa), linked locally through the
+  Netlify CLI. "Build script returned non-zero exit code: 2" hides the real error. Read the full build log with
+  `npx netlify-cli logs --source deploy --deploy-id <id> --since <ISO> --until <ISO>`. To list deploy ids, use
+  the public `https://api.netlify.com/api/v1/sites/<site id>/deploys`.
