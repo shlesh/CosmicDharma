@@ -107,7 +107,7 @@ export default function AdminDashboard() {
       setEditingId(null);
       setIsCreating(false);
       load();
-      toast('Post saved successfully!');
+      toast('Post saved successfully!', 'success');
     } catch (e) {
       toast('Save failed');
     }
@@ -121,7 +121,7 @@ export default function AdminDashboard() {
         headers,
       });
       load();
-      toast('Post deleted successfully!');
+      toast('Post deleted successfully!', 'success');
     } catch (e) {
       toast('Delete failed');
     }
@@ -136,7 +136,7 @@ export default function AdminDashboard() {
         body: JSON.stringify({ is_donor: !user.is_donor }),
       });
       mutateUsers();
-      toast(user.is_donor ? `${user.username} is no longer a donor` : `${user.username} is now a donor`);
+      toast(user.is_donor ? `${user.username} is no longer a donor` : `${user.username} is now a donor`, 'success');
     } catch (e) {
       toast('Could not update donor status');
     }

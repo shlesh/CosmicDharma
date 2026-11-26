@@ -93,8 +93,8 @@ locally. CI is green on GitHub too.
 - [ ] Shadbala kala bala is partial (nathonnata, paksha, and vara only; no tribhaga, abda, masa, hora, ayana,
       or yuddha). Complete it or label it as approximate in the UI.
 - [ ] `GOOGLE_MAPS_API_KEY` does nothing: the `googlemaps` package isn't in requirements.
-- [ ] ProfileForm labels aren't linked to their inputs (no htmlFor/id), so screen readers can't announce them.
-- [ ] Toasts are always red, success included.
+- [x] ProfileForm labels are linked to their inputs, and field errors are tied to their fields (aria-invalid + aria-describedby).
+- [x] Toasts have kinds: success (green, role=status) and error (red, role=alert, the default).
 
 ## Phase 2: cleanup
 
