@@ -156,24 +156,45 @@ function startProcessWin(filePath, args, cwd, extraEnv, redirect) {
   if (redirect) {
     extra = `-RedirectStandardOutput ${JSON.stringify(redirect.out)} -RedirectStandardError ${JSON.stringify(redirect.err)}`;
   }
+  // The pid comes back through a temp file, not stdout. With piped stdio, a launched process
+  // that inherits PowerShell's handles (Next.js does) keeps the pipe open, so spawnSync waited
+  // for Next to exit, which it never does: `npm run up` hung and the pid file was never written.
+  const tag = `${process.pid}-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+  const pidFile = path.join(require("os").tmpdir(), `cd-launch-${tag}.pid`);
+  const errFile = `${pidFile}.err`;
   const script = `
-    ${envLines}
-    $p = Start-Process -FilePath ${JSON.stringify(filePath)} `
+    $ErrorActionPreference = 'Stop'
+    try {
+      ${envLines}
+      $p = Start-Process -FilePath ${JSON.stringify(filePath)} `
     + (args && args.length ? `-ArgumentList @(${argList}) ` : "")
     + `-WorkingDirectory ${JSON.stringify(cwd)} `
     + `-WindowStyle Hidden `
     + extra + ` -PassThru
-    Write-Output $p.Id
+      Set-Content -LiteralPath ${JSON.stringify(pidFile)} -Value $p.Id -Encoding ascii
+    } catch {
+      Set-Content -LiteralPath ${JSON.stringify(errFile)} -Value $_.ToString() -Encoding utf8
+    }
   `;
-  const r = spawnSync(
+  spawnSync(
     "powershell.exe",
     ["-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", script],
-    { encoding: "utf8", windowsHide: true }
+    { stdio: "ignore", windowsHide: true, timeout: 60000 }
   );
-  const pid = Number(String(r.stdout || "").trim().split(/\s+/).pop());
+  const readAndRemove = (f) => {
+    try {
+      const s = fs.readFileSync(f, "utf8").trim();
+      fs.unlinkSync(f);
+      return s;
+    } catch {
+      return "";
+    }
+  };
+  const pid = Number(readAndRemove(pidFile));
+  const err = readAndRemove(errFile);
   if (!Number.isFinite(pid) || pid <= 0) {
     say(`Failed to launch ${filePath}`);
-    say((r.stderr || r.stdout || "").trim());
+    if (err) say(err);
     return 0;
   }
   return pid;
