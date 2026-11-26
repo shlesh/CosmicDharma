@@ -64,9 +64,15 @@ locally. CI is green on GitHub too.
 
 ## Phase 1: correctness and security
 
-- [ ] **Golden charts:** 3-5 known birth data sets with planet and lagna longitudes, nakshatra, and dasha dates
-      checked against Jagannatha Hora (or similar) using Lahiri, plus the same charts using Yukteswar.
-      Tolerance about 1 arcminute. This is the most valuable test the project can have.
+- [x] **Reference charts** (tests/test_reference_charts.py): 3 charts (Honolulu 1961, San Francisco 1955,
+      Prayagraj 1917). All 7 planets are checked against NASA JPL Horizons (worst 0.86″), the ascendant against
+      the Meeus textbook formula (worst 14″), plus local→UT conversion including India's 1917 offset. Nakshatra,
+      pada, and birth dasha are derived independently from the JPL Moon in both the Lahiri and Yukteswar frames.
+      Astro-Databank blocks automated access, so it wasn't used.
+- [ ] Dasha year length: we use the Julian year (365.25 days). Some traditions use 365.2422 (tropical) or 360
+      (savana). The difference is small at birth but grows across a 120-year cycle. Consider making it an option.
+- [ ] Births before standard time (local mean time, e.g. India before 1906) depend on tzdata's LMT entry for
+      the zone, not the actual birthplace's longitude. Add a "local mean time" input for historical charts.
 - [x] #5: `/register` ignores privilege fields; admins grant donor status via
       `PATCH /admin/users/{username}/donor` (the Make/Remove donor button in the admin users list).
 - [ ] #6 (fail hard on a missing SECRET_KEY when not in dev; no admin/admin outside dev), #7, and #8.
